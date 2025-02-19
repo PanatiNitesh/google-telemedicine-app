@@ -91,3 +91,7 @@ flutter:
 
   assets:
     - assets/doctor.png
+    - assets/google.png
+    - assets/microsoft.png
+    - assets/apple.png
+    - assets/back.png
