@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_project/app/pages/HomePage.dart';
 
 class RegisterPage extends StatelessWidget {
-  const RegisterPage({super.key});
+  RegisterPage({super.key});
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -56,11 +61,11 @@ class RegisterPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildTextField("Full Name"),
+                  _buildTextField("Full Name", controller: nameController),
                   const SizedBox(height: 10),
-                  _buildTextField("Email"),
+                  _buildTextField("Email", controller: emailController),
                   const SizedBox(height: 10),
-                  _buildTextField("Password", obscureText: true),
+                  _buildTextField("Password", obscureText: true, controller: passwordController),
                 ],
               ),
             ),
@@ -69,7 +74,15 @@ class RegisterPage extends StatelessWidget {
 
             // Done Button
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                String username = nameController.text;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(username: username),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -110,8 +123,9 @@ class RegisterPage extends StatelessWidget {
   }
 
   // TextField Widget
-  Widget _buildTextField(String hintText, {bool obscureText = false}) {
+  Widget _buildTextField(String hintText, {bool obscureText = false, required TextEditingController controller}) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         hintText: hintText,

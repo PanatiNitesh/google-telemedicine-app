@@ -6,10 +6,13 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
+      appBar: AppBar(
+        title: const Text("Home"),
+        backgroundColor: Colors.blue,
+      ),
       body: const Center(
         child: Text(
-          "Welcome to Telemedicine!",
+          "Welcome to Home Page!",
           style: TextStyle(fontSize: 20),
         ),
       ),

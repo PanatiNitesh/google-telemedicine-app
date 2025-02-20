@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_project/app/pages/LoginPasswordPage.dart';
+
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -78,7 +80,12 @@ class LoginPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PasswordPage()),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -99,7 +106,7 @@ class LoginPage extends StatelessWidget {
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // Navigate back to main.dart
+                      Navigator.pop(context);
                     },
                     child: const Text(
                       'Cancel',
