@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'app/pages/login.dart';
-import 'app/pages/register.dart';
+import 'package:flutter_project/app/pages/HomePage.dart'; // Import HomePage
+import 'package:google_fonts/google_fonts.dart'; // For custom fonts
+import 'app/pages/login.dart'; // Import LoginPage
+import 'app/pages/register.dart'; // Import RegisterPage
 
 void main() {
   runApp(const TelemedicineApp());
@@ -14,12 +14,12 @@ class TelemedicineApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const MainPage(),
+      debugShowCheckedModeBanner: false, // Remove debug banner
+      home: const MainPage(), // Start with MainPage
       routes: {
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => RegisterPage(),
-        '/home': (context) => const HomePage(username: '',),
+        '/login': (context) => const LoginPage(), // Route for LoginPage
+        '/register': (context) => RegisterPage(), // Route for RegisterPage
+        '/home': (context) => const HomePage(username: ''), // Route for HomePage
       },
     );
   }
@@ -40,21 +40,21 @@ class MainPage extends StatelessWidget {
               left: 0,
               right: 0,
               child: ClipPath(
-                clipper: CustomClip(),
+                clipper: CustomClip(), // Custom clipper for slanted design
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.4,
                   color: Colors.blue,
                 ),
               ),
             ),
-            
+
             // Login Button
             Positioned(
               top: 20,
               right: 20,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/login');
+                  Navigator.pushNamed(context, '/login'); // Navigate to LoginPage
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -87,7 +87,7 @@ class MainPage extends StatelessWidget {
               bottom: 20,
               right: 10,
               child: Image.asset(
-                'assets/doctor.png',
+                'assets/doctor.png', // Ensure this image exists in your assets folder
                 height: 250,
                 width: 200,
                 fit: BoxFit.contain,
@@ -100,7 +100,7 @@ class MainPage extends StatelessWidget {
               bottom: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/register');
+                  Navigator.pushNamed(context, '/register'); // Navigate to RegisterPage
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -125,13 +125,13 @@ class CustomClip extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     Path path = Path();
-    path.lineTo(0, size.height - 80);
-    path.lineTo(size.width, size.height * 0.3);
-    path.lineTo(size.width, 0);
+    path.lineTo(0, size.height - 80); // Start from top-left
+    path.lineTo(size.width, size.height * 0.3); // Draw diagonal line
+    path.lineTo(size.width, 0); // Close the path
     path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false; // No need to reclip
 }
