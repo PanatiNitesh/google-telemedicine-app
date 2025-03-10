@@ -31,14 +31,19 @@ dependencies:
   logging: ^1.2.0
   flutter:
     sdk: flutter
-  table_calendar: ^3.0.9
-  font_awesome_flutter: ^10.8.0 
   http: 1.3.0
+  table_calendar: ^3.0.9
+  image_picker: ^1.1.2
+  file_picker: ^9.0.2
+  speech_to_text: ^7.0.0
+  font_awesome_flutter: ^10.8.0 
+  path: ^1.8.2
   
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:

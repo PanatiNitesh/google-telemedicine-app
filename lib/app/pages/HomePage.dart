@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/ProfilePage.dart';
+import 'package:flutter_project/app/pages/chat_bot.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
 
 
-import 'package:flutter_project/app/pages/aichat.dart'; // Ensure correct import
+
 import 'package:logging/logging.dart'; // Add logging package
 
 // Import the ProfilePage
@@ -564,10 +565,17 @@ void _navigateToPage(int index) {
         MaterialPageRoute(builder: (context) => LabTestsApp()),
       );
       break;
+    case 4: // Navigate to AI Assistant Page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ChatScreen()),
+      );
+      break;
     default:
       _logger.info('Navigate to feature $index');
   }
 }
+
 
 
 
