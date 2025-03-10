@@ -12,10 +12,10 @@ class DoctorListPage extends StatelessWidget {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black,
           ),
         ),
-        backgroundColor: Colors.blue,
+ 
         centerTitle: true,
         actions: [
           IconButton(
@@ -57,7 +57,7 @@ class DoctorListPage extends StatelessWidget {
     );
   }
 
-  // Doctor Card Widget
+  // Doctor Card Widget with Icon
   Widget _buildDoctorCard(String name, String specialization) {
     return Card(
       elevation: 4,
@@ -67,22 +67,35 @@ class DoctorListPage extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            // Doctor Icon
+            const Icon(
+              Icons.medical_services,
+              size: 40,
+              color: Colors.blue,
             ),
-            const SizedBox(height: 8),
-            Text(
-              specialization,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+            const SizedBox(width: 16), // Add spacing between icon and text
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    specialization,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

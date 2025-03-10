@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_project/app/pages/DoctorListPage.dart';
+import 'package:flutter_project/app/pages/ProfilePage.dart';
+import 'package:flutter_project/app/pages/labtests.dart';
+import 'package:flutter_project/app/pages/medicine_page.dart';
+
+
+import 'package:flutter_project/app/pages/aichat.dart'; // Ensure correct import
 import 'package:logging/logging.dart'; // Add logging package
 
+// Import the ProfilePage
+ // Ensure this import points to the correct file
+
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required String username});
+  final String username;
+
+  const HomePage({super.key, required this.username});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -14,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 2; // Home index
   final TextEditingController _searchController = TextEditingController();
   bool _isFilterActive = false;
-  
+
   // Sample data for doctors
   final List<Map<String, dynamic>> doctors = [
     {
@@ -60,9 +72,9 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Hi, Ravindra',
-          style: TextStyle(
+        Text(
+          'Hi, ${widget.username}',
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -73,13 +85,22 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.notifications_outlined),
               onPressed: _showNotificationDrawer,
             ),
-            CircleAvatar(
-              backgroundColor: Colors.grey[300],
-              radius: 30,
-              child: const Icon(
-                Icons.person_outline,
-                color: Colors.black54,
-                size: 30,
+            GestureDetector(
+              onTap: () {
+                // Navigate to ProfilePage when the profile icon is clicked
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                backgroundColor: Colors.grey[300],
+                radius: 30,
+                child: const Icon(
+                  Icons.person_outline,
+                  color: Colors.black54,
+                  size: 30,
+                ),
               ),
             ),
           ],
@@ -429,10 +450,10 @@ class _HomePageState extends State<HomePage> {
   // Action methods
   void _performSearch(String query) {
     if (query.isEmpty) return;
-    
+
     // Implement search functionality
     _logger.info('Searching for: $query'); // Using logger instead of print
-    
+
     // Clear search field after search
     _searchController.clear();
     FocusScope.of(context).unfocus();
@@ -523,23 +544,38 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _navigateToPage(int index) {
-    // Navigate to respective page based on index
-    _logger.info('Navigate to feature $index'); // Using logger instead of print
-    
-    // You would typically use Navigator.push here
-    // Example:
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => FeaturePages[index]),
-    // );
+void _navigateToPage(int index) {
+  switch (index) {
+    case 0:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const DoctorListPage()),
+      );
+      break;
+    case 1:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => MedicinePage()),
+      );
+      break;
+    case 3: // Navigate to Laboratories Page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LabTestsApp()),
+      );
+      break;
+    default:
+      _logger.info('Navigate to feature $index');
   }
+}
+
+
 
   void _toggleFilter() {
     setState(() {
       _isFilterActive = !_isFilterActive;
     });
-    
+
     if (_isFilterActive) {
       _showFilterOptions();
     }
@@ -616,7 +652,7 @@ class _HomePageState extends State<HomePage> {
   void _bookAppointment(Map<String, dynamic> doctor) {
     // Implement booking functionality
     _logger.info('Booking appointment with ${doctor['name']}'); // Using logger instead of print
-    
+
     // Show booking confirmation
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -626,6 +662,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;

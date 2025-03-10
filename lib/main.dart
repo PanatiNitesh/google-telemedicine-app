@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/HomePage.dart'; // Import HomePage
+import 'package:flutter_project/app/pages/ProfilePage.dart';
 import 'package:google_fonts/google_fonts.dart'; // For custom fonts
 import 'app/pages/login.dart'; // Import LoginPage
 import 'app/pages/register.dart'; // Import RegisterPage
@@ -20,6 +21,7 @@ class TelemedicineApp extends StatelessWidget {
         '/login': (context) => const LoginPage(), // Route for LoginPage
         '/register': (context) => RegisterPage(), // Route for RegisterPage
         '/home': (context) => const HomePage(username: ''), // Route for HomePage
+        '/profile': (context) => const ProfilePage(), // Route for ProfilePage
       },
     );
   }
