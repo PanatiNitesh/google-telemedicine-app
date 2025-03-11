@@ -1,159 +1,142 @@
 import 'package:flutter/material.dart';
 
-class DoctorListPage extends StatelessWidget {
-  const DoctorListPage({super.key});
+class DoctorsListPage extends StatelessWidget {
+  final List<Map<String, dynamic>> doctors = [
+    {
+      'name': 'Dr. John Doe',
+      'specialty': 'Cardiologist',
+      'description': 'Expert in heart diseases with 10 years of experience.',
+      'image': 'assets/doctor1.png',
+    },
+    {
+      'name': 'Dr. Jane Smith',
+      'specialty': 'Dermatologist',
+      'description': 'Specialist in skin and hair treatments.',
+      'image': 'assets/doctor2.png',
+    },
+    {
+      'name': 'Dr. Robert Brown',
+      'specialty': 'Pediatrician',
+      'description': 'Caring for children’s health and well-being.',
+      'image': 'assets/doctor3.png',
+    },
+  ];
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Doctor's List",
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
- 
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              // Add search functionality here
-              _showSearchDialog(context);
-            },
+  Widget _buildDoctorCard(Map<String, dynamic> doctor) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8), // Reduced margin
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 5,
+            spreadRadius: 2,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDoctorCard("Doctor-1", "Rheumatologist"),
-          _buildDoctorCard("Doctor-2", "Dermatologist"),
-          _buildDoctorCard("Doctor-3", "Dermatologist"),
-          _buildDoctorCard("Doctor-4", "Dermatologist"),
-          _buildDoctorCard("Doctor-5", "Dermatologist"),
-          _buildDoctorCard("Doctor-6", "Dermatologist"),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.black54,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.medical_services), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
-        ],
-        onTap: (index) {
-          // Handle bottom navigation bar taps
-          _handleBottomNavigationTap(context, index);
-        },
-      ),
-    );
-  }
-
-  // Doctor Card Widget with Icon
-  Widget _buildDoctorCard(String name, String specialization) {
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Doctor Icon
-            const Icon(
-              Icons.medical_services,
-              size: 40,
-              color: Colors.blue,
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
             ),
-            const SizedBox(width: 16), // Add spacing between icon and text
-            Expanded(
+            child: Image.asset(
+              doctor['image'],
+              width: 90, // Adjusted size to match home page
+              height: 90, // Adjusted size
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 90,
+                  height: 90,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.person, size: 40),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0), // Reduced padding
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    doctor['name'],
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
                   Text(
-                    specialization,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
+                    doctor['specialty'],
+                    style: TextStyle(
+                      color: Colors.grey[600],
                     ),
+                  ),
+                  const SizedBox(height: 4), // Reduced space
+                  Text(
+                    doctor['description'],
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey[600]), // Small arrow for navigation
+          ),
+        ],
       ),
     );
   }
 
-  // Search Dialog
-  void _showSearchDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Search Doctors"),
-          content: const TextField(
-            decoration: InputDecoration(
-              hintText: "Search by name or specialization",
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFDDDDDD),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 14), // Maintain spacing
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Image.asset(
+              'assets/back.png',
+              width: 20, // Reduced size
+              height: 20, // Reduced size
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
-              },
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                // Add search logic here
-                Navigator.pop(context); // Close the dialog
-              },
-              child: const Text("Search"),
-            ),
-          ],
-        );
-      },
+        ),
+        title: const Text(
+          'Doctors List',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView.builder(
+          itemCount: doctors.length,
+          itemBuilder: (context, index) {
+            return _buildDoctorCard(doctors[index]);
+          },
+        ),
+      ),
     );
-  }
-
-  // Handle Bottom Navigation Bar Taps
-  void _handleBottomNavigationTap(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        // Navigate to Home Page
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        // Navigate to Doctor List Page (current page)
-        break;
-      case 2:
-        // Navigate to Search Page (or show search dialog)
-        _showSearchDialog(context);
-        break;
-      case 3:
-        // Navigate to Profile Page
-        Navigator.pushNamed(context, '/profile');
-        break;
-    }
   }
 }

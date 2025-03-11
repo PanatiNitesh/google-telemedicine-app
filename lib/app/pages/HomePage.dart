@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/ProfilePage.dart';
+import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:flutter_project/app/pages/chat_bot.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
@@ -304,86 +305,87 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // Improved alignment
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              bottomLeft: Radius.circular(12),
-            ),
-            child: Image.asset(
-              doctor['image'],
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                // Fallback widget when image can't be loaded
-                return Container(
-                  width: 100,
-                  height: 100,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.person, size: 50),
-                );
-              },
-            ),
+  return Container(
+    margin: const EdgeInsets.symmetric(vertical: 8), // Reduce margin
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            bottomLeft: Radius.circular(12),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doctor['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    doctor['specialty'],
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    doctor['description'],
-                    style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                ],
-              ),
-            ),
+          child: Image.asset(
+            doctor['image'],
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey[300],
+                child: const Icon(Icons.person, size: 50),
+              );
+            },
           ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: ElevatedButton(
-              onPressed: () => _bookAppointment(doctor),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0), // Reduce padding
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  doctor['name'],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Book',
-                style: TextStyle(color: Colors.white),
-              ),
+                Text(
+                  doctor['specialty'],
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 4), // Reduce space
+                Text(
+                  doctor['description'],
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4), // Reduce padding
+          child: ElevatedButton(
+            onPressed: () => _bookAppointment(doctor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduce button padding
+            ),
+            child: const Text(
+              'Book',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildBottomNavBar() {
     return Container(
@@ -550,7 +552,7 @@ void _navigateToPage(int index) {
     case 0:
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const DoctorListPage()),
+        MaterialPageRoute(builder: (context) =>  DoctorsListPage()),
       );
       break;
     case 1:
@@ -569,6 +571,12 @@ void _navigateToPage(int index) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => ChatScreen()),
+      );
+      break;
+    case 5: // Navigate to Test Results Page
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TestResults()),
       );
       break;
     default:
