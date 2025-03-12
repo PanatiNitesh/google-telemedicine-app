@@ -28,6 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_screenutil: ^5.9.0
   logging: ^1.2.0
   flutter:
     sdk: flutter
@@ -108,3 +109,5 @@ flutter:
     - assets/doctor1.png
     - assets/doctor2.png
     - assets/google_lens.png
+    - assets/ellipse.png
+    - assets/image.png

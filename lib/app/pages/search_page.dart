@@ -40,10 +40,42 @@ class _SearchPageState extends State<SearchPage> {
     },
   ];
 
+  // Mock data for recent searches
+  final List<Map<String, dynamic>> recentSearches = [
+    {
+      'title': 'Dermatologist',
+      'type': 'Doctor',
+      'image': 'assets/doctor1.png',
+      'action': 'Book',
+    },
+    {
+      'title': 'CBC Test',
+      'type': 'Lab Test',
+      'icon': Icons.local_hospital,
+      'action': 'Book',
+    },
+    {
+      'title': 'Dolo - 650mg',
+      'type': 'Medicine',
+      'icon': Icons.medication,
+      'action': 'Order',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+
+    // Check for route arguments and perform search if query exists
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args.containsKey('query')) {
+        final query = args['query'] as String;
+        _searchController.text = query;
+        _performSearch(query);
+      }
+    });
   }
 
   @override
@@ -69,77 +101,138 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  void _clearSearch() {
-    setState(() {
-      _searchController.clear();
-      _searchQuery = null;
-      _isSuggestionVisible = false;
-    });
+  void _goBack() {
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search'),
-        backgroundColor: Colors.grey[200],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSearchBar(),
-            if (_isSuggestionVisible) _buildSuggestions(),
-            if (_searchQuery != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Results for "$_searchQuery"',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      backgroundColor: const Color(0xFFDDDDDD), // Background color
+      body: Column(
+        children: [
+          // Navbar with Back Button at Top Left
+          Container(
+            padding: const EdgeInsets.only(top: 10.0, left: 6.0), // Moved closer to top with left padding of 6
+            height: 60.0, // Reduced height to keep it compact
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start, // Align to the left
+              children: [
+                GestureDetector(
+                  onTap: _goBack,
+                  child: Image.asset(
+                    'assets/back.png',
+                    width: 30, // Keep size at 30x30 as per your code
+                    height: 30,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSearchBar(), // Search bar below navbar
+                  if (_isSuggestionVisible) _buildSuggestions(),
+                  if (_searchQuery != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Results for "$_searchQuery"',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Expanded(child: _buildSearchResults()),
+                  ],
+                  // Recent Searches Section
+                  if (_searchQuery == null) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Previous Search',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // TODO: Implement View All functionality
+                          },
+                          child: const Text(
+                            'View All',
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _buildRecentSearches(),
+                  ],
+                ],
               ),
-              const SizedBox(height: 10),
-              Expanded(child: _buildSearchResults()),
-            ],
-          ],
+            ),
+          ),
+        ],
+      ),
+      // Chat Bot Floating Action Button with Image
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: Implement chat bot functionality
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chat Bot Opened')),
+          );
+        },
+        backgroundColor: Colors.blue,
+        elevation: 4.0,
+        child: Image.asset(
+          'assets/chatbot.png',
+          width: 24,
+          height: 24,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.chat_bubble_outline, color: Colors.white);
+          },
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildSearchBar() {
     return Container(
       height: 50,
+      margin: const EdgeInsets.only(top: 10), // Space below navbar
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(51),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 1),
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _clearSearch,
-          ),
           Expanded(
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
                 hintText: 'Search Doctors, medicines',
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
               onSubmitted: _performSearch,
             ),
           ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 5),
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
             child: InkWell(
               onTap: () {
                 showDialog(
@@ -253,6 +346,72 @@ class _SearchPageState extends State<SearchPage> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildRecentSearches() {
+    return SizedBox(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: recentSearches.length,
+        itemBuilder: (context, index) {
+          final search = recentSearches[index];
+          return Container(
+            width: 100,
+            margin: const EdgeInsets.only(right: 10),
+            child: Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  search['image'] != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            search['image'],
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 40);
+                            },
+                          ),
+                        )
+                      : Icon(search['icon'] as IconData?, size: 40, color: Colors.blue),
+                  const SizedBox(height: 8),
+                  Text(
+                    search['title'],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Implement action (Book or Order)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${search['action']} clicked for ${search['title']}')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: const Size(60, 30),
+                    ),
+                    child: Text(
+                      search['action'],
+                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

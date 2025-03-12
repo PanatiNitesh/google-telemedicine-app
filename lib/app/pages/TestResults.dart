@@ -7,6 +7,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,6 +23,8 @@ class MyApp extends StatelessWidget {
 }
 
 class TestResults extends StatefulWidget {
+  const TestResults({super.key});
+
   @override
   _TestResultsState createState() => _TestResultsState();
 }
@@ -275,7 +279,7 @@ class _TestResultsState extends State<TestResults>
 
 class PlaceholderPage extends StatelessWidget {
   final String title;
-  const PlaceholderPage({Key? key, required this.title}) : super(key: key);
+  const PlaceholderPage({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,7 @@ import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:flutter_project/app/pages/chat_bot.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
+import 'package:flutter_project/app/pages/search_page.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   int _selectedIndex = 2; // Home index
   final TextEditingController _searchController = TextEditingController();
   bool _isFilterActive = false;
+  bool _isSuggestionVisible = false; // Added for suggestions
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -41,6 +43,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     },
   ];
 
+  // Sample suggestions for search bar
+  final List<String> suggestions = [
+    'Dolo - 650mg',
+    'Doc2 - Dermatologist',
+    'Blood - CBC',
+    'Doc2 - Dermatologist',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -51,29 +61,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _animation = Tween<double>(begin: 0, end: -10).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+    // Add listener for search bar suggestions
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _searchController.dispose();
+    _searchController.removeListener(_onSearchChanged);
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _isSuggestionVisible = _searchController.text.isNotEmpty;
+    });
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    _controller.forward().then((_) => _controller.reverse());
+    _controller.forward().then((_) => _controller.reverse()); // Fixed typo: _controller instead of controller
 
     final Color themeColor;
     switch (index) {
       case 0:
         themeColor = Colors.purple;
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+        _logger.info('Navigating to /profile');
+        Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
         break;
       case 1:
         themeColor = Colors.teal;
+        _logger.info('Navigating to /test_results');
         Navigator.push(context, MaterialPageRoute(builder: (context) => TestResults()));
         break;
       case 2:
@@ -81,10 +102,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         break;
       case 3:
         themeColor = Colors.amber;
+        _logger.info('Navigating to /search from bottom navigation');
+        Navigator.pushNamed(context, '/search'); // Using pushNamed for search
         break;
       case 4:
         themeColor = Colors.red;
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+        _logger.info('Navigating to /profile');
+        Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
         break;
       default:
         themeColor = Colors.blue;
@@ -109,6 +133,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     _buildHeader(),
                     const SizedBox(height: 16),
                     _buildSearchBar(),
+                    if (_isSuggestionVisible) _buildSuggestions(), // Added suggestions
                     const SizedBox(height: 24),
                     _buildFeatureTabs(),
                     const SizedBox(height: 24),
@@ -151,10 +176,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             ),
             GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                );
+                _logger.info('Navigating to /profile from header');
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
               },
               child: CircleAvatar(
                 backgroundColor: Colors.grey[300],
@@ -220,6 +243,85 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               icon: const Icon(Icons.search),
               onPressed: () => _performSearch(_searchController.text),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestions() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(51),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Suggestion',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ...suggestions.map((suggestion) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(suggestion),
+                onTap: () {
+                  _searchController.text = suggestion;
+                  setState(() {
+                    _isSuggestionVisible = false;
+                  });
+                  _performSearch(suggestion);
+                },
+              )),
+        ],
+      ),
+    );
+  }
+
+  void _performSearch(String query) {
+    if (query.isEmpty) return;
+    _logger.info('Searching for: $query');
+    _searchController.clear();
+    setState(() {
+      _isSuggestionVisible = false;
+    });
+    FocusScope.of(context).unfocus();
+    _logger.info('Navigating to /search with query: $query'); // Debug log
+    Navigator.pushNamed(
+      context,
+      '/search',
+      arguments: {'query': query}, // Pass the search query
+    );
+  }
+
+  void _openGoogleLens() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Google Lens'),
+        content: const Text('Open camera for visual search'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _logger.info('Opening camera for visual search');
+            },
+            child: const Text('Open Camera'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
         ],
       ),
@@ -686,36 +788,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  void _performSearch(String query) {
-    if (query.isEmpty) return;
-    _logger.info('Searching for: $query');
-    _searchController.clear();
-    FocusScope.of(context).unfocus();
-  }
-
-  void _openGoogleLens() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Google Lens'),
-        content: const Text('Open camera for visual search'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _logger.info('Opening camera for visual search');
-            },
-            child: const Text('Open Camera'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showNotificationDrawer() {
     showModalBottomSheet(
       context: context,
@@ -780,18 +852,26 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   void _navigateToPage(int index) {
     switch (index) {
       case 0:
+        _logger.info('Navigating to /doctors_list');
         Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorsListPage()));
         break;
       case 1:
+        _logger.info('Navigating to /medicines');
         Navigator.push(context, MaterialPageRoute(builder: (context) => MedicinePage()));
         break;
+      case 2:
+        _logger.info('Navigate to Appointments');
+        break;
       case 3:
+        _logger.info('Navigating to /lab_tests');
         Navigator.push(context, MaterialPageRoute(builder: (context) => LabTestsApp()));
         break;
       case 4:
+        _logger.info('Navigating to /ai_diagnose');
         Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen()));
         break;
       case 5:
+        _logger.info('Navigating to /test_results');
         Navigator.push(context, MaterialPageRoute(builder: (context) => TestResults()));
         break;
       default:
@@ -885,7 +965,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 }
 
-// Custom painters moved outside the class
+// Custom painters (unchanged)
 class LineGraphPainter extends CustomPainter {
   final List<Offset> points;
   final Color lineColor;

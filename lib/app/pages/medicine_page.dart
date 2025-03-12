@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_project/app/pages/HomePage.dart'; // Adjust imports as needed
 import 'package:flutter_project/app/pages/ProfilePage.dart';
-import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:logging/logging.dart'; // For Logger
 
 class MedicinePage extends StatefulWidget {
@@ -87,7 +86,7 @@ class _MedicinePageState extends State<MedicinePage>
       case 0:
         themeColor = Colors.purple;
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+            context, MaterialPageRoute(builder: (context) =>  ProfilePage()));
         break;
       case 1:
         themeColor = Colors.teal;
@@ -104,7 +103,7 @@ class _MedicinePageState extends State<MedicinePage>
       case 4:
         themeColor = Colors.red;
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+            context, MaterialPageRoute(builder: (context) =>  ProfilePage()));
         break;
       default:
         themeColor = Colors.blue;
@@ -146,7 +145,7 @@ class _MedicinePageState extends State<MedicinePage>
       ),
       body: Column(
         children: [
-          const SizedBox(height: 50),
+          const SizedBox(height: 40),
           const Text(
             "Select a Date",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

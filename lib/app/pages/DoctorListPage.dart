@@ -69,7 +69,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       case 0:
         themeColor = Colors.purple;
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+            context, MaterialPageRoute(builder: (context) => ProfilePage()));
         break;
       case 1:
         themeColor = Colors.teal;
@@ -88,7 +88,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       case 4:
         themeColor = Colors.red;
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+            context, MaterialPageRoute(builder: (context) =>  ProfilePage()));
         break;
       default:
         themeColor = Colors.blue;

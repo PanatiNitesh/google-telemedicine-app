@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({Key? key}) : super(key: key);
+  const ChatScreen({super.key});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();

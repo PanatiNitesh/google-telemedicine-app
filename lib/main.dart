@@ -21,14 +21,14 @@ class TelemedicineApp extends StatelessWidget {
       home: const MainPage(), // Start with MainPage
       routes: {
         '/login': (context) => const LoginPage(), // Route for LoginPage
-        '/register': (context) => RegisterPage(), // Route for RegisterPage
+        '/register': (context) =>  RegisterPage(), // Route for RegisterPage
         '/home': (context) {
           // Extract the username from the arguments
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           final username = args != null ? args['username'] as String : 'User'; // Fallback to 'User'
           return home_page.HomePage(username: username);
         }, // Route for HomePage
-        '/profile': (context) => const ProfilePage(), // Route for ProfilePage
+        '/profile': (context) => ProfilePage(), // Route for ProfilePage
         '/ai_diagnose': (context) => const chat_bot.ChatScreen(), // Route for ChatScreen
         '/search': (context) => const SearchPage(), // Route for SearchPage
       },
