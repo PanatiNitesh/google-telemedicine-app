@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart'; // Import HomePage
+import 'package:flutter_project/app/pages/HomePage.dart' as home_page; // Changed prefix to home_page
 import 'package:flutter_project/app/pages/ProfilePage.dart';
 import 'package:google_fonts/google_fonts.dart'; // For custom fonts
 import 'app/pages/login.dart'; // Import LoginPage
 import 'app/pages/register.dart'; // Import RegisterPage
-import 'app/pages/chat_bot.dart' as chatBot;
+import 'app/pages/chat_bot.dart' as chat_bot; // Changed prefix to chat_bot
+import 'app/pages/search_page.dart'; // Ensure this file exists or correct the path
+
 void main() {
   runApp(const TelemedicineApp());
 }
@@ -20,9 +22,15 @@ class TelemedicineApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(), // Route for LoginPage
         '/register': (context) => RegisterPage(), // Route for RegisterPage
-        '/home': (context) => const HomePage(username: ''), // Route for HomePage
+        '/home': (context) {
+          // Extract the username from the arguments
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final username = args != null ? args['username'] as String : 'User'; // Fallback to 'User'
+          return home_page.HomePage(username: username);
+        }, // Route for HomePage
         '/profile': (context) => const ProfilePage(), // Route for ProfilePage
-        '/ai_diagnose': (context) => const chatBot.ChatScreen(),
+        '/ai_diagnose': (context) => const chat_bot.ChatScreen(), // Route for ChatScreen
+        '/search': (context) => const SearchPage(), // Route for SearchPage
       },
     );
   }
