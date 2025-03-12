@@ -5,7 +5,6 @@ import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:flutter_project/app/pages/chat_bot.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
-import 'package:flutter_project/app/pages/search_page.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 
@@ -103,7 +102,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       case 3:
         themeColor = Colors.amber;
         _logger.info('Navigating to /search from bottom navigation');
-        Navigator.pushNamed(context, '/search'); // Using pushNamed for search
+        Navigator.of(context, rootNavigator: true).pushNamed('/search'); // Using pushNamed for search
         break;
       case 4:
         themeColor = Colors.red;
@@ -298,11 +297,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     });
     FocusScope.of(context).unfocus();
     _logger.info('Navigating to /search with query: $query'); // Debug log
-    Navigator.pushNamed(
-      context,
-      '/search',
-      arguments: {'query': query}, // Pass the search query
-    );
+    Navigator.of(context, rootNavigator: true).pushNamed(
+  '/search',
+  arguments: {'query': query},
+);
   }
 
   void _openGoogleLens() {
