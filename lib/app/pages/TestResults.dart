@@ -171,6 +171,9 @@ class _TestResultsState extends State<TestResults>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD), // Dark gray background
       extendBodyBehindAppBar: true,
@@ -189,8 +192,8 @@ class _TestResultsState extends State<TestResults>
             },
             child: Image.asset(
               'assets/back.png', // Your custom back button asset
-              width: 20,
-              height: 20,
+              width: screenWidth * 0.06, // Responsive width
+              height: screenWidth * 0.06, // Responsive height
             ),
           ),
         ),
@@ -199,6 +202,7 @@ class _TestResultsState extends State<TestResults>
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black,
+            fontSize: screenWidth * 0.05, // Responsive font size
           ),
         ),
         foregroundColor: Colors.black,
@@ -206,30 +210,37 @@ class _TestResultsState extends State<TestResults>
       ),
       // Increased top padding to bring boxes down a bit
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 70, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          screenWidth * 0.04, // Responsive padding
+          screenHeight * 0.1, // Responsive padding
+          screenWidth * 0.04, // Responsive padding
+          screenHeight * 0.02, // Responsive padding
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (var result in testResults)
               Card(
                 elevation: 3.0,
-                margin: EdgeInsets.only(bottom: 14.0),
+                margin: EdgeInsets.only(bottom: screenHeight * 0.015), // Reduced margin
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 color: Colors.white,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 16.0, horizontal: 12.0),
+                  padding: EdgeInsets.symmetric(
+                    vertical: screenHeight * 0.015, // Reduced padding
+                    horizontal: screenWidth * 0.04, // Responsive padding
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
-                          // Reduced icon container size and remove extra padding using FittedBox
+                          // Reduced icon container size
                           Container(
-                            width: 50,
-                            height: 50,
+                            width: screenWidth * 0.1, // Reduced width
+                            height: screenWidth * 0.1, // Reduced height
                             decoration: BoxDecoration(
                               color: Colors.grey[300],
                               borderRadius: BorderRadius.circular(8),
@@ -239,11 +250,11 @@ class _TestResultsState extends State<TestResults>
                               child: Icon(result['icon'], color: Colors.blue),
                             ),
                           ),
-                          SizedBox(width: 12),
+                          SizedBox(width: screenWidth * 0.03), // Responsive spacing
                           Text(
                             result['type'],
                             style: TextStyle(
-                              fontSize: 18.0,
+                              fontSize: screenWidth * 0.04, // Reduced font size
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -254,7 +265,9 @@ class _TestResultsState extends State<TestResults>
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(
-                              vertical: 12.0, horizontal: 16.0),
+                            vertical: screenHeight * 0.01, // Reduced padding
+                            horizontal: screenWidth * 0.03, // Reduced padding
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -263,7 +276,12 @@ class _TestResultsState extends State<TestResults>
                           // Add download functionality here
                           print('${result['type']} downloaded');
                         },
-                        child: Text(result['action']),
+                        child: Text(
+                          result['action'],
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035, // Reduced font size
+                          ),
+                        ),
                       ),
                     ],
                   ),

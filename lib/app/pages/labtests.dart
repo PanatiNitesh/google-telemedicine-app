@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/HomePage.dart'; // Update with your actual path
 
 void main() {
-  runApp(LabTestsApp());
+  runApp(const LabTestsApp());
 }
 
 class LabTestsApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class LabTestsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LabTestsPage(),
+      home: const LabTestsPage(),
     );
   }
 }
@@ -59,7 +59,9 @@ class _LabTestsPageState extends State<LabTestsPage>
     setState(() {
       _selectedIndex = index;
     });
-    _controller.forward().then((_) => _controller.reverse());
+    _controller.forward().then((_) {
+      _controller.reverse();
+    });
 
     // Update navigation links as needed
     switch (index) {
@@ -101,7 +103,7 @@ class _LabTestsPageState extends State<LabTestsPage>
           return Transform.translate(
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
             child: Container(
-              padding: const EdgeInsets.all(15),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
               decoration: BoxDecoration(
                 color:
                     _selectedIndex == index ? Colors.blue : Colors.transparent,
@@ -109,6 +111,7 @@ class _LabTestsPageState extends State<LabTestsPage>
               ),
               child: Icon(
                 icon,
+                size: MediaQuery.of(context).size.width * 0.06,
                 color: _selectedIndex == index ? Colors.white : Colors.grey,
               ),
             ),
@@ -119,11 +122,12 @@ class _LabTestsPageState extends State<LabTestsPage>
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(screenWidth * 0.05),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withAlpha(76),
@@ -133,9 +137,9 @@ class _LabTestsPageState extends State<LabTestsPage>
           ),
         ],
       ),
-      margin: const EdgeInsets.all(12),
+      margin: EdgeInsets.all(screenWidth * 0.02),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(screenWidth * 0.05),
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
@@ -159,32 +163,35 @@ class _LabTestsPageState extends State<LabTestsPage>
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD), // Dark gray background
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Transparent AppBar
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 14),
+          padding: EdgeInsets.only(left: screenWidth * 0.03),
           child: GestureDetector(
             onTap: () {
-              // Back button navigates to HomePage
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => HomePage(username: 'User')),
               );
             },
             child: Image.asset(
-              'assets/back.png', // Your custom back button asset
-              width: 20,
-              height: 20,
+              'assets/back.png',
+              width: screenWidth * 0.06,
+              height: screenWidth * 0.06,
             ),
           ),
         ),
         title: Text(
           'Laboratory Tests',
           style: TextStyle(
+            fontSize: screenWidth * 0.06,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
@@ -192,57 +199,78 @@ class _LabTestsPageState extends State<LabTestsPage>
         foregroundColor: Colors.black,
         centerTitle: false,
       ),
-      // Reduced top padding further to bring the test boxes up
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 30, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          screenWidth * 0.04,
+          screenHeight * 0.06, // Reduced top padding
+          screenWidth * 0.04,
+          screenWidth * 0.04,
+        ),
         child: ListView(
           children: tests.map((test) {
             return Container(
-              margin: EdgeInsets.only(bottom: 12),
+              margin: EdgeInsets.only(bottom: screenHeight * 0.015), // Reduced margin
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.shade300,
-                    blurRadius: 5,
-                    spreadRadius: 2,
+                    blurRadius: screenWidth * 0.01,
+                    spreadRadius: screenWidth * 0.005,
                   ),
                 ],
               ),
               child: ListTile(
+                contentPadding: EdgeInsets.all(screenWidth * 0.03), // Reduced padding
                 leading: Container(
-                  width: 50,
-                  height: 50,
+                  width: screenWidth * 0.1, // Reduced width
+                  height: screenWidth * 0.1, // Reduced height
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
-                  // Remove extra padding by using FittedBox to fill the container
                   child: FittedBox(
                     fit: BoxFit.fill,
-                    child: Icon(test['icon'], color: Colors.blue),
+                    child: Icon(test['icon'],
+                        size: screenWidth * 0.07, color: Colors.blue), // Reduced icon size
                   ),
                 ),
-                title: Text(test['name'],
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Description here...'),
+                title: Text(
+                  test['name'],
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04, // Reduced font size
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  'Description here...',
+                  style: TextStyle(fontSize: screenWidth * 0.03), // Reduced font size
+                ),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.03,
+                      vertical: screenHeight * 0.008, // Reduced padding
+                    ),
                   ),
                   onPressed: () {},
-                  child: Text('Book'),
+                  child: Text(
+                    'Book',
+                    style: TextStyle(fontSize: screenWidth * 0.03), // Reduced font size
+                  ),
                 ),
               ),
             );
           }).toList(),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 }

@@ -113,72 +113,108 @@ class _MedicinePageState extends State<MedicinePage>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        titleSpacing: 15, // Adjusts spacing so title appears closer to the back button
+        titleSpacing: screenWidth * 0.04, // Responsive spacing
         leading: Padding(
-          padding: const EdgeInsets.only(left: 5), // Maintain spacing
+          padding: EdgeInsets.only(left: screenWidth * 0.02), // Responsive padding
           child: GestureDetector(
             onTap: () {
               Navigator.pop(context);
             },
             child: Image.asset(
               'assets/back.png',
-              width: 16, // Reduced size
-              height: 16, // Reduced size
+              width: screenWidth * 0.06, // Responsive width
+              height: screenWidth * 0.06, // Responsive height
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Medicines',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: screenWidth * 0.06, // Responsive font size
             fontWeight: FontWeight.w500,
             color: Colors.black,
           ),
         ),
-        centerTitle: false, // Aligns the title to the left, closer to the back button
+        centerTitle: false, // Aligns the title to the left
       ),
       body: Column(
         children: [
-          const SizedBox(height: 40),
-          const Text(
+          SizedBox(height: screenHeight * 0.08), // Increased spacing for better alignment
+          Text(
             "Select a Date",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: screenWidth * 0.05, // Responsive font size
+              fontWeight: FontWeight.bold,
+            ),
           ),
+          SizedBox(height: screenHeight * 0.02), // Added spacing
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.04, // Responsive padding
+            ),
             child: Card(
               elevation: 4,
-              child: TableCalendar(
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: _focusedDay,
-                calendarFormat: _calendarFormat,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                  });
-                  _fetchMedicines();
-                },
-                onFormatChanged: (format) {
-                  setState(() {
-                    _calendarFormat = format;
-                  });
-                },
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // Rounded corners
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(screenWidth * 0.03), // Responsive padding
+                child: TableCalendar(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay,
+                  calendarFormat: _calendarFormat,
+                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                    });
+                    _fetchMedicines();
+                  },
+                  onFormatChanged: (format) {
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  },
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    selectedDecoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  headerStyle: HeaderStyle(
+                    formatButtonVisible: false, // Hide format button
+                    titleCentered: true, // Center the header title
+                    titleTextStyle: TextStyle(
+                      fontSize: screenWidth * 0.045, // Responsive font size
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          const Text(
+          SizedBox(height: screenHeight * 0.03), // Added spacing
+          Text(
             "Your Medicine List",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: screenWidth * 0.05, // Responsive font size
+              fontWeight: FontWeight.bold,
+            ),
           ),
           Expanded(
             child: _isLoading
@@ -188,10 +224,16 @@ class _MedicinePageState extends State<MedicinePage>
                         child: Text(_errorMessage,
                             style: const TextStyle(color: Colors.red)))
                     : _medicines.isEmpty
-                        ? const Center(
-                            child: Text("No medicines found for this date."))
+                        ? Center(
+                            child: Text(
+                              "No medicines found for this date.",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.04, // Responsive font size
+                              ),
+                            ),
+                          )
                         : ListView.builder(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: EdgeInsets.all(screenWidth * 0.04), // Responsive padding
                             itemCount: _medicines.length,
                             itemBuilder: (context, index) {
                               return MedicineTile(
@@ -221,7 +263,7 @@ class _MedicinePageState extends State<MedicinePage>
           ),
         ],
       ),
-      margin: const EdgeInsets.all(12),
+      margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03), // Responsive margin
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BottomNavigationBar(
@@ -253,7 +295,7 @@ class _MedicinePageState extends State<MedicinePage>
           return Transform.translate(
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
             child: Container(
-              padding: const EdgeInsets.all(15), // Larger blue circle for selected items
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03), // Responsive padding
               decoration: BoxDecoration(
                 color: _selectedIndex == index ? Colors.blue : Colors.transparent,
                 shape: BoxShape.circle,
@@ -279,17 +321,30 @@ class MedicineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      margin: EdgeInsets.symmetric(
+        vertical: screenWidth * 0.02, // Responsive margin
+        horizontal: screenWidth * 0.03, // Responsive margin
+      ),
       child: ListTile(
         leading: Icon(FontAwesomeIcons.pills, color: Colors.green),
         title: Text(
           medicineName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.045, // Responsive font size
+          ),
         ),
-        subtitle: Text(dosage),
-        trailing: const Icon(Icons.check_circle, color: Colors.blue),
+        subtitle: Text(
+          dosage,
+          style: TextStyle(
+            fontSize: screenWidth * 0.04, // Responsive font size
+          ),
+        ),
+        trailing: Icon(Icons.check_circle, color: Colors.blue),
       ),
     );
   }
