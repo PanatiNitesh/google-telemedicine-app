@@ -26,11 +26,31 @@ class LabTestsPage extends StatefulWidget {
 
 class _LabTestsPageState extends State<LabTestsPage>
     with SingleTickerProviderStateMixin {
-  final List<Map<String, dynamic>> tests = [
-    {'name': 'Allergy Test', 'icon': Icons.science, 'booked': false},
-    {'name': 'CT Scan', 'icon': Icons.medical_services, 'booked': false},
-    {'name': 'Ultra Sound', 'icon': Icons.waves, 'booked': false},
-    {'name': 'Blood Test', 'icon': Icons.water_drop, 'booked': false},
+  List<Map<String, dynamic>> tests = [
+    {
+      'name': 'Allergy Test',
+      'icon': Icons.science,
+      'description': 'Identify allergic reactions and triggers.',
+      'booked': false
+    },
+    {
+      'name': 'CT Scan',
+      'icon': Icons.medical_services,
+      'description': 'Detailed imaging for internal diagnostics.',
+      'booked': false
+    },
+    {
+      'name': 'Ultra Sound',
+      'icon': Icons.waves,
+      'description': 'Non-invasive imaging using sound waves.',
+      'booked': false
+    },
+    {
+      'name': 'Blood Test',
+      'icon': Icons.water_drop,
+      'description': 'Analyze blood for health indicators.',
+      'booked': false
+    },
   ];
 
   int _selectedIndex = 1; // LabTests page is at index 1
@@ -56,12 +76,12 @@ class _LabTestsPageState extends State<LabTestsPage>
   }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // Avoid unnecessary navigation
+
     setState(() {
       _selectedIndex = index;
     });
-    _controller.forward().then((_) {
-      _controller.reverse();
-    });
+    _controller.forward().then((_) => _controller.reverse());
 
     // Update navigation links as needed
     switch (index) {
@@ -77,7 +97,8 @@ class _LabTestsPageState extends State<LabTestsPage>
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => PlaceholderPage(title: "Home")),
+          MaterialPageRoute(
+              builder: (_) => const HomePage(username: 'User')),
         );
         break;
       case 3:
@@ -95,68 +116,61 @@ class _LabTestsPageState extends State<LabTestsPage>
     }
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
-    return BottomNavigationBarItem(
-      icon: AnimatedBuilder(
+  void _bookTest(int index) {
+    setState(() {
+      tests[index]['booked'] = !tests[index]['booked'];
+    });
+  }
+
+  Widget _buildBottomNavBar(double screenWidth, double navBarHeight) {
+    return Container(
+      height: navBarHeight,
+      margin: EdgeInsets.all(screenWidth * 0.03),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.06),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: screenWidth * 0.002,
+            blurRadius: screenWidth * 0.025,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildNavItem(Icons.person, 0, 'Profile', screenWidth),
+          _buildNavItem(Icons.science_outlined, 1, 'Tests', screenWidth),
+          _buildNavItem(Icons.home, 2, 'Home', screenWidth),
+          _buildNavItem(Icons.search, 3, 'Search', screenWidth),
+          _buildNavItem(Icons.person_outline, 4, 'Account', screenWidth),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, int index, String label, double screenWidth) {
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           return Transform.translate(
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
-            child: Container(
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-              decoration: BoxDecoration(
-                color:
-                    _selectedIndex == index ? Colors.blue : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
+            child: CircleAvatar(
+              radius: screenWidth * 0.06,
+              backgroundColor:
+                  _selectedIndex == index ? Colors.blue : Colors.transparent,
               child: Icon(
                 icon,
-                size: MediaQuery.of(context).size.width * 0.06,
+                size: screenWidth * 0.06,
                 color: _selectedIndex == index ? Colors.white : Colors.grey,
               ),
             ),
           );
         },
-      ),
-      label: label,
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.05),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      margin: EdgeInsets.all(screenWidth * 0.02),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(screenWidth * 0.05),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: [
-            _buildNavItem(Icons.person, 0, 'Profile'),
-            _buildNavItem(Icons.science_outlined, 1, 'Tests'),
-            _buildNavItem(Icons.home, 2, 'Home'),
-            _buildNavItem(Icons.search, 3, 'Search'),
-            _buildNavItem(Icons.person_outline, 4, 'Account'),
-          ],
-        ),
       ),
     );
   }
@@ -165,26 +179,34 @@ class _LabTestsPageState extends State<LabTestsPage>
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final orientation = MediaQuery.of(context).orientation;
+
+    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFDDDDDD), // Dark gray background
+      backgroundColor: const Color(0xFFDDDDDD),
+      extendBody: true, // Allows body to extend behind the bottom navbar
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: EdgeInsets.only(left: screenWidth * 0.03),
+          padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage(username: 'User')),
+                MaterialPageRoute(builder: (context) => const HomePage(username: 'User')),
               );
             },
             child: Image.asset(
               'assets/back.png',
-              width: screenWidth * 0.06,
-              height: screenWidth * 0.06,
+              width: screenWidth * 0.05,
+              height: screenWidth * 0.05,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.arrow_back,
+                size: screenWidth * 0.05,
+              ),
             ),
           ),
         ),
@@ -192,7 +214,7 @@ class _LabTestsPageState extends State<LabTestsPage>
           'Laboratory Tests',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             color: Colors.black,
           ),
         ),
@@ -202,75 +224,82 @@ class _LabTestsPageState extends State<LabTestsPage>
       body: Padding(
         padding: EdgeInsets.fromLTRB(
           screenWidth * 0.04,
-          screenHeight * 0.06, // Reduced top padding
+          10.0, // No top padding; content starts directly below AppBar
           screenWidth * 0.04,
-          screenWidth * 0.04,
+          navBarHeight + (screenWidth * 0.03), // Padding to avoid overlap with navbar
         ),
-        child: ListView(
-          children: tests.map((test) {
+        child: ListView.builder(
+          itemCount: tests.length,
+          itemBuilder: (context, index) {
+            final test = tests[index];
             return Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.015), // Reduced margin
+              margin: EdgeInsets.only(bottom: screenHeight * 0.02),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.shade300,
-                    blurRadius: screenWidth * 0.01,
+                    blurRadius: screenWidth * 0.012,
                     spreadRadius: screenWidth * 0.005,
                   ),
                 ],
               ),
               child: ListTile(
-                contentPadding: EdgeInsets.all(screenWidth * 0.03), // Reduced padding
+                contentPadding: EdgeInsets.all(screenWidth * 0.04),
                 leading: Container(
-                  width: screenWidth * 0.1, // Reduced width
-                  height: screenWidth * 0.1, // Reduced height
+                  width: screenWidth * 0.12,
+                  height: screenWidth * 0.12,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
-                  child: FittedBox(
-                    fit: BoxFit.fill,
-                    child: Icon(test['icon'],
-                        size: screenWidth * 0.07, color: Colors.blue), // Reduced icon size
+                  child: Icon(
+                    test['icon'],
+                    size: screenWidth * 0.08,
+                    color: Colors.blue,
                   ),
                 ),
                 title: Text(
                   test['name'],
                   style: TextStyle(
-                    fontSize: screenWidth * 0.04, // Reduced font size
+                    fontSize: screenWidth * 0.045,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: Text(
-                  'Description here...',
-                  style: TextStyle(fontSize: screenWidth * 0.03), // Reduced font size
+                subtitle: Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.005),
+                  child: Text(
+                    test['description'],
+                    style: TextStyle(fontSize: screenWidth * 0.035),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: test['booked'] ? Colors.grey : Colors.blue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
                     padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.03,
-                      vertical: screenHeight * 0.008, // Reduced padding
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.015,
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () => _bookTest(index),
                   child: Text(
-                    'Book',
-                    style: TextStyle(fontSize: screenWidth * 0.03), // Reduced font size
+                    test['booked'] ? 'Cancel' : 'Book',
+                    style: TextStyle(fontSize: screenWidth * 0.035),
                   ),
                 ),
               ),
             );
-          }).toList(),
+          },
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: _buildBottomNavBar(screenWidth, navBarHeight),
     );
   }
 }

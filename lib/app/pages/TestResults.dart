@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/HomePage.dart'; // Update with your actual path
-import 'package:flutter_project/app/pages/ProfilePage.dart'; // Update with your actual path
+import 'package:flutter_project/app/pages/profile-page.dart'; // Update with your actual path
+import 'dart:math'; // For simulating download failure
 
 void main() {
   runApp(MyApp());
@@ -29,24 +30,32 @@ class TestResults extends StatefulWidget {
   _TestResultsState createState() => _TestResultsState();
 }
 
-class _TestResultsState extends State<TestResults>
-    with SingleTickerProviderStateMixin {
+class _TestResultsState extends State<TestResults> with SingleTickerProviderStateMixin {
   int _selectedIndex = 1; // TestResults is at index 1
-  final List<Map<String, dynamic>> testResults = [
+  List<Map<String, dynamic>> testResults = [
     {
       'type': 'Ultra Sound',
+      'description': 'Non-invasive imaging using sound waves.',
+      'date': '2025-03-10',
       'action': 'DOWNLOAD',
-      'icon': Icons.health_and_safety,
+      'downloaded': false,
+      'icon': Icons.waves,
     },
     {
       'type': 'CT Scan',
+      'description': 'Detailed imaging for internal diagnostics.',
+      'date': '2025-03-08',
       'action': 'DOWNLOAD',
-      'icon': Icons.scanner,
+      'downloaded': false,
+      'icon': Icons.medical_services,
     },
     {
       'type': 'Blood Test',
+      'description': 'Analyze blood for health indicators.',
+      'date': '2025-03-05',
       'action': 'DOWNLOAD',
-      'icon': Icons.bloodtype,
+      'downloaded': false,
+      'icon': Icons.water_drop,
     },
   ];
 
@@ -72,12 +81,13 @@ class _TestResultsState extends State<TestResults>
   }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // Avoid unnecessary navigation
+
     setState(() {
       _selectedIndex = index;
     });
     _controller.forward().then((_) => _controller.reverse());
 
-    // Mimic linking from your previous pages
     switch (index) {
       case 0:
         Navigator.pushReplacement(
@@ -86,7 +96,7 @@ class _TestResultsState extends State<TestResults>
         );
         break;
       case 1:
-        // Already on TestResults page; do nothing.
+        // Already on TestResults page
         break;
       case 2:
         Navigator.pushReplacement(
@@ -95,7 +105,10 @@ class _TestResultsState extends State<TestResults>
         );
         break;
       case 3:
-        // If you have a Search page, add it here.
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => PlaceholderPage(title: "Search")),
+        );
         break;
       case 4:
         Navigator.pushReplacement(
@@ -106,191 +119,231 @@ class _TestResultsState extends State<TestResults>
     }
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
-    return BottomNavigationBarItem(
-      icon: AnimatedBuilder(
+  void _downloadResult(int index) {
+    // Simulate a download with a 20% chance of failure
+    bool success = Random().nextDouble() > 0.2; // 80% success rate
+
+    if (success) {
+      setState(() {
+        testResults[index]['downloaded'] = true;
+        testResults[index]['action'] = 'VIEW';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${testResults[index]['type']} downloaded successfully!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to download ${testResults[index]['type']}. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _viewResult(int index) {
+    // Simulate viewing the downloaded result
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Viewing ${testResults[index]['type']} result...')),
+    );
+  }
+
+  Widget _buildBottomNavBar(double screenWidth, double navBarHeight) {
+    return Container(
+      height: navBarHeight,
+      margin: EdgeInsets.all(screenWidth * 0.03),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.06),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: screenWidth * 0.002,
+            blurRadius: screenWidth * 0.025,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildNavItem(Icons.person, 0, 'Profile', screenWidth),
+          _buildNavItem(Icons.science_outlined, 1, 'Tests', screenWidth),
+          _buildNavItem(Icons.home, 2, 'Home', screenWidth),
+          _buildNavItem(Icons.search, 3, 'Search', screenWidth),
+          _buildNavItem(Icons.person_outline, 4, 'Account', screenWidth),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, int index, String label, double screenWidth) {
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           return Transform.translate(
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: _selectedIndex == index ? Colors.blue : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
+            child: CircleAvatar(
+              radius: screenWidth * 0.06,
+              backgroundColor: _selectedIndex == index ? Colors.blue : Colors.transparent,
               child: Icon(
                 icon,
+                size: screenWidth * 0.06,
                 color: _selectedIndex == index ? Colors.white : Colors.grey,
               ),
             ),
           );
         },
       ),
-      label: label,
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      margin: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: [
-            _buildNavItem(Icons.person, 0, 'Profile'),
-            _buildNavItem(Icons.science, 1, 'Tests'),
-            _buildNavItem(Icons.home, 2, 'Home'),
-            _buildNavItem(Icons.search, 3, 'Search'),
-            _buildNavItem(Icons.person_outline, 4, 'Account'),
-          ],
-        ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final orientation = MediaQuery.of(context).orientation;
+
+    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFDDDDDD), // Dark gray background
+      backgroundColor: const Color(0xFFDDDDDD),
+      extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Transparent AppBar
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 14),
+          padding: EdgeInsets.only(left: screenWidth * 0.04), // Match LabTestsPage
           child: GestureDetector(
             onTap: () {
-              // Back button linked to HomePage
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => HomePage(username: 'User')),
               );
             },
             child: Image.asset(
-              'assets/back.png', // Your custom back button asset
-              width: screenWidth * 0.06, // Responsive width
-              height: screenWidth * 0.06, // Responsive height
+              'assets/back.png',
+              width: screenWidth * 0.05, // Match LabTestsPage
+              height: screenWidth * 0.05, // Match LabTestsPage
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.arrow_back,
+                size: screenWidth * 0.05, // Match LabTestsPage
+              ),
             ),
           ),
         ),
         title: Text(
           'Laboratory Test Results',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.06, // Match LabTestsPage
+            fontWeight: FontWeight.w500, // Match LabTestsPage
             color: Colors.black,
-            fontSize: screenWidth * 0.05, // Responsive font size
           ),
         ),
         foregroundColor: Colors.black,
         centerTitle: false,
       ),
-      // Increased top padding to bring boxes down a bit
       body: Padding(
         padding: EdgeInsets.fromLTRB(
-          screenWidth * 0.04, // Responsive padding
-          screenHeight * 0.1, // Responsive padding
-          screenWidth * 0.04, // Responsive padding
-          screenHeight * 0.02, // Responsive padding
+          screenWidth * 0.04,
+          0.0, // Match LabTestsPage (start below AppBar)
+          screenWidth * 0.04,
+          navBarHeight + (screenWidth * 0.03), // Match LabTestsPage
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (var result in testResults)
-              Card(
-                elevation: 3.0,
-                margin: EdgeInsets.only(bottom: screenHeight * 0.015), // Reduced margin
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+        child: ListView.builder(
+          itemCount: testResults.length,
+          itemBuilder: (context, index) {
+            final result = testResults[index];
+            return Container(
+              margin: EdgeInsets.only(bottom: screenHeight * 0.02), // Match LabTestsPage
+              decoration: BoxDecoration(
                 color: Colors.white,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: screenHeight * 0.015, // Reduced padding
-                    horizontal: screenWidth * 0.04, // Responsive padding
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade300,
+                    blurRadius: screenWidth * 0.012,
+                    spreadRadius: screenWidth * 0.005,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ],
+              ),
+              child: ListTile(
+                contentPadding: EdgeInsets.all(screenWidth * 0.04), // Match LabTestsPage
+                leading: Container(
+                  width: screenWidth * 0.12, // Match LabTestsPage
+                  height: screenWidth * 0.12, // Match LabTestsPage
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  ),
+                  child: Icon(
+                    result['icon'],
+                    size: screenWidth * 0.08,
+                    color: Colors.blue,
+                  ),
+                ),
+                title: Text(
+                  result['type'],
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.045, // Match LabTestsPage
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.005),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          // Reduced icon container size
-                          Container(
-                            width: screenWidth * 0.1, // Reduced width
-                            height: screenWidth * 0.1, // Reduced height
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.fill,
-                              child: Icon(result['icon'], color: Colors.blue),
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.03), // Responsive spacing
-                          Text(
-                            result['type'],
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.04, // Reduced font size
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        result['description'],
+                        style: TextStyle(fontSize: screenWidth * 0.035), // Match LabTestsPage
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                            vertical: screenHeight * 0.01, // Reduced padding
-                            horizontal: screenWidth * 0.03, // Reduced padding
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () {
-                          // Add download functionality here
-                          print('${result['type']} downloaded');
-                        },
-                        child: Text(
-                          result['action'],
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035, // Reduced font size
-                          ),
+                      SizedBox(height: screenHeight * 0.005),
+                      Text(
+                        'Date: ${result['date']}',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          color: Colors.grey,
                         ),
                       ),
                     ],
                   ),
                 ),
+                trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: result['downloaded'] ? Colors.grey : Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04, // Match LabTestsPage
+                      vertical: screenHeight * 0.015, // Match LabTestsPage
+                    ),
+                  ),
+                  onPressed: () {
+                    if (result['downloaded']) {
+                      _viewResult(index);
+                    } else {
+                      _downloadResult(index);
+                    }
+                  },
+                  child: Text(
+                    result['action'],
+                    style: TextStyle(fontSize: screenWidth * 0.035), // Match LabTestsPage
+                  ),
+                ),
               ),
-          ],
+            );
+          },
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar: _buildBottomNavBar(screenWidth, navBarHeight),
     );
   }
 }

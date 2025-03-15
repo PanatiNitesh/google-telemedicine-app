@@ -45,6 +45,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   shared_preferences: ^2.2.3
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -111,3 +112,6 @@ flutter:
     - assets/google_lens.png
     - assets/ellipse.png
     - assets/image.png
+    - assets/.env
+    - assets/medicine.png
+    - assets/backshape.png

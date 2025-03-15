@@ -390,7 +390,6 @@ class _SearchPageState extends State<SearchPage> {
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
-                      // TODO: Implement action (Book or Order)
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('${search['action']} clicked for ${search['title']}')),
                       );

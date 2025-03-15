@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  State<ChatScreen> createState() => ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
+class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _textScrollController = ScrollController();
   final List<Map<String, String>> _messages = [];
@@ -23,11 +24,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   late AnimationController _animationController;
   Animation<Offset>? _slideAnimation;
 
-  // Cohere API Key and endpoint
-  final String cohereApiKey = 'PQ6mQ17KyRlPLC23OrGxEi8aW1KYDZQrtIWkyZvH'; // Replace with your actual Cohere API key
-  final String cohereEndpoint = 'https://api.cohere.ai/v1/chat';
-
-  // Chat storage
+  static const String cohereEndpoint = 'https://api.cohere.ai/v1/chat';
   final List<List<Map<String, String>>> _chatHistory = [];
   List<Map<String, String>> _currentChat = [];
 
@@ -40,16 +37,22 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    // Modified animation to slide from right to left
     _slideAnimation = Tween<Offset>(
       begin: const Offset(1.0, 0.0),
       end: const Offset(0.0, 0.0),
     ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
-    // Start a new chat on app open
     _startNewChat();
 
-    // Add listener to TextEditingController to manage text changes
+    if (!dotenv.isInitialized) {
+      _addErrorMessage('Warning: Environment variables not yet loaded. Chat may not work until initialization completes.');
+    } else {
+      final apiKey = dotenv.env['COHERE_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        _addErrorMessage('Warning: Cohere API key not found. Chat functionality may not work.');
+      }
+    }
+
     _controller.addListener(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_textScrollController.hasClients) {
@@ -59,28 +62,50 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _initializeSpeech() async {
-    await _speech.initialize();
+  void _addErrorMessage(String message) {
+    setState(() {
+      _currentChat.add({'sender': 'bot', 'message': message});
+      _messages.add({'sender': 'bot', 'message': message});
+    });
   }
 
-  // Load chat history from shared preferences
-  Future<void> _loadChatHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final chatHistoryJson = prefs.getString('chat_history');
-    if (chatHistoryJson != null) {
-      final List<dynamic> decoded = jsonDecode(chatHistoryJson);
-      setState(() {
-        _chatHistory.clear();
-        _chatHistory.addAll(decoded.map((chat) => (chat as List<dynamic>).map((msg) => Map<String, String>.from(msg)).toList()).toList());
-      });
+  Future<void> _initializeSpeech() async {
+    try {
+      bool available = await _speech.initialize(
+        onError: (error) => _addErrorMessage('Speech recognition error: $error'),
+      );
+      if (!available) {
+        _addErrorMessage('Speech recognition not available on this device.');
+      }
+    } catch (e) {
+      _addErrorMessage('Failed to initialize speech recognition: $e');
     }
   }
 
-  // Save chat history to shared preferences
+  Future<void> _loadChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final chatHistoryJson = prefs.getString('chat_history');
+      if (chatHistoryJson != null) {
+        final List<dynamic> decoded = jsonDecode(chatHistoryJson);
+        setState(() {
+          _chatHistory.clear();
+          _chatHistory.addAll(decoded.map((chat) => (chat as List<dynamic>).map((msg) => Map<String, String>.from(msg)).toList()).toList());
+        });
+      }
+    } catch (e) {
+      _addErrorMessage('Failed to load chat history: $e');
+    }
+  }
+
   Future<void> _saveChatHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final chatHistoryJson = jsonEncode(_chatHistory);
-    await prefs.setString('chat_history', chatHistoryJson);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final chatHistoryJson = jsonEncode(_chatHistory);
+      await prefs.setString('chat_history', chatHistoryJson);
+    } catch (e) {
+      _addErrorMessage('Failed to save chat history: $e');
+    }
   }
 
   Future<void> _sendMessage(String message) async {
@@ -88,6 +113,12 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       _currentChat.add({'sender': 'user', 'message': message});
       _messages.add({'sender': 'user', 'message': message});
     });
+
+    final cohereApiKey = dotenv.env['COHERE_API_KEY'];
+    if (cohereApiKey == null || cohereApiKey.isEmpty) {
+      _addErrorMessage('Error: Cohere API key not configured. Please check app settings.');
+      return;
+    }
 
     try {
       final response = await http.post(
@@ -104,7 +135,14 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        String botResponse = data['text'];
+        String botResponse = data['text'] ?? 'No response text received.';
+        debugPrint("Raw Cohere response: $botResponse");
+        
+        botResponse = botResponse
+            .replaceAll('\r\n', '\n')
+            .replaceAll('\r', '\n')
+            .replaceAll(RegExp(r'[^\x20-\x7E\n]'), '');
+        botResponse = _formatListResponse(botResponse);
         botResponse += '\n\nPlease consult a doctor for personalized medical advice.';
         
         setState(() {
@@ -112,30 +150,73 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
           _messages.add({'sender': 'bot', 'message': botResponse});
         });
       } else {
-        setState(() {
-          _currentChat.add({
-            'sender': 'bot',
-            'message': 'Error: Server returned status ${response.statusCode}. Please consult a doctor for medical advice.',
-          });
-          _messages.add({
-            'sender': 'bot',
-            'message': 'Error: Server returned status ${response.statusCode}. Please consult a doctor for medical advice.',
-          });
-        });
+        String errorMessage;
+        switch (response.statusCode) {
+          case 401:
+            errorMessage = 'Error: Invalid API key. Please check your Cohere API key.';
+            break;
+          case 429:
+            errorMessage = 'Error: Too many requests. Please try again later.';
+            break;
+          case 500:
+            errorMessage = 'Error: Server issue at Cohere. Please try again later.';
+            break;
+          default:
+            errorMessage = 'Error: Server returned status ${response.statusCode}. Please try again or consult a doctor.';
+        }
+        _addErrorMessage(errorMessage);
       }
     } catch (e) {
-      print('Error sending message: $e');
-      setState(() {
-        _currentChat.add({
-          'sender': 'bot',
-          'message': 'Error: Check your network or API key. Please consult a doctor for medical advice.',
-        });
-        _messages.add({
-          'sender': 'bot',
-          'message': 'Error: Check your network or API key. Please consult a doctor for medical advice.',
-        });
-      });
+      debugPrint('Error sending message: $e');
+      String errorMessage = e is http.ClientException
+          ? 'Error: Network issue. Please check your internet connection.'
+          : 'Error: Unexpected issue ($e). Please try again or consult a doctor.';
+      _addErrorMessage(errorMessage);
     }
+  }
+
+  String _formatListResponse(String response) {
+    final lines = response.split('\n');
+    final formattedLines = lines.map((line) {
+      if (RegExp(r'^\d+\.').hasMatch(line)) {
+        return line.replaceFirstMapped(RegExp(r'^\d+\.'), (match) => '${match.group(0)} ');
+      }
+      return line;
+    }).join('\n');
+    return formattedLines;
+  }
+
+  List<TextSpan> _parseBoldText(String text, double fontSize) {
+    final spans = <TextSpan>[];
+    final regex = RegExp(r'\*\*(.*?)\*\*');
+    int lastEnd = 0;
+
+    for (final match in regex.allMatches(text)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastEnd, match.start),
+          style: TextStyle(fontSize: fontSize, color: Colors.black87),
+        ));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: TextStyle(
+          fontSize: fontSize,
+          color: Colors.black87,
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastEnd),
+        style: TextStyle(fontSize: fontSize, color: Colors.black87),
+      ));
+    }
+
+    return spans;
   }
 
   void _startNewChat() {
@@ -155,21 +236,31 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
 
   void _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize();
-      if (available) {
-        setState(() => _isListening = true);
-        _speech.listen(
-          onResult: (val) => setState(() {
-            _controller.text = val.recognizedWords;
-            if (val.finalResult) {
-              _isListening = false;
-              if (_controller.text.isNotEmpty) {
-                _sendMessage(_controller.text);
-                _controller.clear();
-              }
-            }
-          }),
+      try {
+        bool available = await _speech.initialize(
+          onError: (error) => _addErrorMessage('Speech recognition error: $error'),
         );
+        if (available) {
+          setState(() => _isListening = true);
+          _speech.listen(
+            onResult: (val) => setState(() {
+              _controller.text = val.recognizedWords;
+              if (val.finalResult) {
+                _isListening = false;
+                if (_controller.text.isNotEmpty) {
+                  _sendMessage(_controller.text);
+                  _controller.clear();
+                }
+              }
+            }),
+            onSoundLevelChange: null,
+          );
+        } else {
+          _addErrorMessage('Speech recognition not available.');
+        }
+      } catch (e) {
+        _addErrorMessage('Failed to start speech recognition: $e');
+        setState(() => _isListening = false);
       }
     } else {
       setState(() => _isListening = false);
@@ -178,31 +269,43 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   }
 
   void _openCamera() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-      setState(() {
-        _currentChat.add({'sender': 'user', 'message': 'Image uploaded (path: ${image.path})'});
-        _messages.add({'sender': 'user', 'message': 'Image uploaded (path: ${image.path})'});
-      });
-      _sendMessage('User uploaded an image for analysis. Please note that I can only provide basic health information and you should consult a doctor for proper diagnosis.');
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.camera);
+      if (image != null) {
+        setState(() {
+          _currentChat.add({'sender': 'user', 'message': 'Image uploaded (path: ${image.path})'});
+          _messages.add({'sender': 'user', 'message': 'Image uploaded (path: ${image.path})'});
+        });
+        _sendMessage('User uploaded an image for analysis. Please note that I can only provide basic health information and you should consult a doctor for proper diagnosis.');
+      }
+    } catch (e) {
+      _addErrorMessage('Failed to open camera or upload image: $e');
     }
   }
 
   void _attachFile() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
-    if (file != null) {
-      setState(() {
-        _currentChat.add({'sender': 'user', 'message': 'File attached (path: ${file.path})'});
-        _messages.add({'sender': 'user', 'message': 'File attached (path: ${file.path})'});
-      });
-      _sendMessage('User attached a file for analysis. Please note that I can only provide basic health information and you should consult a doctor for proper diagnosis.');
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+      if (file != null) {
+        setState(() {
+          _currentChat.add({'sender': 'user', 'message': 'File attached (path: ${file.path})'});
+          _messages.add({'sender': 'user', 'message': 'File attached (path: ${file.path})'});
+        });
+        _sendMessage('User attached a file for analysis. Please note that I can only provide basic health information and you should consult a doctor for proper diagnosis.');
+      }
+    } catch (e) {
+      _addErrorMessage('Failed to attach file: $e');
     }
   }
 
   void _bookAppointment() {
-    Navigator.pushNamed(context, '/book-appointment');
+    try {
+      Navigator.pushNamed(context, '/book-appointment');
+    } catch (e) {
+      _addErrorMessage('Failed to navigate to booking page: $e');
+    }
   }
 
   @override
@@ -238,8 +341,22 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final panelWidth = screenWidth * 0.6; // 60% of screen width
-    final inputBoxHeight = 89.0; // Estimated height of input box including padding
+    final safePaddingTop = MediaQuery.of(context).padding.top;
+    final safePaddingBottom = MediaQuery.of(context).padding.bottom;
+    final orientation = MediaQuery.of(context).orientation;
+
+    // Responsive panel width
+    final panelWidth = screenWidth > 600
+        ? screenWidth * 0.4
+        : screenWidth * (orientation == Orientation.portrait ? 0.75 : 0.5);
+
+    // Responsive input box height
+    final inputBoxHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+
+    // Responsive panel height
+    final appBarHeight = kToolbarHeight + safePaddingTop;
+    final disclaimerHeight = screenHeight * 0.06;
+    final panelHeight = screenHeight - appBarHeight - inputBoxHeight - disclaimerHeight - safePaddingBottom;
 
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
@@ -247,66 +364,87 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: GestureDetector(
-          onTap: () {
-            _startNewChat();
-            Navigator.pop(context);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
+        leading: Padding(
+          padding: EdgeInsets.only(left: screenWidth * 0.04),
+          child: GestureDetector(
+            onTap: () {
+              _startNewChat();
+              Navigator.pop(context);
+            },
             child: Image.asset(
               'assets/back.png',
-              width: 24,
-              height: 24,
+              width: screenWidth * 0.05,
+              height: screenWidth * 0.05,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.arrow_back,
+                size: screenWidth * 0.05,
+              ),
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'AI Health Assistant',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: screenWidth * 0.06,
             fontWeight: FontWeight.w500,
             color: Colors.black,
           ),
         ),
+        foregroundColor: Colors.black,
+        centerTitle: false,
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 16),
-            width: 150,
-            height: 50,
+            margin: EdgeInsets.only(right: screenWidth * 0.04),
+            width: screenWidth * 0.3,
+            height: screenHeight * 0.06,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white.withAlpha((0.9 * 255).toInt()),
+              borderRadius: BorderRadius.circular(screenWidth * 0.02),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.home, color: Colors.black),
-                  onPressed: () {
-                    _startNewChat();
-                    Navigator.pushNamed(context, '/home');
-                  },
-                  tooltip: 'Home',
+                Expanded(
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.home,
+                      size: screenWidth * 0.05,
+                    ),
+                    onPressed: () {
+                      _startNewChat();
+                      Navigator.pushNamed(context, '/home');
+                    },
+                    tooltip: 'Home',
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.black),
-                  onPressed: _startNewChat,
-                  tooltip: 'New Chat',
+                Expanded(
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.add,
+                      size: screenWidth * 0.05,
+                    ),
+                    onPressed: _startNewChat,
+                    tooltip: 'New Chat',
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.black),
-                  onPressed: () {
-                    setState(() {
-                      _isMenuOpen = !_isMenuOpen;
-                      if (_isMenuOpen) {
-                        _animationController.forward();
-                      } else {
-                        _animationController.reverse();
-                      }
-                    });
-                  },
-                  tooltip: 'Chat History',
+                Expanded(
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.menu,
+                      size: screenWidth * 0.05,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isMenuOpen = !_isMenuOpen;
+                        if (_isMenuOpen) {
+                          _animationController.forward();
+                        } else {
+                          _animationController.reverse();
+                        }
+                      });
+                    },
+                    tooltip: 'Chat History',
+                  ),
                 ),
               ],
             ),
@@ -321,6 +459,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               children: [
                 Expanded(
                   child: ListView.builder(
+                    controller: _textScrollController,
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final message = _messages[index];
@@ -328,17 +467,18 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                       return Align(
                         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: screenWidth * 0.05),
-                          padding: const EdgeInsets.all(12),
+                          margin: EdgeInsets.symmetric(
+                            vertical: screenHeight * 0.015,
+                            horizontal: screenWidth * 0.05,
+                          ),
+                          padding: EdgeInsets.all(screenWidth * 0.03),
                           decoration: BoxDecoration(
-                            color: isUser 
-                              ? Colors.white.withOpacity(0.9)
-                              : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                            color: isUser ? Colors.white.withAlpha((0.9 * 255).toInt()) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 2,
+                                color: Colors.black.withAlpha((0.05 * 255).toInt()),
+                                blurRadius: screenWidth * 0.005,
                                 offset: const Offset(0, 1),
                               ),
                             ],
@@ -352,29 +492,42 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                               Text(
                                 isUser ? 'USER' : 'AI HEALTH ASSISTANT',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: screenWidth * 0.03,
                                   fontWeight: FontWeight.bold,
                                   color: isUser ? Colors.blue : Colors.green,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                message['message']!,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black87,
-                                ),
-                              ),
+                              SizedBox(height: screenHeight * 0.01),
+                              isUser
+                                  ? Text(
+                                      message['message']!,
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.04,
+                                        color: Colors.black87,
+                                      ),
+                                      softWrap: true,
+                                      overflow: TextOverflow.clip,
+                                    )
+                                  : RichText(
+                                      text: TextSpan(
+                                        children: _parseBoldText(message['message']!, screenWidth * 0.04),
+                                      ),
+                                      softWrap: true,
+                                      overflow: TextOverflow.clip,
+                                    ),
                               if (!isUser)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
+                                  padding: EdgeInsets.only(top: screenHeight * 0.015),
                                   child: ElevatedButton(
                                     onPressed: _bookAppointment,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      textStyle: const TextStyle(fontSize: 14),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.03,
+                                        vertical: screenHeight * 0.015,
+                                      ),
+                                      textStyle: TextStyle(fontSize: screenWidth * 0.035),
                                     ),
                                     child: const Text('Book an Appointment'),
                                   ),
@@ -388,38 +541,41 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 ),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.amber.withOpacity(0.2),
-                  child: const Text(
+                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  color: Colors.amber.withAlpha((0.2 * 255).toInt()),
+                  child: Text(
                     'Disclaimer: This is not a substitute for professional medical advice. Please consult a doctor.',
-                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.03,
+                      fontStyle: FontStyle.italic,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(screenWidth * 0.03),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
                         child: Container(
                           constraints: BoxConstraints(
-                            maxHeight: 5 * 20.0,
+                            maxHeight: screenHeight * 0.2,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(25),
+                            borderRadius: BorderRadius.circular(screenWidth * 0.06),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.attach_file),
+                                icon: Icon(Icons.attach_file, size: screenWidth * 0.05),
                                 onPressed: _attachFile,
                               ),
                               IconButton(
-                                icon: const Icon(Icons.camera_alt),
+                                icon: Icon(Icons.camera_alt, size: screenWidth * 0.05),
                                 onPressed: _openCamera,
                               ),
                               Expanded(
@@ -430,10 +586,13 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                     controller: _controller,
                                     maxLines: null,
                                     keyboardType: TextInputType.multiline,
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       hintText: 'Ask your health question...',
                                       border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.02,
+                                        vertical: screenHeight * 0.015,
+                                      ),
                                     ),
                                     onChanged: (text) {
                                       _manageTextField(text);
@@ -444,6 +603,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                               IconButton(
                                 icon: Icon(
                                   _isListening ? Icons.mic : Icons.mic_none,
+                                  size: screenWidth * 0.05,
                                   color: _isListening ? Colors.red : Colors.black,
                                 ),
                                 onPressed: _listen,
@@ -452,11 +612,12 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: screenWidth * 0.02),
                       CircleAvatar(
+                        radius: screenWidth * 0.06,
                         backgroundColor: Colors.blue,
                         child: IconButton(
-                          icon: const Icon(Icons.send, color: Colors.white),
+                          icon: Icon(Icons.send, size: screenWidth * 0.05, color: Colors.white),
                           onPressed: () {
                             if (_controller.text.isNotEmpty) {
                               _sendMessage(_controller.text);
@@ -470,44 +631,46 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 ),
               ],
             ),
-            // Improved chat history panel positioning
             if (_slideAnimation != null && _isMenuOpen)
               Positioned(
                 right: 0,
-                bottom: inputBoxHeight, // Position it just above the chat input
+                top: appBarHeight,
                 width: panelWidth,
-                height: screenHeight - inputBoxHeight - MediaQuery.of(context).padding.top - kToolbarHeight - 2, // 2mm (or px) gap
+                height: panelHeight,
                 child: SlideTransition(
                   position: _slideAnimation!,
                   child: Material(
                     elevation: 8,
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      bottomLeft: Radius.circular(12),
+                      topLeft: Radius.circular(screenWidth * 0.03),
+                      bottomLeft: Radius.circular(screenWidth * 0.03),
                     ),
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
+                          topLeft: Radius.circular(screenWidth * 0.03),
+                          bottomLeft: Radius.circular(screenWidth * 0.03),
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black26,
-                            blurRadius: 10,
-                            offset: Offset(-2, 0),
+                            blurRadius: screenWidth * 0.025,
+                            offset: Offset(-screenWidth * 0.005, 0),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04,
+                              vertical: screenHeight * 0.03,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue.shade50,
                               borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(12),
+                                topLeft: Radius.circular(screenWidth * 0.03),
                               ),
                               border: Border(
                                 bottom: BorderSide(color: Colors.grey.shade300),
@@ -516,10 +679,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
+                                Text(
                                   'Chat History',
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: screenWidth * 0.045,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                   ),
@@ -527,7 +690,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                 Row(
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.add, color: Colors.blue),
+                                      icon: Icon(Icons.add, size: screenWidth * 0.05),
                                       onPressed: () {
                                         _startNewChat();
                                         setState(() {
@@ -538,7 +701,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                       tooltip: 'Start New Chat',
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.black54),
+                                      icon: Icon(Icons.close, size: screenWidth * 0.05),
                                       onPressed: () {
                                         setState(() {
                                           _isMenuOpen = false;
@@ -560,14 +723,14 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                       children: [
                                         Icon(
                                           Icons.history,
-                                          size: 50,
+                                          size: screenWidth * 0.12,
                                           color: Colors.grey.shade400,
                                         ),
-                                        const SizedBox(height: 8),
+                                        SizedBox(height: screenHeight * 0.02),
                                         Text(
                                           'No previous chats',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: screenWidth * 0.04,
                                             color: Colors.grey.shade600,
                                           ),
                                         ),
@@ -575,7 +738,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                     ),
                                   )
                                 : ListView.builder(
-                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: screenHeight * 0.02,
+                                      horizontal: screenWidth * 0.03,
+                                    ),
                                     itemCount: _chatHistory.length,
                                     itemBuilder: (context, index) {
                                       final reversedIndex = _chatHistory.length - 1 - index;
@@ -584,25 +750,26 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                         (msg) => msg['sender'] == 'user',
                                         orElse: () => {'message': 'Chat ${reversedIndex + 1}'},
                                       )['message'];
-                                      final lastMessageTime = DateTime.now().toString().split(' ')[0]; // Placeholder
+                                      final lastMessageTime = DateTime.now().toString().split(' ')[0];
 
                                       return Card(
                                         elevation: 2,
-                                        margin: const EdgeInsets.symmetric(vertical: 6),
+                                        margin: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(screenWidth * 0.03),
                                         ),
                                         child: ListTile(
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 8,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: screenWidth * 0.04,
+                                            vertical: screenHeight * 0.015,
                                           ),
                                           leading: CircleAvatar(
+                                            radius: screenWidth * 0.05,
                                             backgroundColor: Colors.blue.shade100,
                                             child: Text(
                                               (reversedIndex + 1).toString(),
-                                              style: const TextStyle(
-                                                fontSize: 14,
+                                              style: TextStyle(
+                                                fontSize: screenWidth * 0.035,
                                                 color: Colors.blue,
                                               ),
                                             ),
@@ -611,8 +778,8 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                             firstUserMessage ?? 'Chat ${reversedIndex + 1}',
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 16,
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.04,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -622,7 +789,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                                 child: Text(
                                                   '${chat.length} messages',
                                                   style: TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize: screenWidth * 0.03,
                                                     color: Colors.grey.shade600,
                                                   ),
                                                 ),
@@ -630,7 +797,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                               Text(
                                                 'Last: $lastMessageTime',
                                                 style: TextStyle(
-                                                  fontSize: 11,
+                                                  fontSize: screenWidth * 0.025,
                                                   color: Colors.grey.shade500,
                                                 ),
                                               ),
@@ -656,7 +823,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-          ],
+          ],  
         ),
       ),
     );

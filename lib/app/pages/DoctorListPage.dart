@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart'; // Assuming this is where HomePage is defined
-import 'package:flutter_project/app/pages/ProfilePage.dart'; // Add imports for navigation targets
+import 'package:flutter_project/app/pages/HomePage.dart'; // Adjust import paths as needed
+import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/TestResults.dart';
-import 'package:logging/logging.dart'; // For Logger
+import 'package:logging/logging.dart';
 
 class DoctorsListPage extends StatefulWidget {
   const DoctorsListPage({super.key});
@@ -14,11 +14,10 @@ class DoctorsListPage extends StatefulWidget {
 class _DoctorsListPageState extends State<DoctorsListPage>
     with SingleTickerProviderStateMixin {
   final _logger = Logger('DoctorsListPage');
-  int _selectedIndex = 0; // Default to Doctors (can adjust based on context)
+  int _selectedIndex = 0;
   late AnimationController _controller;
   late Animation<double> _animation;
 
-  // Doctors data
   final List<Map<String, dynamic>> doctors = [
     {
       'name': 'Dr. John Doe',
@@ -78,8 +77,10 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         break;
       case 2:
         themeColor = Colors.blue;
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const HomePage(username: 'User')));
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const HomePage(username: 'User')));
         break;
       case 3:
         themeColor = Colors.amber;
@@ -88,7 +89,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       case 4:
         themeColor = Colors.red;
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) =>  ProfilePage()));
+            context, MaterialPageRoute(builder: (context) => ProfilePage()));
         break;
       default:
         themeColor = Colors.blue;
@@ -96,17 +97,33 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     _logger.info('Changed theme color to: $themeColor');
   }
 
-  Widget _buildDoctorCard(Map<String, dynamic> doctor) {
+  Widget _buildDoctorCard(Map<String, dynamic> doctor, double screenWidth, double screenHeight) {
+    // Define text styles
+    final textStyleName = TextStyle(
+      fontSize: screenWidth * 0.045,
+      fontWeight: FontWeight.bold,
+    );
+    final textStyleSpecialty = TextStyle(
+      color: Colors.grey[600],
+      fontSize: screenWidth * 0.035,
+    );
+    final textStyleDescription = TextStyle(fontSize: screenWidth * 0.03);
+
+    // Set a fixed aspect ratio for the image (e.g., 1:1 or 4:3)
+    const double aspectRatio = 1.0; // Square image
+    final imageHeight = screenHeight * 0.15; // Fixed height for consistency
+    final imageWidth = imageHeight * aspectRatio;
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8), // Reduced margin
+      margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
-            blurRadius: 5,
-            spreadRadius: 2,
+            blurRadius: screenWidth * 0.012,
+            spreadRadius: screenWidth * 0.005,
           ),
         ],
       ),
@@ -114,59 +131,65 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              bottomLeft: Radius.circular(12),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(screenWidth * 0.03),
+              bottomLeft: Radius.circular(screenWidth * 0.03),
             ),
             child: Image.asset(
               doctor['image'],
-              width: 90, // Adjusted size to match home page
-              height: 90, // Adjusted size
-              fit: BoxFit.cover,
+              width: imageWidth,
+              height: imageHeight,
+              fit: BoxFit.cover, // Maintain aspect ratio and fill the space
               errorBuilder: (context, error, stackTrace) {
+                _logger.warning('Failed to load image ${doctor['image']}: $error');
                 return Container(
-                  width: 90,
-                  height: 90,
+                  width: imageWidth,
+                  height: imageHeight,
                   color: Colors.grey[300],
-                  child: const Icon(Icons.person, size: 40),
+                  child: Icon(Icons.person, size: imageWidth * 0.4, color: Colors.grey[600]),
                 );
               },
             ),
           ),
           Expanded(
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0), // Reduced padding
+              padding: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.015,
+                horizontal: screenWidth * 0.03,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     doctor['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: textStyleName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     doctor['specialty'],
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                    ),
+                    style: textStyleSpecialty,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4), // Reduced space
+                  SizedBox(height: screenHeight * 0.005),
                   Text(
                     doctor['description'],
-                    style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
+                    style: textStyleDescription,
                     maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey[600]), // Small arrow for navigation
+            padding: EdgeInsets.all(screenWidth * 0.03),
+            child: Icon(
+              Icons.arrow_forward_ios,
+              size: screenWidth * 0.045,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -175,6 +198,12 @@ class _DoctorsListPageState extends State<DoctorsListPage>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final orientation = MediaQuery.of(context).orientation;
+
+    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
       extendBodyBehindAppBar: true,
@@ -182,100 +211,94 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 14), // Maintain spacing
+          padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
             onTap: () {
               Navigator.pop(context);
             },
             child: Image.asset(
               'assets/back.png',
-              width: 20, // Reduced size
-              height: 20, // Reduced size
+              width: screenWidth * 0.05,
+              height: screenWidth * 0.05,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.arrow_back,
+                size: screenWidth * 0.05,
+              ),
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Doctors List',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: screenWidth * 0.06,
             fontWeight: FontWeight.w500,
             color: Colors.black,
           ),
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: ListView.builder(
           itemCount: doctors.length,
           itemBuilder: (context, index) {
-            return _buildDoctorCard(doctors[index]);
+            return _buildDoctorCard(doctors[index], screenWidth, screenHeight);
           },
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(), // Add the navbar here
+      bottomNavigationBar: _buildBottomNavBar(screenWidth, navBarHeight),
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(double screenWidth, double navBarHeight) {
     return Container(
+      height: navBarHeight,
+      margin: EdgeInsets.all(screenWidth * 0.03),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(screenWidth * 0.06),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 10,
+            spreadRadius: screenWidth * 0.002,
+            blurRadius: screenWidth * 0.025,
             offset: const Offset(0, -2),
           ),
         ],
       ),
-      margin: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: [
-            _buildNavItem(Icons.person, 0, 'Profile'),
-            _buildNavItem(Icons.science_outlined, 1, 'Tests'),
-            _buildNavItem(Icons.home, 2, 'Home'),
-            _buildNavItem(Icons.search, 3, 'Search'),
-            _buildNavItem(Icons.person_outline, 4, 'Account'),
-          ],
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildNavItem(Icons.person, 0, 'Profile', screenWidth),
+          _buildNavItem(Icons.science_outlined, 1, 'Tests', screenWidth),
+          _buildNavItem(Icons.home, 2, 'Home', screenWidth),
+          _buildNavItem(Icons.search, 3, 'Search', screenWidth),
+          _buildNavItem(Icons.person_outline, 4, 'Account', screenWidth),
+        ],
       ),
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
-    return BottomNavigationBarItem(
-      icon: AnimatedBuilder(
+  Widget _buildNavItem(IconData icon, int index, String label, double screenWidth) {
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           return Transform.translate(
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
-            child: Container(
-              padding: const EdgeInsets.all(15), // Larger blue circle for selected items
-              decoration: BoxDecoration(
-                color: _selectedIndex == index ? Colors.blue : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
+            child: CircleAvatar(
+              radius: screenWidth * 0.06,
+              backgroundColor:
+                  _selectedIndex == index ? Colors.blue : Colors.transparent,
               child: Icon(
                 icon,
+                size: screenWidth * 0.06,
                 color: _selectedIndex == index ? Colors.white : Colors.grey,
               ),
             ),
           );
         },
       ),
-      label: label,
     );
   }
 }

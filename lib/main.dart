@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/HomePage.dart' as home_page;
-import 'package:flutter_project/app/pages/ProfilePage.dart';
+import 'package:flutter_project/app/pages/medicines_list_page.dart';
+import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_project/app/pages/login.dart';
 import 'package:flutter_project/app/pages/register.dart';
@@ -12,7 +14,39 @@ import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 
 void main() {
-  runApp(const TelemedicineApp());
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  Future<void> _initializeDotEnv() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    try {
+      await dotenv.load(fileName: "assets/.env");
+      print("Loaded .env successfully");
+    } catch (e) {
+      print("Error loading .env: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _initializeDotEnv(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return TelemedicineApp();
+        } else {
+          return const MaterialApp(
+            home: Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          ); // Show loading indicator while .env loads
+        }
+      },
+    );
+  }
 }
 
 class TelemedicineApp extends StatelessWidget {
@@ -25,19 +59,23 @@ class TelemedicineApp extends StatelessWidget {
       home: const MainPage(),
       routes: {
         '/login': (context) => const LoginPage(),
-        '/register': (context) => RegisterPage(),
+        '/register': (context) => const RegisterPage(),
         '/home': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           final username = args?['username'] as String? ?? 'User';
           return home_page.HomePage(username: username);
         },
-        '/profile': (context) => ProfilePage(),
+        '/profile': (context) => const ProfilePage(),
         '/ai_diagnose': (context) => const chat_bot.ChatScreen(),
         '/search': (context) => const SearchPage(),
         '/doctors_list': (context) => const DoctorsListPage(),
         '/test_results': (context) => const TestResults(),
-        '/medicines': (context) => const MedicinePage(),
+        '/medicines': (context) => const MedicinesListPage(), // Now shows the dropdown list
         '/lab_tests': (context) => const LabTestsApp(),
+        '/medicines-list': (context) {
+          final String? medicineName = ModalRoute.of(context)?.settings.arguments as String?;
+          return MedicinePage(medicineName: medicineName);
+        },
       },
       onGenerateRoute: (settings) {
         return MaterialPageRoute(
@@ -52,7 +90,7 @@ class TelemedicineApp extends StatelessWidget {
 
 class MainPage extends StatelessWidget {
   const MainPage({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
-import 'package:flutter_project/app/pages/ProfilePage.dart';
+import 'package:flutter_project/app/pages/medicines_list_page.dart';
+import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:flutter_project/app/pages/chat_bot.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
-import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
 
@@ -855,7 +855,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         break;
       case 1:
         _logger.info('Navigating to /medicines');
-        Navigator.push(context, MaterialPageRoute(builder: (context) => MedicinePage()));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => MedicinesListPage()));
         break;
       case 2:
         _logger.info('Navigate to Appointments');
