@@ -126,6 +126,28 @@ class MainPage extends StatelessWidget {
                 ),
               ),
             ),
+            // About Us button
+            Positioned(
+              top: screenHeight * 0.03,
+              left: screenWidth * 0.05,
+              child: TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('About Us feature coming soon!'),
+                    ),
+                  );
+                },
+                child: Text(
+                  "About Us",
+                  style: GoogleFonts.poppins(
+                    fontSize: screenWidth * 0.04,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
             // Login button
             Positioned(
               top: screenHeight * 0.03,
@@ -180,7 +202,7 @@ class MainPage extends StatelessWidget {
             ),
             // Doctor image
             Positioned(
-              bottom: screenHeight * 0.03,
+              bottom: screenHeight * 0.01, // Adjusted to position the image lower
               right: screenWidth * 0.03,
               child: Image.asset(
                 'assets/doctor.png',
@@ -193,38 +215,14 @@ class MainPage extends StatelessWidget {
                 ),
               ),
             ),
-            // Buttons (Get Started and Learn More)
+            // Get Started button
             Positioned(
               left: screenWidth * 0.05,
               bottom: screenHeight * 0.06,
-              child: Row(
-                children: [
-                  // Animated Get Started button
-                  AnimatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/register'),
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
-                  ),
-                  SizedBox(width: screenWidth * 0.03),
-                  // Learn More button
-                  TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Learn More feature coming soon!'),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      "",
-                      style: GoogleFonts.poppins(
-                        fontSize: screenWidth * 0.04,
-                        color: Colors.blue,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              child: AnimatedButton(
+                onPressed: () => Navigator.pushNamed(context, '/register'),
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
               ),
             ),
             // Dots indicator for feature carousel

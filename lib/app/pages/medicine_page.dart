@@ -171,7 +171,7 @@ class _MedicinePageState extends State<MedicinePage>
           children: [
             // Always show calendar unless in detailed view with a match
             if (widget.medicineName == null || _medicines.length == 3) ...[
-              SizedBox(height: screenHeight * 0.04),
+              SizedBox(height: screenHeight * 0.08), // Increased top padding
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                 child: Text(
@@ -183,7 +183,7 @@ class _MedicinePageState extends State<MedicinePage>
                   ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: screenHeight * 0.03), // Increased spacing
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                 child: Card(
@@ -271,7 +271,7 @@ class _MedicinePageState extends State<MedicinePage>
                   ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.03),
+              SizedBox(height: screenHeight * 0.05), // Increased spacing
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                 child: Text(
@@ -283,7 +283,7 @@ class _MedicinePageState extends State<MedicinePage>
                   ),
                 ),
               ),
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: screenHeight * 0.03), // Increased spacing
             ],
             _isLoading
                 ? Padding(

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_project/app/pages/HomePage.dart';
+import 'package:flutter_project/app/pages/profile-page.dart';
+import 'package:flutter_project/app/pages/search_page.dart';
 
 class MedicinesListPage extends StatefulWidget {
   const MedicinesListPage({super.key});
@@ -7,16 +10,34 @@ class MedicinesListPage extends StatefulWidget {
   State<MedicinesListPage> createState() => _MedicinesListPageState();
 }
 
-class _MedicinesListPageState extends State<MedicinesListPage> {
+class _MedicinesListPageState extends State<MedicinesListPage> with SingleTickerProviderStateMixin {
   String _selectedRoutine = 'Morning';
   List<Map<String, dynamic>> _medicines = [];
   List<Map<String, dynamic>> _filteredMedicines = [];
   final TextEditingController _searchController = TextEditingController();
+  int _selectedIndex = 1; // Track the selected index for the bottom navigation bar
+
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _fetchMedicines();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0, end: -10).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _controller.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchMedicines() async {
@@ -84,10 +105,43 @@ class _MedicinesListPageState extends State<MedicinesListPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // Avoid unnecessary navigation
+
+    setState(() {
+      _selectedIndex = index;
+    });
+    _controller.forward().then((_) => _controller.reverse());
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => ProfilePage()),
+        );
+        break;
+      case 1:
+        // Already on MedicinesListPage
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => HomePage(username: 'User')),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => SearchPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => ProfilePage()),
+        );
+        break;
+    }
   }
 
   @override
@@ -121,13 +175,47 @@ class _MedicinesListPageState extends State<MedicinesListPage> {
             ),
           ),
         ),
-        title: Text(
-          'Medicines List',
-          style: TextStyle(
-            fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Medicines List',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.06,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            DropdownButton<String>(
+              value: _selectedRoutine,
+              items: <String>['Morning', 'Afternoon', 'Night'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      color: Colors.black,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  _filterMedicines(newValue);
+                }
+              },
+              icon: Icon(
+                Icons.arrow_drop_down,
+                size: screenWidth * 0.06,
+                color: Colors.black,
+              ),
+              underline: Container(),
+              dropdownColor: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            ),
+          ],
         ),
         foregroundColor: Colors.black,
         centerTitle: false,
@@ -135,7 +223,7 @@ class _MedicinesListPageState extends State<MedicinesListPage> {
       body: Padding(
         padding: EdgeInsets.fromLTRB(
           screenWidth * 0.04,
-          10.0,
+          screenHeight * 0.1, // Adjusted to move the search bar down
           screenWidth * 0.04,
           navBarHeight + (screenWidth * 0.03),
         ),
@@ -145,7 +233,7 @@ class _MedicinesListPageState extends State<MedicinesListPage> {
             Padding(
               padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
               child: SizedBox(
-                width: screenWidth * 0.6,
+                width: screenWidth * 0.9, // Adjusted to take full width
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -161,37 +249,6 @@ class _MedicinesListPageState extends State<MedicinesListPage> {
                   ),
                   onChanged: _filterBySearch,
                 ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: DropdownButton<String>(
-                value: _selectedRoutine,
-                items: <String>['Morning', 'Afternoon', 'Night'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.04,
-                        color: Colors.black,
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    _filterMedicines(newValue);
-                  }
-                },
-                icon: Icon(
-                  Icons.arrow_drop_down,
-                  size: screenWidth * 0.06,
-                  color: Colors.black,
-                ),
-                underline: Container(),
-                dropdownColor: Colors.white,
-                borderRadius: BorderRadius.circular(screenWidth * 0.02),
               ),
             ),
             Expanded(
@@ -301,20 +358,35 @@ class _MedicinesListPageState extends State<MedicinesListPage> {
 
   Widget _buildNavItem(IconData icon, int index, String label, double screenWidth) {
     return GestureDetector(
-      onTap: () {},
-      child: CircleAvatar(
-        radius: screenWidth * 0.06,
-        backgroundColor: index == 1 ? Colors.blue : Colors.transparent,
-        child: Icon(
-          icon,
-          size: screenWidth * 0.06,
-          color: index == 1 ? Colors.white : Colors.grey,
-        ),
+      onTap: () => _onItemTapped(index),
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
+            child: CircleAvatar(
+              radius: screenWidth * 0.06,
+              backgroundColor: _selectedIndex == index ? Colors.blue : Colors.transparent,
+              child: Icon(
+                icon,
+                size: screenWidth * 0.06,
+                color: _selectedIndex == index ? Colors.white : Colors.grey,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 void main() {
-  runApp(const MaterialApp(home: MedicinesListPage()));
+  runApp(MaterialApp(
+    home: const MedicinesListPage(),
+    routes: {
+      '/profile': (context) => const ProfilePage(),
+      '/home': (context) => const HomePage(username: 'User'),
+      '/search': (context) => const SearchPage(),
+    },
+  ));
 }

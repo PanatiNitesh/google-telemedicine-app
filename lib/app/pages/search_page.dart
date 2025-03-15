@@ -109,31 +109,31 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD), // Background color
-      body: Column(
-        children: [
-          // Navbar with Back Button at Top Left
-          Container(
-            padding: const EdgeInsets.only(top: 10.0, left: 6.0), // Moved closer to top with left padding of 6
-            height: 60.0, // Reduced height to keep it compact
-            decoration: const BoxDecoration(
-              color: Colors.transparent,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start, // Align to the left
-              children: [
-                GestureDetector(
-                  onTap: _goBack,
-                  child: Image.asset(
-                    'assets/back.png',
-                    width: 30, // Keep size at 30x30 as per your code
-                    height: 30,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Navbar with Back Button at Top Left
+            Container(
+              padding: const EdgeInsets.only(top: 10.0, left: 6.0), // Moved closer to top with left padding of 6
+              height: 60.0, // Reduced height to keep it compact
+              decoration: const BoxDecoration(
+                color: Colors.transparent,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start, // Align to the left
+                children: [
+                  GestureDetector(
+                    onTap: _goBack,
+                    child: Image.asset(
+                      'assets/back.png',
+                      width: 30, // Keep size at 30x30 as per your code
+                      height: 30,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: Padding(
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +147,7 @@ class _SearchPageState extends State<SearchPage> {
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-                    Expanded(child: _buildSearchResults()),
+                    _buildSearchResults(),
                   ],
                   // Recent Searches Section
                   if (_searchQuery == null) ...[
@@ -176,8 +176,8 @@ class _SearchPageState extends State<SearchPage> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       // Chat Bot Floating Action Button with Image
       floatingActionButton: FloatingActionButton(
@@ -315,6 +315,8 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     return ListView.builder(
+      shrinkWrap: true, // Add this to prevent overflow
+      physics: const NeverScrollableScrollPhysics(), // Disable scrolling for the inner ListView
       itemCount: filteredResults.length,
       itemBuilder: (context, index) {
         final result = filteredResults[index];
