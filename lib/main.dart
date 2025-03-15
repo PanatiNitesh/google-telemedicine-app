@@ -169,7 +169,7 @@ class MainPage extends StatelessWidget {
                   ),
                   SizedBox(height: screenHeight * 0.01),
                   Text(
-                    "Access quality care\nanytime, anywhere",
+                    "Access quality care anytime,\nanywhere",
                     style: GoogleFonts.poppins(
                       fontSize: screenWidth * 0.04,
                       color: Colors.black54,

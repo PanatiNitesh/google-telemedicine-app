@@ -122,58 +122,55 @@ class _LabTestsPageState extends State<LabTestsPage>
     });
   }
 
-  Widget _buildBottomNavBar(double screenWidth, double navBarHeight) {
-    return Container(
-      height: navBarHeight,
-      margin: EdgeInsets.all(screenWidth * 0.03),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.06),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: screenWidth * 0.002,
-            blurRadius: screenWidth * 0.025,
-            offset: const Offset(0, -2),
-          ),
+  Widget _buildBottomNavBar() {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(30),
+      boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 10, offset: const Offset(0, -2))],
+    ),
+    margin: const EdgeInsets.all(12),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        backgroundColor: Colors.white,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        items: [
+          _buildNavItem(Icons.person, 0, 'Profile'),
+          _buildNavItem(Icons.science_outlined, 1, 'Tests'),
+          _buildNavItem(Icons.home, 2, 'Home'),
+          _buildNavItem(Icons.search, 3, 'Search'),
+          _buildNavItem(Icons.person_outline, 4, 'Account'),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildNavItem(Icons.person, 0, 'Profile', screenWidth),
-          _buildNavItem(Icons.science_outlined, 1, 'Tests', screenWidth),
-          _buildNavItem(Icons.home, 2, 'Home', screenWidth),
-          _buildNavItem(Icons.search, 3, 'Search', screenWidth),
-          _buildNavItem(Icons.person_outline, 4, 'Account', screenWidth),
-        ],
-      ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildNavItem(IconData icon, int index, String label, double screenWidth) {
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
-            child: CircleAvatar(
-              radius: screenWidth * 0.06,
-              backgroundColor:
-                  _selectedIndex == index ? Colors.blue : Colors.transparent,
-              child: Icon(
-                icon,
-                size: screenWidth * 0.06,
-                color: _selectedIndex == index ? Colors.white : Colors.grey,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
+  return BottomNavigationBarItem(
+    icon: AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
+          child: Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(color: _selectedIndex == index ? Colors.blue : Colors.transparent, shape: BoxShape.circle),
+            child: Icon(icon, color: _selectedIndex == index ? Colors.white : Colors.grey),
+          ),
+        );
+      },
+    ),
+    label: label,
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +296,7 @@ class _LabTestsPageState extends State<LabTestsPage>
           },
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(screenWidth, navBarHeight),
+      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 }

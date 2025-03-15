@@ -285,20 +285,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         Image.asset(
                           'assets/backshape.png',
-                          width: screenWidth * 0.35,
-                          height: screenWidth * 0.35,
+                          width: screenWidth * 0.55,
+                          height: screenWidth * 0.55,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) => Container(
-                            width: screenWidth * 0.35,
-                            height: screenWidth * 0.35,
+                            width: screenWidth * 0.55,
+                            height: screenWidth * 0.55,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: screenWidth * 0.012,
-                                  spreadRadius: screenWidth * 0.005,
+                                  blurRadius: screenWidth * 0.02,
+                                  spreadRadius: screenWidth * 0.01,
                                 ),
                               ],
                             ),
