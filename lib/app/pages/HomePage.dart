@@ -7,11 +7,14 @@ import 'package:flutter_project/app/pages/chat_bot.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:logging/logging.dart';
 import 'dart:math';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
+  final String? profileImage; // Store profile image as base64 string
 
-  const HomePage({super.key, required this.username});
+  const HomePage({super.key, required this.username, this.profileImage});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -25,6 +28,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   bool _isSuggestionVisible = false; // Added for suggestions
   late AnimationController _controller;
   late Animation<double> _animation;
+  String? _storedProfileImage;
 
   // Sample data for doctors
   final List<Map<String, dynamic>> doctors = [
@@ -60,8 +64,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _animation = Tween<double>(begin: 0, end: -10).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+    
     // Add listener for search bar suggestions
     _searchController.addListener(_onSearchChanged);
+    
+    // Store user session data
+    _saveUserSession();
+    
+    // Set profile image from widget or load from shared preferences
+    _storedProfileImage = widget.profileImage;
+    if (_storedProfileImage == null) {
+      _loadUserSession();
+    }
   }
 
   @override
@@ -78,11 +92,54 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     });
   }
 
+  // Function to determine greeting based on time of day
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
+  // Save user session to SharedPreferences
+  Future<void> _saveUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('username', widget.username);
+      if (widget.profileImage != null) {
+        await prefs.setString('profileImage', widget.profileImage!);
+      }
+      await prefs.setBool('isLoggedIn', true);
+      _logger.info('User session saved');
+    } catch (e) {
+      _logger.severe('Error saving user session: $e');
+    }
+  }
+
+  // Load user session from SharedPreferences
+  Future<void> _loadUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedImage = prefs.getString('profileImage');
+      if (storedImage != null) {
+        setState(() {
+          _storedProfileImage = storedImage;
+        });
+        _logger.info('User profile image loaded from preferences');
+      }
+    } catch (e) {
+      _logger.severe('Error loading user session: $e');
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    _controller.forward().then((_) => _controller.reverse()); // Fixed typo: _controller instead of controller
+    _controller.forward().then((_) => _controller.reverse());
 
     final Color themeColor;
     switch (index) {
@@ -102,7 +159,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       case 3:
         themeColor = Colors.amber;
         _logger.info('Navigating to /search from bottom navigation');
-        Navigator.of(context, rootNavigator: true).pushNamed('/search'); // Using pushNamed for search
+        Navigator.of(context, rootNavigator: true).pushNamed('/search');
         break;
       case 4:
         themeColor = Colors.red;
@@ -132,7 +189,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     _buildHeader(),
                     const SizedBox(height: 16),
                     _buildSearchBar(),
-                    if (_isSuggestionVisible) _buildSuggestions(), // Added suggestions
+                    if (_isSuggestionVisible) _buildSuggestions(),
                     const SizedBox(height: 24),
                     _buildFeatureTabs(),
                     const SizedBox(height: 24),
@@ -160,12 +217,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Hi, ${widget.username}',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getGreeting(),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+            Text(
+              widget.username,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         Row(
           children: [
@@ -181,11 +250,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: CircleAvatar(
                 backgroundColor: Colors.grey[300],
                 radius: 30,
-                child: const Icon(
-                  Icons.person_outline,
-                  color: Colors.black54,
-                  size: 30,
-                ),
+                child: _storedProfileImage != null
+                  ? ClipOval(
+                      child: Image.memory(
+                        base64Decode(_storedProfileImage!),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          _logger.warning('Error loading profile image: $error');
+                          return const Icon(
+                            Icons.person_outline,
+                            color: Colors.black54,
+                            size: 30,
+                          );
+                        },
+                      ),
+                    )
+                  : const Icon(
+                      Icons.person_outline,
+                      color: Colors.black54,
+                      size: 30,
+                    ),
               ),
             ),
           ],
@@ -296,11 +382,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       _isSuggestionVisible = false;
     });
     FocusScope.of(context).unfocus();
-    _logger.info('Navigating to /search with query: $query'); // Debug log
+    _logger.info('Navigating to /search with query: $query');
     Navigator.of(context, rootNavigator: true).pushNamed(
-  '/search',
-  arguments: {'query': query},
-);
+      '/search',
+      arguments: {'query': query},
+    );
   }
 
   void _openGoogleLens() {

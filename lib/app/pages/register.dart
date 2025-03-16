@@ -60,7 +60,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final String _backendUrl = kIsWeb
       ? 'http://localhost:5000/api/register' // For web
       : (Platform.isAndroid && !kDebugMode)
-          ? 'http://192.168.1.x:5000/api/register' // Replace with your machine’s IP for physical device
+          ? 'http://192.168.174.137:5000/api/register' // Replace with your machine’s IP for physical device
           : 'http://10.0.2.2:5000/api/register'; // For emulator
 
   final ImagePicker _picker = ImagePicker();
