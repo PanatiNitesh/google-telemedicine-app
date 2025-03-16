@@ -1,14 +1,34 @@
 import 'dart:async';
-import 'dart:io' show File;
-import 'dart:typed_data'; // For Uint8List
+import 'dart:io' show File, Platform;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Registration App',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const RegisterPage(),
+      routes: {
+        '/home': (context) => const Scaffold(body: Center(child: Text('Home Page'))),
+      },
+    );
+  }
+}
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -33,360 +53,51 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   String? _selectedCountry;
   String? _selectedState;
-  File? _profileImageFile; // For non-web
-  Uint8List? _profileImageBytes; // For web
+  File? _profileImageFile;
+  Uint8List? _profileImageBytes;
 
-  final String _backendUrl = 'http://192.168.174.137:5000/api/register';
+  // Dynamic backend URL
+  final String _backendUrl = kIsWeb
+      ? 'http://localhost:5000/api/register' // For web
+      : (Platform.isAndroid && !kDebugMode)
+          ? 'http://192.168.1.x:5000/api/register' // Replace with your machine’s IP for physical device
+          : 'http://10.0.2.2:5000/api/register'; // For emulator
 
   final ImagePicker _picker = ImagePicker();
 
-  // Image Picker instance
+  final List<String> countries = [
+    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados',
+    'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia',
+    'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo, Democratic Republic of the', 'Congo, Republic of the', 'Costa Rica', 'Croatia',
+    'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'East Timor', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia',
+    'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti',
+    'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Korea, North',
+    'Korea, South', 'Kosovo', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia',
+    'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia',
+    'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru',
+    'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe',
+    'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan',
+    'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda',
+    'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
+  ];
 
-  // List of all countries (unchanged)
- final List<String> countries = [
-  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados',
-  'Belarus',
-  'Belgium',
-  'Belize',
-  'Benin',
-  'Bhutan',
-  'Bolivia',
-  'Bosnia and Herzegovina',
-  'Botswana',
-  'Brazil',
-  'Brunei',
-  'Bulgaria',
-  'Burkina Faso',
-  'Burundi',
-  'Cabo Verde',
-  'Cambodia',
-  'Cameroon',
-  'Canada',
-  'Central African Republic',
-  'Chad',
-  'Chile',
-  'China',
-  'Colombia',
-  'Comoros',
-  'Congo, Democratic Republic of the',
-  'Congo, Republic of the',
-  'Costa Rica',
-  'Croatia',
-  'Cuba',
-  'Cyprus',
-  'Czech Republic',
-  'Denmark',
-  'Djibouti',
-  'Dominica',
-  'Dominican Republic',
-  'East Timor',
-  'Ecuador',
-  'Egypt',
-  'El Salvador',
-  'Equatorial Guinea',
-  'Eritrea',
-  'Estonia',
-  'Eswatini',
-  'Ethiopia',
-  'Fiji',
-  'Finland',
-  'France',
-  'Gabon',
-  'Gambia',
-  'Georgia',
-  'Germany',
-  'Ghana',
-  'Greece',
-  'Grenada',
-  'Guatemala',
-  'Guinea',
-  'Guinea-Bissau',
-  'Guyana',
-  'Haiti',
-  'Honduras',
-  'Hungary',
-  'Iceland',
-  'India',
-  'Indonesia',
-  'Iran',
-  'Iraq',
-  'Ireland',
-  'Israel',
-  'Italy',
-  'Jamaica',
-  'Japan',
-  'Jordan',
-  'Kazakhstan',
-  'Kenya',
-  'Kiribati',
-  'Korea, North',
-  'Korea, South',
-  'Kosovo',
-  'Kuwait',
-  'Kyrgyzstan',
-  'Laos',
-  'Latvia',
-  'Lebanon',
-  'Lesotho',
-  'Liberia',
-  'Libya',
-  'Liechtenstein',
-  'Lithuania',
-  'Luxembourg',
-  'Madagascar',
-  'Malawi',
-  'Malaysia',
-  'Maldives',
-  'Mali',
-  'Malta',
-  'Marshall Islands',
-  'Mauritania',
-  'Mauritius',
-  'Mexico',
-  'Micronesia',
-  'Moldova',
-  'Monaco',
-  'Mongolia',
-  'Montenegro',
-  'Morocco',
-  'Mozambique',
-  'Myanmar',
-  'Namibia',
-  'Nauru',
-  'Nepal',
-  'Netherlands',
-  'New Zealand',
-  'Nicaragua',
-  'Niger',
-  'Nigeria',
-  'North Macedonia',
-  'Norway',
-  'Oman',
-  'Pakistan',
-  'Palau',
-  'Panama',
-  'Papua New Guinea',
-  'Paraguay',
-  'Peru',
-  'Philippines',
-  'Poland',
-  'Portugal',
-  'Qatar',
-  'Romania',
-  'Russia',
-  'Rwanda',
-  'Saint Kitts and Nevis',
-  'Saint Lucia',
-  'Saint Vincent and the Grenadines',
-  'Samoa',
-  'San Marino',
-  'Sao Tome and Principe',
-  'Saudi Arabia',
-  'Senegal',
-  'Serbia',
-  'Seychelles',
-  'Sierra Leone',
-  'Singapore',
-  'Slovakia',
-  'Slovenia',
-  'Solomon Islands',
-  'Somalia',
-  'South Africa',
-  'South Sudan',
-  'Spain',
-  'Sri Lanka',
-  'Sudan',
-  'Suriname',
-  'Sweden',
-  'Switzerland',
-  'Syria',
-  'Taiwan',
-  'Tajikistan',
-  'Tanzania',
-  'Thailand',
-  'Togo',
-  'Tonga',
-  'Trinidad and Tobago',
-  'Tunisia',
-  'Turkey',
-  'Turkmenistan',
-  'Tuvalu',
-  'Uganda',
-  'Ukraine',
-  'United Arab Emirates',
-  'United Kingdom',
-  'United States',
-  'Uruguay',
-  'Uzbekistan',
-  'Vanuatu',
-  'Vatican City',
-  'Venezuela',
-  'Vietnam',
-  'Yemen',
-  'Zambia',
-  'Zimbabwe',
-];
+  final Map<String, List<String>> countryStates = {
+    'United States': [
+      'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',
+      'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland',
+      'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
+      'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+      'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+    ],
+    'India': [
+      'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+      'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+      'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+    ],
+    // Add other countries as needed
+  };
 
-final Map<String, List<String>> countryStates = {
-  'Afghanistan': ['Badakhshan', 'Badghis', 'Baghlan', 'Balkh', 'Bamyan', 'Daykundi', 'Farah', 'Faryab', 'Ghazni', 'Ghor', 'Helmand', 'Herat', 'Jowzjan', 'Kabul', 'Kandahar', 'Kapisa', 'Khost', 'Kunar', 'Kunduz', 'Laghman', 'Logar', 'Nangarhar', 'Nimroz', 'Nuristan', 'Paktia', 'Paktika', 'Panjshir', 'Parwan', 'Samangan', 'Sar-e Pol', 'Takhar', 'Urozgan', 'Zabul'],
-  'Albania': ['Berat', 'Dibër', 'Durrës', 'Elbasan', 'Fier', 'Gjirokastër', 'Korçë', 'Kukës', 'Lezhë', 'Shkodër', 'Tirana', 'Vlorë'],
-  'Algeria': ['Adrar', 'Aïn Defla', 'Aïn Témouchent', 'Alger', 'Annaba', 'Batna', 'Béchar', 'Béjaïa', 'Biskra', 'Blida', 'Bordj Bou Arréridj', 'Bouira', 'Boumerdès', 'Chlef', 'Constantine', 'Djelfa', 'El Bayadh', 'El Oued', 'El Tarf', 'Ghardaïa', 'Guelma', 'Illizi', 'Jijel', 'Khenchela', 'Laghouat', 'Mascara', 'Médéa', 'Mila', 'Mostaganem', 'Msila', 'Naâma', 'Oran', 'Ouargla', 'Oum El Bouaghi', 'Relizane', 'Saïda', 'Sétif', 'Sidi Bel Abbès', 'Skikda', 'Souk Ahras', 'Tamanghasset', 'Tébessa', 'Tiaret', 'Tindouf', 'Tipaza', 'Tissemsilt', 'Tizi Ouzou', 'Tlemcen'],
-  'Argentina': ['Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'],
-  'Australia': ['Australian Capital Territory', 'New South Wales', 'Northern Territory', 'Queensland', 'South Australia', 'Tasmania', 'Victoria', 'Western Australia'],
-  'Austria': ['Burgenland', 'Carinthia', 'Lower Austria', 'Salzburg', 'Styria', 'Tyrol', 'Upper Austria', 'Vienna', 'Vorarlberg'],
-  'Bangladesh': ['Barisal', 'Chittagong', 'Dhaka', 'Khulna', 'Rajshahi', 'Rangpur', 'Sylhet'],
-  'Belarus': ['Brest', 'Gomel', 'Grodno', 'Minsk', 'Mogilev', 'Vitebsk'],
-  'Belgium': ['Antwerp', 'Brussels', 'East Flanders', 'Flemish Brabant', 'Hainaut', 'Liège', 'Limburg', 'Luxembourg', 'Namur', 'Walloon Brabant', 'West Flanders'],
-  'Bolivia': ['Beni', 'Chuquisaca', 'Cochabamba', 'La Paz', 'Oruro', 'Pando', 'Potosí', 'Santa Cruz', 'Tarija'],
-  'Bosnia and Herzegovina': ['Federation of Bosnia and Herzegovina', 'Republika Srpska', 'Brčko District'],
-  'Brazil': ['Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará', 'Espírito Santo', 'Goiás', 'Maranhão', 'Mato Grosso', 'Mato Grosso do Sul', 'Minas Gerais', 'Pará', 'Paraíba', 'Paraná', 'Pernambuco', 'Piauí', 'Rio de Janeiro', 'Rio Grande do Norte', 'Rio Grande do Sul', 'Rondônia', 'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'],
-  'Bulgaria': ['Blagoevgrad', 'Burgas', 'Dobrich', 'Gabrovo', 'Haskovo', 'Kardzhali', 'Kyustendil', 'Lovech', 'Montana', 'Pazardzhik', 'Pernik', 'Pleven', 'Plovdiv', 'Razgrad', 'Ruse', 'Shumen', 'Silistra', 'Sliven', 'Smolyan', 'Sofia', 'Sofia City', 'Stara Zagora', 'Targovishte', 'Varna', 'Veliko Tarnovo', 'Vidin', 'Vratsa', 'Yambol'],
-  'Canada': ['Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador', 'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan'],
-  'Chile': ['Aisén', 'Antofagasta', 'Araucanía', 'Arica and Parinacota', 'Atacama', 'Bío Bío', 'Coquimbo', 'La Araucanía', 'Los Lagos', 'Los Ríos', 'Magallanes', 'Maule', 'Ñuble', 'O’Higgins', 'Santiago Metropolitan', 'Tarapacá', 'Valparaíso'],
-  'China': ['Anhui', 'Beijing', 'Chongqing', 'Fujian', 'Gansu', 'Guangdong', 'Guangxi', 'Guizhou', 'Hainan', 'Hebei', 'Heilongjiang', 'Henan', 'Hubei', 'Hunan', 'Inner Mongolia', 'Jiangsu', 'Jiangxi', 'Jilin', 'Liaoning', 'Ningxia', 'Qinghai', 'Shaanxi', 'Shandong', 'Shanghai', 'Shanxi', 'Sichuan', 'Tianjin', 'Tibet', 'Xinjiang', 'Yunnan', 'Zhejiang'],
-  'Colombia': ['Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá', 'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cesar', 'Chocó', 'Córdoba', 'Cundinamarca', 'Guainía', 'Guaviare', 'Huila', 'La Guajira', 'Magdalena', 'Meta', 'Nariño', 'Norte de Santander', 'Putumayo', 'Quindío', 'Risaralda', 'San Andrés and Providencia', 'Santander', 'Sucre', 'Tolima', 'Valle del Cauca', 'Vaupés', 'Vichada'],
-  'Croatia': ['Bjelovar-Bilogora', 'Dubrovnik-Neretva', 'Istria', 'Karlovac', 'Koprivnica-Križevci', 'Lika-Senj', 'Međimurje', 'Osijek-Baranja', 'Požega-Slavonia', 'Primorje-Gorski Kotar', 'Sisak-Moslavina', 'Split-Dalmatia', 'Šibenik-Knin', 'Varaždin', 'Virovitica-Podravina', 'Vukovar-Srijem', 'Zadar', 'Zagreb', 'Zagreb County'],
-  'Czech Republic': ['Central Bohemian', 'Hradec Králové', 'Karlovy Vary', 'Liberec', 'Moravian-Silesian', 'Olomouc', 'Pardubice', 'Plzeň', 'Prague', 'South Bohemian', 'South Moravian', 'Ústí nad Labem', 'Vysočina', 'Zlín'],
-  'Denmark': ['Capital Region', 'Central Denmark Region', 'North Denmark Region', 'Region of Southern Denmark', 'Zealand'],
-  'Ecuador': ['Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro', 'Esmeraldas', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos', 'Manabí', 'Morona-Santiago', 'Napo', 'Orellana', 'Pastaza', 'Pichincha', 'Santa Elena', 'Santo Domingo de los Tsáchilas', 'Sucumbíos', 'Tungurahua', 'Zamora-Chinchipe'],
-  'Egypt': ['Alexandria', 'Aswan', 'Asyut', 'Beheira', 'Beni Suef', 'Cairo', 'Dakahlia', 'Damietta', 'Faiyum', 'Gharbia', 'Giza', 'Ismailia', 'Kafr El Sheikh', 'Luxor', 'Matrouh', 'Minya', 'Monufia', 'New Valley', 'North Sinai', 'Port Said', 'Qalyubia', 'Qena', 'Red Sea', 'Sharqia', 'Sohag', 'South Sinai', 'Suez'],
-  'Ethiopia': ['Afar', 'Amhara', 'Benishangul-Gumuz', 'Dire Dawa', 'Gambela', 'Harari', 'Oromia', 'Sidama', 'Somali', 'Southern Nations, Nationalities, and Peoples\' Region', 'Tigray'],
-  'Finland': ['Åland', 'Central Finland', 'Finland Proper', 'Kainuu', 'Lapland', 'North Karelia', 'North Ostrobothnia', 'North Savo', 'Ostrobothnia', 'Päijänne Tavastia', 'Pirkanmaa', 'Satakunta', 'South Karelia', 'South Ostrobothnia', 'South Savo', 'Uusimaa'],
-  'France': ['Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Brittany', 'Centre-Val de Loire', 'Corsica', 'Grand Est', 'Hauts-de-France', 'Île-de-France', 'Normandy', 'Nouvelle-Aquitaine', 'Occitanie', 'Pays de la Loire', 'Provence-Alpes-Côte d\'Azur'],
-  'Germany': ['Baden-Württemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse', 'Lower Saxony', 'Mecklenburg-Vorpommern', 'North Rhine-Westphalia', 'Rhineland-Palatinate', 'Saarland', 'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia'],
-  'Greece': ['Attica', 'Central Greece', 'Central Macedonia', 'Crete', 'East Macedonia and Thrace', 'Epirus', 'Ionian Islands', 'North Aegean', 'Peloponnese', 'South Aegean', 'Thessaly', 'West Greece', 'West Macedonia'],
-  'Hungary': ['Bács-Kiskun', 'Baranya', 'Békés', 'Borsod-Abaúj-Zemplén', 'Csongrád-Csanád', 'Fejér', 'Győr-Moson-Sopron', 'Hajdú-Bihar', 'Heves', 'Jász-Nagykun-Szolnok', 'Komárom-Esztergom', 'Nógrád', 'Pest', 'Somogy', 'Szabolcs-Szatmár-Bereg', 'Tolna', 'Vas', 'Veszprém', 'Zala'],
-  'India': ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'],
-  'Indonesia': ['Aceh', 'Bali', 'Bangka Belitung Islands', 'Banten', 'Bengkulu', 'Central Java', 'Central Kalimantan', 'Central Sulawesi', 'East Java', 'East Kalimantan', 'East Nusa Tenggara', 'Gorontalo', 'Jakarta', 'Jambi', 'Lampung', 'Maluku', 'North Kalimantan', 'North Maluku', 'North Sulawesi', 'North Sumatra', 'Papua', 'Riau', 'South Kalimantan', 'South Sulawesi', 'South Sumatra', 'Southeast Sulawesi', 'West Java', 'West Kalimantan', 'West Nusa Tenggara', 'West Papua', 'West Sulawesi', 'West Sumatra', 'Yogyakarta'],
-  'Iran': ['Alborz', 'Ardabil', 'Bushehr', 'Chahar Mahaal and Bakhtiari', 'East Azerbaijan', 'Fars', 'Gilan', 'Golestan', 'Hamadan', 'Hormozgan', 'Ilam', 'Isfahan', 'Kerman', 'Kermanshah', 'Khuzestan', 'Kohgiluyeh and Boyer-Ahmad', 'Kurdistan', 'Lorestan', 'Markazi', 'Mazandaran', 'North Khorasan', 'Qazvin', 'Qom', 'Razavi Khorasan', 'Semnan', 'Sistan and Baluchestan', 'South Khorasan', 'Tehran', 'West Azerbaijan', 'Yazd', 'Zanjan'],
-  'Iraq': ['Anbar', 'Babil', 'Baghdad', 'Basra', 'Dhi Qar', 'Diyala', 'Dohuk', 'Erbil', 'Karbala', 'Kirkuk', 'Maysan', 'Muthanna', 'Najaf', 'Nineveh', 'Saladin', 'Sulaymaniyah', 'Wasit'],
-  'Italy': ['Abruzzo', 'Aosta Valley', 'Apulia', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna', 'Friuli-Venezia Giulia', 'Lazio', 'Liguria', 'Lombardy', 'Marche', 'Molise', 'Piedmont', 'Sardinia', 'Sicily', 'Trentino-South Tyrol', 'Tuscany', 'Umbria', 'Veneto'],
-  'Japan': ['Aichi', 'Akita', 'Aomori', 'Chiba', 'Ehime', 'Fukui', 'Fukuoka', 'Fukushima', 'Gifu', 'Gunma', 'Hiroshima', 'Hokkaido', 'Hyogo', 'Ibaraki', 'Ishikawa', 'Iwate', 'Kagawa', 'Kagoshima', 'Kanagawa', 'Kochi', 'Kumamoto', 'Kyoto', 'Mie', 'Miyagi', 'Miyazaki', 'Nagano', 'Nagasaki', 'Nara', 'Niigata', 'Oita', 'Okayama', 'Okinawa', 'Osaka', 'Saga', 'Saitama', 'Shiga', 'Shimane', 'Shizuoka', 'Tochigi', 'Tokushima', 'Tokyo', 'Tottori', 'Toyama', 'Wakayama', 'Yamagata', 'Yamaguchi', 'Yamanashi'],
-  'Kenya': ['Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo-Marakwet', 'Embu', 'Garissa', 'Homa Bay', 'Isiolo', 'Kajiado', 'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga', 'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia', 'Lamu', 'Machakos', 'Makueni', 'Mandera', 'Marsabit', 'Meru', 'Migori', 'Mombasa', 'Murang\'a', 'Nairobi', 'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua', 'Nyeri', 'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River', 'Tharaka-Nithi', 'Trans Nzoia', 'Turkana', 'Uasin Gishu', 'Vihiga', 'Wajir', 'West Pokot'],
-  'Malaysia': ['Johor', 'Kedah', 'Kelantan', 'Malacca', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu'],
-  'Mexico': ['Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua', 'Coahuila', 'Colima', 'Durango', 'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Mexico City', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'],
-  'Morocco': ['Béni Mellal-Khénifra', 'Casablanca-Settat', 'Dakhla-Oued Ed-Dahab', 'Drâa-Tafilalet', 'Fès-Meknès', 'Guelmim-Oued Noun', 'Laâyoune-Sakia El Hamra', 'Marrakech-Safi', 'Oriental', 'Rabat-Salé-Kénitra', 'Souss-Massa', 'Tangier-Tétouan-Al Hoceïma'],
-  'Myanmar': ['Ayeyarwady', 'Bago', 'Chin', 'Kachin', 'Kayah', 'Kayin', 'Magway', 'Mandalay', 'Mon', 'Naypyidaw', 'Rakhine', 'Sagaing', 'Shan', 'Tanintharyi', 'Yangon'],
-  'Nepal': ['Bagmati', 'Gandaki', 'Karnali', 'Koshi', 'Lumbini', 'Madhesh', 'Sudurpashchim'],
-  'Netherlands': ['Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg', 'North Brabant', 'North Holland', 'Overijssel', 'South Holland', 'Utrecht', 'Zeeland'],
-  'New Zealand': ['Auckland', 'Bay of Plenty', 'Canterbury', 'Hawke\'s Bay', 'Manawatu-Whanganui', 'Marlborough', 'Nelson', 'Northland', 'Otago', 'Southland', 'Taranaki', 'Tasman', 'Waikato', 'Wellington', 'West Coast'],
-  'Nigeria': ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'],
-  'Pakistan': ['Balochistan', 'Khyber Pakhtunkhwa', 'Punjab', 'Sindh', 'Gilgit-Baltistan', 'Azad Jammu and Kashmir'],
-  'Peru': ['Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho', 'Cajamarca', 'Callao', 'Cusco', 'Huancavelica', 'Huanuco', 'Ica', 'Junín', 'La Libertad', 'Lambayeque', 'Lima', 'Loreto', 'Madre de Dios', 'Moquegua', 'Pasco', 'Piura', 'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'],
-  'Philippines': ['Abra', 'Agusan del Norte', 'Agusan del Sur', 'Aklan', 'Albay', 'Antique', 'Apayao', 'Aurora', 'Basilan', 'Bataan', 'Batanes', 'Batangas', 'Benguet', 'Biliran', 'Bohol', 'Bukidnon', 'Bulacan', 'Cagayan', 'Camarines Norte', 'Camarines Sur', 'Camiguin', 'Capiz', 'Catanduanes', 'Cavite', 'Cebu', 'Cotabato', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Occidental', 'Davao Oriental', 'Dinagat Islands', 'Eastern Samar', 'Guimaras', 'Ifugao', 'Ilocos Norte', 'Ilocos Sur', 'Iloilo', 'Isabela', 'Kalinga', 'La Union', 'Laguna', 'Lanao del Norte', 'Lanao del Sur', 'Leyte', 'Maguindanao', 'Marinduque', 'Masbate', 'Misamis Occidental', 'Misamis Oriental', 'Mountain Province', 'Negros Occidental', 'Negros Oriental', 'Northern Samar', 'Nueva Ecija', 'Nueva Vizcaya', 'Occidental Mindoro', 'Oriental Mindoro', 'Palawan', 'Pampanga', 'Pangasinan', 'Quezon', 'Quirino', 'Rizal', 'Romblon', 'Samar', 'Sarangani', 'Siquijor', 'Sorsogon', 'South Cotabato', 'Southern Leyte', 'Sultan Kudarat', 'Sulu', 'Surigao del Norte', 'Surigao del Sur', 'Tarlac', 'Tawi-Tawi', 'Zambales', 'Zamboanga del Norte', 'Zamboanga del Sur', 'Zamboanga Sibugay'],
-  'Poland': ['Greater Poland', 'Kuyavian-Pomeranian', 'Lesser Poland', 'Lodz', 'Lower Silesian', 'Lublin', 'Lubusz', 'Masovian', 'Opole', 'Podlaskie', 'Pomeranian', 'Silesian', 'Subcarpathian', 'Świętokrzyskie', 'Warmian-Masurian', 'West Pomeranian'],
-  'Romania': ['Alba', 'Arad', 'Argeș', 'Bacău', 'Bihor', 'Bistrița-Năsăud', 'Botoșani', 'Brașov', 'Brăila', 'București', 'Buzău', 'Călărași', 'Caraș-Severin', 'Cluj', 'Constanța', 'Covasna', 'Dâmbovița', 'Dolj', 'Galați', 'Giurgiu', 'Gorj', 'Harghita', 'Hunedoara', 'Ialomița', 'Iași', 'Ilfov', 'Maramureș', 'Mehedinți', 'Mureș', 'Neamț', 'Olt', 'Prahova', 'Satu Mare', 'Sălaj', 'Sibiu', 'Suceava', 'Teleorman', 'Timiș', 'Tulcea', 'Vâlcea', 'Vaslui', 'Vrancea'],
-  'Russia': ['Adygea', 'Altai Republic', 'Bashkortostan', 'Buryatia', 'Chechnya', 'Chuvashia', 'Dagestan', 'Ingushetia', 'Kabardino-Balkaria', 'Kalmykia', 'Karachay-Cherkessia', 'Karelia', 'Khakassia', 'Komi', 'Mari El', 'Mordovia', 'North Ossetia-Alania', 'Sakha', 'Tatarstan', 'Tuva', 'Udmurtia'],
-  'South Africa': ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'North West', 'Northern Cape', 'Western Cape'],
-  'Spain': ['Andalusia', 'Aragon', 'Asturias', 'Balearic Islands', 'Basque Country', 'Canary Islands', 'Cantabria', 'Castile and León', 'Castile-La Mancha', 'Catalonia', 'Community of Madrid', 'Extremadura', 'Galicia', 'La Rioja', 'Navarre', 'Region of Murcia', 'Valencian Community'],
-  'Sudan': ['Blue Nile', 'Central Darfur', 'East Darfur', 'Gedaref', 'Kassala', 'Khartoum', 'North Darfur', 'North Kordofan', 'Northern', 'Red Sea', 'River Nile', 'Sennar', 'South Darfur', 'South Kordofan', 'West Darfur', 'West Kordofan'],
-  'Sweden': ['Blekinge', 'Dalarna', 'Gävleborg', 'Gotland', 'Halland', 'Jämtland', 'Jönköping', 'Kalmar', 'Kronoberg', 'Norrbotten', 'Örebro', 'Östergötland', 'Skåne', 'Södermanland', 'Stockholm', 'Uppsala', 'Värmland', 'Västerbotten', 'Västernorrland', 'Västmanland', 'Västra Götaland'],
-  'Switzerland': ['Aargau', 'Appenzell Ausserrhoden', 'Appenzell Innerrhoden', 'Basel-Landschaft', 'Basel-Stadt', 'Bern', 'Fribourg', 'Geneva', 'Glarus', 'Graubünden', 'Jura', 'Lucerne', 'Neuchâtel', 'Nidwalden', 'Obwalden', 'Schaffhausen', 'Schwyz', 'Solothurn', 'St. Gallen', 'Thurgau', 'Ticino', 'Uri', 'Vaud', 'Valais', 'Zug', 'Zurich'],
-  'Thailand': ['Amnat Charoen', 'Ang Thong', 'Bueng Kan', 'Buri Ram', 'Chachoengsao', 'Chai Nat', 'Chaiyaphum', 'Chanthaburi', 'Chiang Mai', 'Chiang Rai', 'Chon Buri', 'Chumphon', 'Kalasin', 'Kamphaeng Phet', 'Kanchanaburi', 'Khon Kaen', 'Krabi', 'Lampang', 'Lamphun', 'Loei', 'Lop Buri', 'Mae Hong Son', 'Maha Sarakham', 'Mukdahan', 'Nakhon Pathom', 'Nakhon Phanom', 'Nakhon Ratchasima', 'Nakhon Sawan', 'Nakhon Si Thammarat', 'Nan', 'Narathiwat', 'Nong Bua Lamphu', 'Nong Khai', 'Nonthaburi', 'Pathum Thani', 'Pattani', 'Phang Nga', 'Phatthalung', 'Phayao', 'Phetchabun', 'Phetchaburi', 'Phichit', 'Phitsanulok', 'Phrae', 'Phuket', 'Prachin Buri', 'Prachuap Khiri Khan', 'Ranong', 'Ratchaburi', 'Rayong', 'Roi Et', 'Sa Kaeo', 'Sakon Nakhon', 'Samut Prakan', 'Samut Sakhon', 'Samut Songkhram', 'Saraburi', 'Satun', 'Sing Buri', 'Sisaket', 'Songkhla', 'Sukhothai', 'Suphan Buri', 'Surat Thani', 'Surin', 'Tak', 'Trang', 'Trat', 'Ubon Ratchathani', 'Udon Thani', 'Uthai Thani', 'Uttaradit', 'Yala', 'Yasothon'],
-  'Turkey': ['Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya', 'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'Istanbul', 'Izmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis', 'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa', 'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize', 'Sakarya', 'Samsun', 'Şanlıurfa', 'Siirt', 'Sinop', 'Sivas', 'Şırnak', 'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'],
-  'Ukraine': ['Cherkasy', 'Chernihiv', 'Chernivtsi', 'Dnipropetrovsk', 'Donetsk', 'Ivano-Frankivsk', 'Kharkiv', 'Kherson', 'Khmelnytskyi', 'Kiev', 'Kirovohrad', 'Luhansk', 'Lviv', 'Mykolaiv', 'Odessa', 'Poltava', 'Rivne', 'Sumy', 'Ternopil', 'Vinnytsia', 'Volyn', 'Zakarpattia', 'Zaporizhzhia', 'Zhytomyr'],
-  'United Kingdom': ['England', 'Northern Ireland', 'Scotland', 'Wales'],
-  'United States': ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'],
-  'Venezuela': ['Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 'Carabobo', 'Cojedes', 'Delta Amacuro', 'Falcón', 'Guárico', 'Lara', 'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta', 'Portuguesa', 'Sucre', 'Táchira', 'Trujillo', 'Yaracuy', 'Zulia'],
-  'Vietnam': ['An Giang', 'Bà Rịa-Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước', 'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hải Phòng', 'Hậu Giang', 'Hòa Bình', 'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'],
-  // Unitary states or countries with no formal provinces/states
-  'Andorra': [],
-  'Antigua and Barbuda': [],
-  'Bahamas': [],
-  'Bahrain': [],
-  'Barbados': [],
-  'Belize': [],
-  'Bhutan': [],
-  'Brunei': [],
-  'Comoros': [],
-  'Cyprus': [],
-  'Djibouti': [],
-  'Dominica': [],
-  'East Timor': [],
-  'El Salvador': [],
-  'Equatorial Guinea': [],
-  'Eritrea': [],
-  'Estonia': [],
-  'Eswatini': [],
-  'Fiji': [],
-  'Gabon': [],
-  'Gambia': [],
-  'Grenada': [],
-  'Guinea': [],
-  'Guinea-Bissau': [],
-  'Guyana': [],
-  'Haiti': [],
-  'Iceland': [],
-  'Ireland': [],
-  'Israel': [],
-  'Jamaica': [],
-  'Jordan': [],
-  'Kiribati': [],
-  'Korea, North': [],
-  'Korea, South': [],
-  'Kosovo': [],
-  'Kuwait': [],
-  'Kyrgyzstan': [],
-  'Laos': [],
-  'Latvia': [],
-  'Lebanon': [],
-  'Lesotho': [],
-  'Liberia': [],
-  'Liechtenstein': [],
-  'Lithuania': [],
-  'Luxembourg': [],
-  'Malawi': [],
-  'Maldives': [],
-  'Malta': [],
-  'Marshall Islands': [],
-  'Mauritania': [],
-  'Mauritius': [],
-  'Micronesia': [],
-  'Moldova': [],
-  'Monaco': [],
-  'Montenegro': [],
-  'Nauru': [],
-  'Nicaragua': [],
-  'Niger': [],
-  'North Macedonia': [],
-  'Norway': [],
-  'Oman': [],
-  'Palau': [],
-  'Panama': [],
-  'Qatar': [],
-  'Saint Kitts and Nevis': [],
-  'Saint Lucia': [],
-  'Saint Vincent and the Grenadines': [],
-  'Samoa': [],
-  'San Marino': [],
-  'Sao Tome and Principe': [],
-  'Saudi Arabia': [],
-  'Senegal': [],
-  'Seychelles': [],
-  'Sierra Leone': [],
-  'Singapore': [],
-  'Slovakia': [],
-  'Slovenia': [],
-  'Solomon Islands': [],
-  'Somalia': [],
-  'South Sudan': [],
-  'Suriname': [],
-  'Togo': [],
-  'Tonga': [],
-  'Trinidad and Tobago': [],
-  'Tunisia': [],
-  'Turkmenistan': [],
-  'Tuvalu': [],
-  'United Arab Emirates': [],
-  'Uruguay': [],
-  'Uzbekistan': [],
-  'Vanuatu': [],
-  'Vatican City': [],
-  'Yemen': [],
-  'Zambia': [],
-  'Zimbabwe': [],
-};
-@override
+  @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -401,7 +112,12 @@ final Map<String, List<String>> countryStates = {
   }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 80,
+    );
     if (image != null) {
       try {
         if (kIsWeb) {
@@ -410,11 +126,6 @@ final Map<String, List<String>> countryStates = {
             _profileImageBytes = bytes;
           });
           developer.log('Web image selected, bytes length: ${bytes.length}', name: 'RegisterPage');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Image compression not supported on web. Uploading original image.')),
-            );
-          }
         } else {
           final String targetPath = '${image.path}_compressed.jpg';
           final compressedImage = await FlutterImageCompress.compressAndGetFile(
@@ -423,25 +134,15 @@ final Map<String, List<String>> countryStates = {
             quality: 85,
             format: CompressFormat.jpeg,
           );
-
-          if (compressedImage != null) {
-            setState(() {
-              _profileImageFile = File(compressedImage.path);
-            });
-            developer.log('Compressed file path: ${compressedImage.path}', name: 'RegisterPage');
-          } else {
-            developer.log('Failed to compress image, using original', name: 'RegisterPage');
-            setState(() {
-              _profileImageFile = File(image.path);
-            });
-          }
+          setState(() {
+            _profileImageFile = compressedImage != null ? File(compressedImage.path) : File(image.path);
+          });
+          developer.log('Image path: ${_profileImageFile!.path}', name: 'RegisterPage');
         }
       } catch (e) {
         developer.log('Error processing image: $e', name: 'RegisterPage');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error processing image: $e')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error processing image: $e')));
         }
       }
     }
@@ -454,8 +155,17 @@ final Map<String, List<String>> countryStates = {
       });
 
       try {
+        // Ping server
+        final pingUrl = _backendUrl.replaceAll('/api/register', '/ping');
+        final pingResponse = await http.get(Uri.parse(pingUrl)).timeout(const Duration(seconds: 5));
+        if (pingResponse.statusCode != 200) {
+          throw Exception('Server ping failed: ${pingResponse.statusCode} - ${pingResponse.body}');
+        }
+        developer.log('Server ping successful: ${pingResponse.body}', name: 'RegisterPage');
+
         var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
 
+        // Add form fields
         request.fields['firstName'] = _firstNameController.text;
         request.fields['lastName'] = _lastNameController.text;
         request.fields['gender'] = _genderController.text;
@@ -468,39 +178,34 @@ final Map<String, List<String>> countryStates = {
         request.fields['governmentId'] = _govMedicalIdController.text;
         request.fields['password'] = _passwordController.text;
 
+        // Add profile image
         if (_profileImageFile != null) {
-          developer.log('Adding image to request, file size: ${_profileImageFile!.lengthSync()} bytes', name: 'RegisterPage');
           request.files.add(await http.MultipartFile.fromPath(
             'profileImage',
             _profileImageFile!.path,
             contentType: http_parser.MediaType('image', 'jpeg'),
           ));
+          developer.log('Image file added: ${_profileImageFile!.path}', name: 'RegisterPage');
         } else if (_profileImageBytes != null) {
-          developer.log('Adding web image to request, bytes length: ${_profileImageBytes!.length}', name: 'RegisterPage');
           request.files.add(http.MultipartFile.fromBytes(
             'profileImage',
             _profileImageBytes!,
             contentType: http_parser.MediaType('image', 'jpeg'),
+            filename: 'profile.jpg',
           ));
+          developer.log('Image bytes added: ${_profileImageBytes!.length} bytes', name: 'RegisterPage');
         }
 
         developer.log('Sending request to: $_backendUrl', name: 'RegisterPage');
-
-        var response = await request.send().timeout(const Duration(seconds: 30), onTimeout: () {
-          throw TimeoutException('The request to $_backendUrl timed out after 30 seconds.');
-        });
-
-        developer.log('Request sent, awaiting response...', name: 'RegisterPage');
+        var response = await request.send().timeout(const Duration(seconds: 60));
         var responseData = await http.Response.fromStream(response);
-        developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
+
+        developer.log('Response: ${response.statusCode} - ${responseData.body}', name: 'RegisterPage');
 
         final jsonResponse = jsonDecode(responseData.body);
         if (response.statusCode == 201 && jsonResponse['success']) {
           if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => SuccessPage()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const SuccessPage()));
           }
         } else {
           if (mounted) {
@@ -510,10 +215,10 @@ final Map<String, List<String>> countryStates = {
           }
         }
       } on TimeoutException catch (e) {
-        developer.log('Timeout error: $e', name: 'RegisterPage');
+        developer.log('Timeout: $e', name: 'RegisterPage');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Request timed out. Please check your network and try again.')),
+            const SnackBar(content: Text('Server timed out. Check your network or server status.')),
           );
         }
       } catch (e) {
@@ -552,9 +257,7 @@ final Map<String, List<String>> countryStates = {
                     Container(
                       height: 200,
                       width: double.infinity,
-                      child: CustomPaint(
-                        painter: TrianglePainter(),
-                      ),
+                      child: CustomPaint(painter: TrianglePainter()),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(20.0),
@@ -565,10 +268,7 @@ final Map<String, List<String>> countryStates = {
                           const Center(
                             child: Text(
                               'Register',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -580,31 +280,24 @@ final Map<String, List<String>> countryStates = {
                                 _buildLabel('First Name'),
                                 _buildTextField('First Name', controller: _firstNameController),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Last Name'),
                                 _buildTextField('Last Name', controller: _lastNameController),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Gender'),
                                 _buildTextField('Gender', controller: _genderController),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Email'),
                                 _buildTextField('example@gmail.com', controller: _emailController),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Phone Number'),
                                 _buildTextField('+91 12345 6789', controller: _phoneNumberController),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Date-Of-Birth'),
                                 _buildDateField(),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Full Address'),
                                 _buildTextField('7th street - medicine road, doctor 82', controller: _fullAddressController),
                                 const SizedBox(height: 15),
-
                                 Row(
                                   children: [
                                     Expanded(
@@ -629,11 +322,9 @@ final Map<String, List<String>> countryStates = {
                                   ],
                                 ),
                                 const SizedBox(height: 15),
-
                                 _buildLabel('Government/Medical ID Verification'),
                                 _buildTextField('9999-8888-7777-6666', controller: _govMedicalIdController),
                                 const SizedBox(height: 20),
-
                                 Center(
                                   child: Column(
                                     children: [
@@ -647,33 +338,17 @@ final Map<String, List<String>> countryStates = {
                                         child: _profileImageFile != null || _profileImageBytes != null
                                             ? ClipOval(
                                                 child: _profileImageFile != null
-                                                    ? Image.file(
-                                                        _profileImageFile!,
-                                                        width: 100,
-                                                        height: 100,
-                                                        fit: BoxFit.cover,
-                                                      )
-                                                    : Image.memory(
-                                                        _profileImageBytes!,
-                                                        width: 100,
-                                                        height: 100,
-                                                        fit: BoxFit.cover,
-                                                      ),
+                                                    ? Image.file(_profileImageFile!, width: 100, height: 100, fit: BoxFit.cover)
+                                                    : Image.memory(_profileImageBytes!, width: 100, height: 100, fit: BoxFit.cover),
                                               )
-                                            : const Icon(
-                                                Icons.person_outline,
-                                                size: 50,
-                                                color: Colors.grey,
-                                              ),
+                                            : const Icon(Icons.person_outline, size: 50, color: Colors.grey),
                                       ),
                                       const SizedBox(height: 10),
                                       ElevatedButton(
                                         onPressed: _pickImage,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.grey.shade300,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                         ),
                                         child: const Text('Upload Image'),
                                       ),
@@ -681,11 +356,9 @@ final Map<String, List<String>> countryStates = {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-
                                 _buildLabel('Create Password'),
                                 _buildTextField('Password', controller: _passwordController, isPassword: true),
                                 const SizedBox(height: 20),
-
                                 Row(
                                   children: [
                                     Checkbox(
@@ -699,46 +372,32 @@ final Map<String, List<String>> countryStates = {
                                     const Text('Consent & Agreements'),
                                   ],
                                 ),
-
                                 Center(
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(3, (index) {
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: index == 0 ? Colors.blue : Colors.grey,
-                                        ),
-                                      );
-                                    }),
+                                    children: List.generate(3, (index) => Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: index == 0 ? Colors.blue : Colors.grey,
+                                      ),
+                                    )),
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-
                                 Center(
                                   child: isLoading
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.blue,
-                                        )
+                                      ? const CircularProgressIndicator(color: Colors.blue)
                                       : ElevatedButton(
                                           onPressed: _register,
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.blue,
                                             minimumSize: const Size(200, 50),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(30),
-                                            ),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                                           ),
-                                          child: const Text(
-                                            'Done',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                            ),
-                                          ),
+                                          child: const Text('Done', style: TextStyle(color: Colors.white, fontSize: 16)),
                                         ),
                                 ),
                                 const SizedBox(height: 100),
@@ -763,25 +422,17 @@ final Map<String, List<String>> countryStates = {
       ),
     );
   }
-Widget _buildLabel(String text) {
+
+  Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
-        ),
-      ),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
     );
   }
 
   Widget _buildTextField(String hint, {TextEditingController? controller, bool isPassword = false}) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(25),
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword,
@@ -790,22 +441,14 @@ Widget _buildLabel(String text) {
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: InputBorder.none,
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'This field is required';
-          }
-          return null;
-        },
+        validator: (value) => value == null || value.isEmpty ? 'This field is required' : null,
       ),
     );
   }
 
   Widget _buildDateField() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(25),
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
       child: TextFormField(
         controller: _dateOfBirthController,
         decoration: InputDecoration(
@@ -814,12 +457,7 @@ Widget _buildLabel(String text) {
           border: InputBorder.none,
           suffixIcon: const Icon(Icons.calendar_today),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Date of birth is required';
-          }
-          return null;
-        },
+        validator: (value) => value == null || value.isEmpty ? 'Date of birth is required' : null,
         onTap: () async {
           final DateTime? picked = await showDatePicker(
             context: context,
@@ -840,12 +478,8 @@ Widget _buildLabel(String text) {
   Widget _buildCountryAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) {
-          return const Iterable<String>.empty();
-        }
-        return countries.where((country) {
-          return country.toLowerCase().contains(textEditingValue.text.toLowerCase());
-        });
+        if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
+        return countries.where((country) => country.toLowerCase().contains(textEditingValue.text.toLowerCase()));
       },
       onSelected: (String selection) {
         setState(() {
@@ -853,72 +487,42 @@ Widget _buildLabel(String text) {
           _selectedState = null;
         });
       },
-      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
-          FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(25),
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) => Container(
+        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
+        child: TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            hintText: 'Search Country',
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            border: InputBorder.none,
           ),
-          child: TextFormField(
-            controller: fieldTextEditingController,
-            focusNode: fieldFocusNode,
-            decoration: InputDecoration(
-              hintText: 'Search Country',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              border: InputBorder.none,
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please select a country';
-              }
-              return null;
-            },
-          ),
-        );
-      },
+          validator: (value) => value == null || value.isEmpty ? 'Please select a country' : null,
+        ),
+      ),
     );
   }
 
   Widget _buildStateAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty || _selectedCountry == null) {
-          return const Iterable<String>.empty();
-        }
-        return (countryStates[_selectedCountry] ?? []).where((state) {
-          return state.toLowerCase().contains(textEditingValue.text.toLowerCase());
-        });
+        if (textEditingValue.text.isEmpty || _selectedCountry == null) return const Iterable<String>.empty();
+        return (countryStates[_selectedCountry] ?? []).where((state) => state.toLowerCase().contains(textEditingValue.text.toLowerCase()));
       },
-      onSelected: (String selection) {
-        setState(() {
-          _selectedState = selection;
-        });
-      },
-      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
-          FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(25),
+      onSelected: (String selection) => setState(() => _selectedState = selection),
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) => Container(
+        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
+        child: TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            hintText: 'Search State',
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            border: InputBorder.none,
           ),
-          child: TextFormField(
-            controller: fieldTextEditingController,
-            focusNode: fieldFocusNode,
-            decoration: InputDecoration(
-              hintText: 'Search State',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              border: InputBorder.none,
-            ),
-            validator: (value) {
-              if (_selectedCountry != null && (value == null || value.isEmpty)) {
-                return 'Please select a state';
-              }
-              return null;
-            },
-          ),
-        );
-      },
+          validator: (value) => _selectedCountry != null && (value == null || value.isEmpty) ? 'Please select a state' : null,
+        ),
+      ),
     );
   }
 
@@ -928,14 +532,7 @@ Widget _buildLabel(String text) {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, -1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, -1))],
       ),
       child: Column(
         children: [
@@ -962,10 +559,7 @@ Widget _buildLabel(String text) {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
         child: Image.asset(
           imagePath,
           width: 24,
@@ -974,11 +568,7 @@ Widget _buildLabel(String text) {
           errorBuilder: (context, error, stackTrace) {
             developer.log('Error loading image: $imagePath, Error: $error', name: 'RegisterPage');
             return Icon(
-              imagePath.contains('google')
-                  ? Icons.g_mobiledata
-                  : imagePath.contains('microsoft')
-                      ? Icons.window
-                      : Icons.apple,
+              imagePath.contains('google') ? Icons.g_mobiledata : imagePath.contains('microsoft') ? Icons.window : Icons.apple,
               size: 24,
             );
           },
@@ -987,7 +577,7 @@ Widget _buildLabel(String text) {
     );
   }
 }
-// SuccessPage (unchanged)
+
 class SuccessPage extends StatefulWidget {
   const SuccessPage({super.key});
 
@@ -1000,9 +590,7 @@ class SuccessPageState extends State<SuccessPage> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
     });
   }
 
@@ -1014,13 +602,7 @@ class SuccessPageState extends State<SuccessPage> {
           SingleChildScrollView(
             child: Column(
               children: [
-                Container(
-                  height: 200,
-                  width: double.infinity,
-                  child: CustomPaint(
-                    painter: TrianglePainter(),
-                  ),
-                ),
+                Container(height: 200, width: double.infinity, child: CustomPaint(painter: TrianglePainter())),
                 const SizedBox(height: 200),
               ],
             ),
@@ -1032,25 +614,11 @@ class SuccessPageState extends State<SuccessPage> {
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 60,
-                    color: Colors.white,
-                  ),
+                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                  child: const Icon(Icons.check, size: 60, color: Colors.white),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Account created successfully',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
+                const Text('Account created successfully', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -1058,27 +626,20 @@ class SuccessPageState extends State<SuccessPage> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildSocialSignInSection(context),
+            child: _buildSocialSignInSection(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSocialSignInSection(BuildContext context) {
+  Widget _buildSocialSignInSection() {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, -1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, -1))],
       ),
       child: Column(
         children: [
@@ -1105,10 +666,7 @@ class SuccessPageState extends State<SuccessPage> {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
         child: Image.asset(
           imagePath,
           width: 24,
@@ -1117,11 +675,7 @@ class SuccessPageState extends State<SuccessPage> {
           errorBuilder: (context, error, stackTrace) {
             developer.log('Error loading image: $imagePath, Error: $error', name: 'SuccessPage');
             return Icon(
-              imagePath.contains('google')
-                  ? Icons.g_mobiledata
-                  : imagePath.contains('microsoft')
-                      ? Icons.window
-                      : Icons.apple,
+              imagePath.contains('google') ? Icons.g_mobiledata : imagePath.contains('microsoft') ? Icons.window : Icons.apple,
               size: 24,
             );
           },
@@ -1134,38 +688,23 @@ class SuccessPageState extends State<SuccessPage> {
 class TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(0, size.height);
-    path.close();
-
-    final secondaryPaint = Paint()
-      ..color = Colors.blue.withAlpha(51)
-      ..style = PaintingStyle.fill;
-
-    final curvePath1 = Path();
-    curvePath1.moveTo(size.width * 0.5, size.height * 0.3);
-    curvePath1.quadraticBezierTo(
-      size.width * 0.7,
-      size.height * 0.1,
-      size.width,
-      size.height * 0.2,
-    );
-    curvePath1.lineTo(size.width, 0);
-    curvePath1.lineTo(size.width * 0.4, 0);
-    curvePath1.close();
-
+    final paint = Paint()..color = Colors.blue..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(0, size.height)
+      ..close();
+    final secondaryPaint = Paint()..color = Colors.blue.withAlpha(51)..style = PaintingStyle.fill;
+    final curvePath1 = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.3)
+      ..quadraticBezierTo(size.width * 0.7, size.height * 0.1, size.width, size.height * 0.2)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width * 0.4, 0)
+      ..close();
     canvas.drawPath(path, paint);
     canvas.drawPath(curvePath1, secondaryPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

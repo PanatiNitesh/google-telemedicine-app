@@ -52,7 +52,7 @@ class User {
 }
 
 class AuthService {
-  static const String _baseUrl = 'http://192.168.174.137:5000/api';
+  static const String _baseUrl = 'http://192.168.1.73:5000/api';
 
   Future<UserResponse> checkUser(String username) async {
     final url = Uri.parse('$_baseUrl/login');

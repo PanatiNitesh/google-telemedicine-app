@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
                       width: 60,
                       height: 60,
                       child: CircularProgressIndicator(
-                        color: Color(0xFF4F6AF3),
+                        color: Colors.blue,
                         strokeWidth: 8,
                       ),
                     ),
@@ -63,7 +63,7 @@ class MyApp extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF4F6AF3),
+                        color: Colors.blue,
                       ),
                     ),
                   ],
@@ -85,13 +85,13 @@ class TelemedicineApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF4F6AF3),
+        primaryColor: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
         fontFamily: GoogleFonts.poppins().fontFamily,
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 0,
-            backgroundColor: const Color(0xFF4F6AF3),
+            backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -101,14 +101,14 @@ class TelemedicineApp extends StatelessWidget {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF4F6AF3),
+            foregroundColor: Colors.blue,
           ),
         ),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4F6AF3),
-          primary: const Color(0xFF4F6AF3),
-          secondary: const Color(0xFFDCE1FE),
-          tertiary: const Color(0xFF6C63FF),
+          seedColor: Colors.blue,
+          primary: Colors.blue,
+          secondary: Colors.blue.shade100,
+          tertiary: Colors.blue.shade700,
         ),
       ),
       home: const MainPage(),
@@ -281,7 +281,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF4F6AF3), Color(0xFF6C63FF)],
+                    colors: [Colors.blue, Colors.blue],
                   ),
                 ),
               ),
@@ -298,7 +298,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               child: Container(
                 height: screenHeight * 0.4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE1FE).withOpacity(0.8),
+                  color: Colors.blue.shade100,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -356,7 +356,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                   onPressed: () => Navigator.pushNamed(context, '/login'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF4F6AF3),
+                    foregroundColor: Colors.blue,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -426,8 +426,8 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           color: _currentPage == index 
-                              ? const Color(0xFF4F6AF3) 
-                              : const Color(0xFF4F6AF3).withOpacity(0.3),
+                              ? Colors.blue 
+                              : Colors.blue.withOpacity(0.3),
                         ),
                       );
                     }),
@@ -457,17 +457,17 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                backgroundColor: const Color(0xFF4F6AF3),
+                                backgroundColor: Colors.blue,
                                 duration: const Duration(seconds: 2),
                               ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF4F6AF3),
+                            foregroundColor: Colors.blue,
                             elevation: 0,
-                            side: const BorderSide(
-                              color: Color(0xFF4F6AF3),
+                            side: BorderSide(
+                              color: Colors.blue,
                               width: 2,
                             ),
                           ),
@@ -723,7 +723,7 @@ class _AnimatedGetStartedButtonState extends State<AnimatedGetStartedButton>
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF4F6AF3).withOpacity(_glowAnimation.value * 0.5),
+                color: Colors.blue.withOpacity(_glowAnimation.value * 0.5),
                 blurRadius: 20,
                 spreadRadius: _glowAnimation.value * 5,
               ),
@@ -734,7 +734,7 @@ class _AnimatedGetStartedButtonState extends State<AnimatedGetStartedButton>
             child: ElevatedButton(
               onPressed: widget.onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F6AF3),
+                backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 16),
