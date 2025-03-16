@@ -1,9 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/LoginPasswordPage.dart';
+import 'package:flutter_project/app/pages/services/auth_service.dart';
+import 'dart:developer' as developer;
 
-
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _usernameController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _handleLogin() async {
+    if (_usernameController.text.isEmpty) {
+      setState(() {
+        _errorMessage = 'Username is required';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userResponse = await _authService.checkUser(_usernameController.text);
+
+      if (userResponse.success && userResponse.user != null) {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PasswordPage(
+              userId: userResponse.user!.id,
+              username: userResponse.user!.firstName,
+              profileImage: userResponse.user!.profileImage,
+            ),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = userResponse.message;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Connection error. Please check your network and try again.';
+      });
+      developer.log('Login error: $e', name: 'LoginPage');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +128,7 @@ class LoginPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 TextField(
+                  controller: _usernameController,
                   decoration: InputDecoration(
                     hintText: 'User Name or Email',
                     filled: true,
@@ -76,16 +143,19 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const PasswordPage()),
-                      );
-                    },
+                    onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -93,13 +163,22 @@ class LoginPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'Next',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Next',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
