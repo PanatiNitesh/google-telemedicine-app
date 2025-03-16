@@ -1,34 +1,14 @@
 import 'dart:async';
-import 'dart:io' show File, Platform;
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
+import 'dart:io' show File;
+import 'dart:typed_data'; // For Uint8List
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Registration App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const RegisterPage(),
-      routes: {
-        '/home': (context) => const Scaffold(body: Center(child: Text('Home Page'))),
-      },
-    );
-  }
-}
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -53,15 +33,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   String? _selectedCountry;
   String? _selectedState;
-  File? _profileImageFile;
-  Uint8List? _profileImageBytes;
+  File? _profileImageFile; // For non-web
+  Uint8List? _profileImageBytes; // For web
 
-  // Dynamic backend URL
-  final String _backendUrl = kIsWeb
-      ? 'http://localhost:5000/api/register' // For web
-      : (Platform.isAndroid && !kDebugMode)
-          ? 'http://192.168.174.137:5000/api/register' // Replace with your machine’s IP for physical device
-          : 'http://10.0.2.2:5000/api/register'; // For emulator
+  final String _backendUrl = 'http://192.168.174.137:5000/api/register';
+
 
   final ImagePicker _picker = ImagePicker();
 
@@ -94,7 +70,6 @@ class _RegisterPageState extends State<RegisterPage> {
       'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
       'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
     ],
-    // Add other countries as needed
   };
 
   @override
@@ -126,6 +101,11 @@ class _RegisterPageState extends State<RegisterPage> {
             _profileImageBytes = bytes;
           });
           developer.log('Web image selected, bytes length: ${bytes.length}', name: 'RegisterPage');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image compression not supported on web. Uploading original image.')),
+            );
+          }
         } else {
           final String targetPath = '${image.path}_compressed.jpg';
           final compressedImage = await FlutterImageCompress.compressAndGetFile(
@@ -134,15 +114,25 @@ class _RegisterPageState extends State<RegisterPage> {
             quality: 85,
             format: CompressFormat.jpeg,
           );
-          setState(() {
-            _profileImageFile = compressedImage != null ? File(compressedImage.path) : File(image.path);
-          });
-          developer.log('Image path: ${_profileImageFile!.path}', name: 'RegisterPage');
+
+          if (compressedImage != null) {
+            setState(() {
+              _profileImageFile = File(compressedImage.path);
+            });
+            developer.log('Compressed file path: ${compressedImage.path}', name: 'RegisterPage');
+          } else {
+            developer.log('Failed to compress image, using original', name: 'RegisterPage');
+            setState(() {
+              _profileImageFile = File(image.path);
+            });
+          }
         }
       } catch (e) {
         developer.log('Error processing image: $e', name: 'RegisterPage');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error processing image: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error processing image: $e')),
+          );
         }
       }
     }
@@ -155,17 +145,26 @@ class _RegisterPageState extends State<RegisterPage> {
       });
 
       try {
-        // Ping server
-        final pingUrl = _backendUrl.replaceAll('/api/register', '/ping');
-        final pingResponse = await http.get(Uri.parse(pingUrl)).timeout(const Duration(seconds: 5));
-        if (pingResponse.statusCode != 200) {
-          throw Exception('Server ping failed: ${pingResponse.statusCode} - ${pingResponse.body}');
+        // Further compress the image if needed
+        if (_profileImageFile != null && _profileImageFile!.lengthSync() > 512 * 1024) { // 512KB threshold
+          developer.log('Image is too large (${_profileImageFile!.lengthSync()} bytes), compressing further', name: 'RegisterPage');
+          final compressedImage = await FlutterImageCompress.compressWithFile(
+            _profileImageFile!.path,
+            quality: 50, // Reduce quality further
+            minWidth: 400, // Reduce dimensions
+            minHeight: 400,
+          );
+          if (compressedImage != null) {
+            _profileImageBytes = compressedImage;
+            _profileImageFile = null; // Switch to bytes for upload
+            developer.log('Further compressed image size: ${compressedImage.length} bytes', name: 'RegisterPage');
+          }
         }
-        developer.log('Server ping successful: ${pingResponse.body}', name: 'RegisterPage');
 
+        // Prepare the request
         var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
 
-        // Add form fields
+        // Add all form fields to the request
         request.fields['firstName'] = _firstNameController.text;
         request.fields['lastName'] = _lastNameController.text;
         request.fields['gender'] = _genderController.text;
@@ -178,34 +177,45 @@ class _RegisterPageState extends State<RegisterPage> {
         request.fields['governmentId'] = _govMedicalIdController.text;
         request.fields['password'] = _passwordController.text;
 
-        // Add profile image
+        // Add the image to the request if available
         if (_profileImageFile != null) {
+          developer.log('Adding image to request, file size: ${_profileImageFile!.lengthSync()} bytes', name: 'RegisterPage');
           request.files.add(await http.MultipartFile.fromPath(
             'profileImage',
             _profileImageFile!.path,
             contentType: http_parser.MediaType('image', 'jpeg'),
           ));
-          developer.log('Image file added: ${_profileImageFile!.path}', name: 'RegisterPage');
         } else if (_profileImageBytes != null) {
+          developer.log('Adding web image to request, bytes length: ${_profileImageBytes!.length}', name: 'RegisterPage');
           request.files.add(http.MultipartFile.fromBytes(
             'profileImage',
             _profileImageBytes!,
             contentType: http_parser.MediaType('image', 'jpeg'),
             filename: 'profile.jpg',
           ));
-          developer.log('Image bytes added: ${_profileImageBytes!.length} bytes', name: 'RegisterPage');
         }
 
         developer.log('Sending request to: $_backendUrl', name: 'RegisterPage');
-        var response = await request.send().timeout(const Duration(seconds: 60));
-        var responseData = await http.Response.fromStream(response);
+        developer.log('Request fields: ${request.fields}', name: 'RegisterPage');
+        developer.log('Request files: ${request.files.map((f) => f.filename).join(', ')}', name: 'RegisterPage');
 
-        developer.log('Response: ${response.statusCode} - ${responseData.body}', name: 'RegisterPage');
+        // Send the request with a timeout for debugging
+        var response = await request.send().timeout(const Duration(seconds: 60), onTimeout: () {
+          developer.log('Request timed out after 60 seconds', name: 'RegisterPage');
+          return http.StreamedResponse(Stream.empty(), 408); // Request Timeout
+        });
+
+        developer.log('Request sent, awaiting response...', name: 'RegisterPage');
+        var responseData = await http.Response.fromStream(response);
+        developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
 
         final jsonResponse = jsonDecode(responseData.body);
         if (response.statusCode == 201 && jsonResponse['success']) {
           if (mounted) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const SuccessPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SuccessPage()),
+            );
           }
         } else {
           if (mounted) {
@@ -213,13 +223,6 @@ class _RegisterPageState extends State<RegisterPage> {
               SnackBar(content: Text(jsonResponse['message'] ?? 'Registration failed')),
             );
           }
-        }
-      } on TimeoutException catch (e) {
-        developer.log('Timeout: $e', name: 'RegisterPage');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Server timed out. Check your network or server status.')),
-          );
         }
       } catch (e) {
         developer.log('Error: $e', name: 'RegisterPage');
@@ -257,7 +260,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     Container(
                       height: 200,
                       width: double.infinity,
-                      child: CustomPaint(painter: TrianglePainter()),
+                      child: CustomPaint(
+                        painter: TrianglePainter(),
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(20.0),
@@ -268,7 +273,10 @@ class _RegisterPageState extends State<RegisterPage> {
                           const Center(
                             child: Text(
                               'Register',
-                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -280,24 +288,31 @@ class _RegisterPageState extends State<RegisterPage> {
                                 _buildLabel('First Name'),
                                 _buildTextField('First Name', controller: _firstNameController),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Last Name'),
                                 _buildTextField('Last Name', controller: _lastNameController),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Gender'),
                                 _buildTextField('Gender', controller: _genderController),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Email'),
                                 _buildTextField('example@gmail.com', controller: _emailController),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Phone Number'),
                                 _buildTextField('+91 12345 6789', controller: _phoneNumberController),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Date-Of-Birth'),
                                 _buildDateField(),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Full Address'),
                                 _buildTextField('7th street - medicine road, doctor 82', controller: _fullAddressController),
                                 const SizedBox(height: 15),
+
                                 Row(
                                   children: [
                                     Expanded(
@@ -322,9 +337,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 15),
+
                                 _buildLabel('Government/Medical ID Verification'),
                                 _buildTextField('9999-8888-7777-6666', controller: _govMedicalIdController),
                                 const SizedBox(height: 20),
+
                                 Center(
                                   child: Column(
                                     children: [
@@ -338,17 +355,33 @@ class _RegisterPageState extends State<RegisterPage> {
                                         child: _profileImageFile != null || _profileImageBytes != null
                                             ? ClipOval(
                                                 child: _profileImageFile != null
-                                                    ? Image.file(_profileImageFile!, width: 100, height: 100, fit: BoxFit.cover)
-                                                    : Image.memory(_profileImageBytes!, width: 100, height: 100, fit: BoxFit.cover),
+                                                    ? Image.file(
+                                                        _profileImageFile!,
+                                                        width: 100,
+                                                        height: 100,
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                    : Image.memory(
+                                                        _profileImageBytes!,
+                                                        width: 100,
+                                                        height: 100,
+                                                        fit: BoxFit.cover,
+                                                      ),
                                               )
-                                            : const Icon(Icons.person_outline, size: 50, color: Colors.grey),
+                                            : const Icon(
+                                                Icons.person_outline,
+                                                size: 50,
+                                                color: Colors.grey,
+                                              ),
                                       ),
                                       const SizedBox(height: 10),
                                       ElevatedButton(
                                         onPressed: _pickImage,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.grey.shade300,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
                                         ),
                                         child: const Text('Upload Image'),
                                       ),
@@ -356,9 +389,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+
                                 _buildLabel('Create Password'),
                                 _buildTextField('Password', controller: _passwordController, isPassword: true),
                                 const SizedBox(height: 20),
+
                                 Row(
                                   children: [
                                     Checkbox(
@@ -372,32 +407,46 @@ class _RegisterPageState extends State<RegisterPage> {
                                     const Text('Consent & Agreements'),
                                   ],
                                 ),
+
                                 Center(
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(3, (index) => Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: index == 0 ? Colors.blue : Colors.grey,
-                                      ),
-                                    )),
+                                    children: List.generate(3, (index) {
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: index == 0 ? Colors.blue : Colors.grey,
+                                        ),
+                                      );
+                                    }),
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+
                                 Center(
                                   child: isLoading
-                                      ? const CircularProgressIndicator(color: Colors.blue)
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.blue,
+                                        )
                                       : ElevatedButton(
                                           onPressed: _register,
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.blue,
                                             minimumSize: const Size(200, 50),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(30),
+                                            ),
                                           ),
-                                          child: const Text('Done', style: TextStyle(color: Colors.white, fontSize: 16)),
+                                          child: const Text(
+                                            'Done',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          ),
                                         ),
                                 ),
                                 const SizedBox(height: 100),
@@ -426,13 +475,22 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+      ),
     );
   }
 
   Widget _buildTextField(String hint, {TextEditingController? controller, bool isPassword = false}) {
     return Container(
-      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(25),
+      ),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword,
@@ -441,14 +499,22 @@ class _RegisterPageState extends State<RegisterPage> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: InputBorder.none,
         ),
-        validator: (value) => value == null || value.isEmpty ? 'This field is required' : null,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'This field is required';
+          }
+          return null;
+        },
       ),
     );
   }
 
   Widget _buildDateField() {
     return Container(
-      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(25),
+      ),
       child: TextFormField(
         controller: _dateOfBirthController,
         decoration: InputDecoration(
@@ -457,7 +523,12 @@ class _RegisterPageState extends State<RegisterPage> {
           border: InputBorder.none,
           suffixIcon: const Icon(Icons.calendar_today),
         ),
-        validator: (value) => value == null || value.isEmpty ? 'Date of birth is required' : null,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Date of birth is required';
+          }
+          return null;
+        },
         onTap: () async {
           final DateTime? picked = await showDatePicker(
             context: context,
@@ -478,8 +549,12 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildCountryAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
-        return countries.where((country) => country.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<String>.empty();
+        }
+        return countries.where((country) {
+          return country.toLowerCase().contains(textEditingValue.text.toLowerCase());
+        });
       },
       onSelected: (String selection) {
         setState(() {
@@ -487,42 +562,72 @@ class _RegisterPageState extends State<RegisterPage> {
           _selectedState = null;
         });
       },
-      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) => Container(
-        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
-        child: TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          decoration: InputDecoration(
-            hintText: 'Search Country',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            border: InputBorder.none,
+      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
+          FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(25),
           ),
-          validator: (value) => value == null || value.isEmpty ? 'Please select a country' : null,
-        ),
-      ),
+          child: TextFormField(
+            controller: fieldTextEditingController,
+            focusNode: fieldFocusNode,
+            decoration: InputDecoration(
+              hintText: 'Search Country',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              border: InputBorder.none,
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select a country';
+              }
+              return null;
+            },
+          ),
+        );
+      },
     );
   }
 
   Widget _buildStateAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty || _selectedCountry == null) return const Iterable<String>.empty();
-        return (countryStates[_selectedCountry] ?? []).where((state) => state.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+        if (textEditingValue.text.isEmpty || _selectedCountry == null) {
+          return const Iterable<String>.empty();
+        }
+        return (countryStates[_selectedCountry] ?? []).where((state) {
+          return state.toLowerCase().contains(textEditingValue.text.toLowerCase());
+        });
       },
-      onSelected: (String selection) => setState(() => _selectedState = selection),
-      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) => Container(
-        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25)),
-        child: TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          decoration: InputDecoration(
-            hintText: 'Search State',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            border: InputBorder.none,
+      onSelected: (String selection) {
+        setState(() {
+          _selectedState = selection;
+        });
+      },
+      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
+          FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(25),
           ),
-          validator: (value) => _selectedCountry != null && (value == null || value.isEmpty) ? 'Please select a state' : null,
-        ),
-      ),
+          child: TextFormField(
+            controller: fieldTextEditingController,
+            focusNode: fieldFocusNode,
+            decoration: InputDecoration(
+              hintText: 'Search State',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              border: InputBorder.none,
+            ),
+            validator: (value) {
+              if (_selectedCountry != null && (value == null || value.isEmpty)) {
+                return 'Please select a state';
+              }
+              return null;
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -532,7 +637,14 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, -1))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, -1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -559,7 +671,10 @@ class _RegisterPageState extends State<RegisterPage> {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Image.asset(
           imagePath,
           width: 24,
@@ -568,7 +683,11 @@ class _RegisterPageState extends State<RegisterPage> {
           errorBuilder: (context, error, stackTrace) {
             developer.log('Error loading image: $imagePath, Error: $error', name: 'RegisterPage');
             return Icon(
-              imagePath.contains('google') ? Icons.g_mobiledata : imagePath.contains('microsoft') ? Icons.window : Icons.apple,
+              imagePath.contains('google')
+                  ? Icons.g_mobiledata
+                  : imagePath.contains('microsoft')
+                      ? Icons.window
+                      : Icons.apple,
               size: 24,
             );
           },
@@ -590,7 +709,9 @@ class SuccessPageState extends State<SuccessPage> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     });
   }
 
@@ -602,7 +723,13 @@ class SuccessPageState extends State<SuccessPage> {
           SingleChildScrollView(
             child: Column(
               children: [
-                Container(height: 200, width: double.infinity, child: CustomPaint(painter: TrianglePainter())),
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  child: CustomPaint(
+                    painter: TrianglePainter(),
+                  ),
+                ),
                 const SizedBox(height: 200),
               ],
             ),
@@ -614,11 +741,25 @@ class SuccessPageState extends State<SuccessPage> {
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
-                  child: const Icon(Icons.check, size: 60, color: Colors.white),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 60,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                const Text('Account created successfully', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Account created successfully',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
               ],
             ),
           ),
@@ -639,7 +780,14 @@ class SuccessPageState extends State<SuccessPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, -1))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, -1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -666,7 +814,10 @@ class SuccessPageState extends State<SuccessPage> {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Image.asset(
           imagePath,
           width: 24,
@@ -675,7 +826,11 @@ class SuccessPageState extends State<SuccessPage> {
           errorBuilder: (context, error, stackTrace) {
             developer.log('Error loading image: $imagePath, Error: $error', name: 'SuccessPage');
             return Icon(
-              imagePath.contains('google') ? Icons.g_mobiledata : imagePath.contains('microsoft') ? Icons.window : Icons.apple,
+              imagePath.contains('google')
+                  ? Icons.g_mobiledata
+                  : imagePath.contains('microsoft')
+                      ? Icons.window
+                      : Icons.apple,
               size: 24,
             );
           },
@@ -688,23 +843,38 @@ class SuccessPageState extends State<SuccessPage> {
 class TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.blue..style = PaintingStyle.fill;
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(0, size.height)
-      ..close();
-    final secondaryPaint = Paint()..color = Colors.blue.withAlpha(51)..style = PaintingStyle.fill;
-    final curvePath1 = Path()
-      ..moveTo(size.width * 0.5, size.height * 0.3)
-      ..quadraticBezierTo(size.width * 0.7, size.height * 0.1, size.width, size.height * 0.2)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width * 0.4, 0)
-      ..close();
+    final paint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(0, size.height);
+    path.close();
+
+    final secondaryPaint = Paint()
+      ..color = Colors.blue.withAlpha(51)
+      ..style = PaintingStyle.fill;
+
+    final curvePath1 = Path();
+    curvePath1.moveTo(size.width * 0.5, size.height * 0.3);
+    curvePath1.quadraticBezierTo(
+      size.width * 0.7,
+      size.height * 0.1,
+      size.width,
+      size.height * 0.2,
+    );
+    curvePath1.lineTo(size.width, 0);
+    curvePath1.lineTo(size.width * 0.4, 0);
+    curvePath1.close();
+
     canvas.drawPath(path, paint);
     canvas.drawPath(curvePath1, secondaryPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
 }
