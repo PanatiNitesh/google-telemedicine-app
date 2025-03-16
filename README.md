@@ -1,4 +1,4 @@
-# flutter_project
+# Hack2skills Google Solution Challenge
 
 A new Flutter project.
 
