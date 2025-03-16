@@ -13,6 +13,7 @@ import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -25,7 +26,7 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Future<void> _initializeDotEnv() async {
+  Future<Map<String, dynamic>> _initializeApp() async {
     WidgetsFlutterBinding.ensureInitialized();
     try {
       await dotenv.load(fileName: "assets/.env");
@@ -33,15 +34,49 @@ class MyApp extends StatelessWidget {
     } catch (e) {
       print("Error loading .env: $e");
     }
+
+    // Load SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    final String? username = prefs.getString('username');
+    final String? profileImage = prefs.getString('profileImage');
+
+    return {
+      'isLoggedIn': isLoggedIn,
+      'username': username ?? 'User',
+      'profileImage': profileImage,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _initializeDotEnv(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _initializeApp(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return TelemedicineApp();
+          if (snapshot.hasError) {
+            return MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: Text('Error initializing app: ${snapshot.error}'),
+                ),
+              ),
+            );
+          }
+
+          final bool isLoggedIn = snapshot.data?['isLoggedIn'] ?? false;
+          final String username = snapshot.data?['username'] ?? 'User';
+          final String? profileImage = snapshot.data?['profileImage'];
+
+          return TelemedicineApp(
+            initialRoute: isLoggedIn ? '/home' : '/',
+            initialArguments: isLoggedIn
+                ? {
+                    'username': username,
+                    'profileImage': profileImage,
+                  }
+                : null,
+          );
         } else {
           return MaterialApp(
             home: Scaffold(
@@ -78,7 +113,14 @@ class MyApp extends StatelessWidget {
 }
 
 class TelemedicineApp extends StatelessWidget {
-  const TelemedicineApp({super.key});
+  final String initialRoute;
+  final Map<String, dynamic>? initialArguments;
+
+  const TelemedicineApp({
+    super.key,
+    required this.initialRoute,
+    this.initialArguments,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -111,14 +153,19 @@ class TelemedicineApp extends StatelessWidget {
           tertiary: Colors.blue.shade700,
         ),
       ),
-      home: const MainPage(),
+      initialRoute: initialRoute,
       routes: {
+        '/': (context) => const MainPage(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/home': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? initialArguments;
           final username = args?['username'] as String? ?? 'User';
-          return home_page.HomePage(username: username);
+          final profileImage = args?['profileImage'] as String?;
+          return home_page.HomePage(
+            username: username,
+            profileImage: profileImage,
+          );
         },
         '/profile': (context) => const ProfilePage(),
         '/ai_diagnose': (context) => const chat_bot.ChatScreen(),
@@ -139,9 +186,11 @@ class TelemedicineApp extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.warning_amber_rounded, 
-                      size: 80, 
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 80,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Page Not Found',
@@ -162,7 +211,7 @@ class TelemedicineApp extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pushNamed('/home'),
                     child: const Text('Go to Home'),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -267,7 +316,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           // Top clipper shapes
           Positioned(
             top: 0,
@@ -287,7 +336,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           // Secondary clipper
           Positioned(
             top: 0,
@@ -310,7 +359,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           // Glass effect card at the bottom
           Positioned(
             bottom: 0,
@@ -334,7 +383,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           // Login button with glass effect
           Positioned(
             top: screenHeight * 0.06,
@@ -377,7 +426,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           // Feature carousel with PageView
           Positioned(
             left: 0,
@@ -394,17 +443,17 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               itemCount: _features.length,
               itemBuilder: (context, index) {
                 return _buildFeatureItem(
-                  context, 
+                  context,
                   _features[index]['title'] ?? '',
                   _features[index]['subtitle'] ?? '',
                   _features[index]['image'] ?? '',
                   screenWidth,
-                  screenHeight
+                  screenHeight,
                 );
               },
             ),
           ),
-          
+
           // Bottom controls (dots and buttons)
           Positioned(
             bottom: screenHeight * 0.03,
@@ -425,16 +474,16 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                         height: 8,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          color: _currentPage == index 
-                              ? Colors.blue 
+                          color: _currentPage == index
+                              ? Colors.blue
                               : Colors.blue.withOpacity(0.3),
                         ),
                       );
                     }),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -474,7 +523,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                           child: Text(
                             "Learn More",
                             style: GoogleFonts.poppins(
-                              fontSize: 16, 
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -491,7 +540,8 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildFeatureItem(BuildContext context, String title, String subtitle, String image, double screenWidth, double screenHeight) {
+  Widget _buildFeatureItem(
+      BuildContext context, String title, String subtitle, String image, double screenWidth, double screenHeight) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
       child: Column(
@@ -520,9 +570,9 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           SizedBox(height: screenHeight * 0.01),
-          
+
           // Feature subtitle with animated text
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
@@ -546,9 +596,9 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // Feature image with animated fade
           Center(
             child: TweenAnimationBuilder<double>(
@@ -611,22 +661,22 @@ class CustomClip extends CustomClipper<Path> {
   Path getClip(Size size) {
     Path path = Path();
     path.lineTo(0, size.height - 100);
-    
+
     // Create a more interesting curve
     path.quadraticBezierTo(
-      size.width * 0.25, 
-      size.height - 50, 
-      size.width * 0.5, 
-      size.height - 70
+      size.width * 0.25,
+      size.height - 50,
+      size.width * 0.5,
+      size.height - 70,
     );
-    
+
     path.quadraticBezierTo(
-      size.width * 0.75, 
-      size.height - 90, 
-      size.width, 
-      size.height * 0.3
+      size.width * 0.75,
+      size.height - 90,
+      size.width,
+      size.height * 0.3,
     );
-    
+
     path.lineTo(size.width, 0);
     path.close();
     return path;
@@ -644,19 +694,24 @@ class SecondaryClip extends CustomClipper<Path> {
     path.moveTo(size.width * 0.4, 0);
     path.lineTo(size.width, 0);
     path.lineTo(size.width, size.height * 0.3);
-    
+
     // Create a more organic shape
     path.cubicTo(
-      size.width * 0.8, size.height * 0.2,
-      size.width * 0.6, size.height * 0.1,
-      size.width * 0.5, size.height * 0.35
+      size.width * 0.8,
+      size.height * 0.2,
+      size.width * 0.6,
+      size.height * 0.1,
+      size.width * 0.5,
+      size.height * 0.35,
     );
-    
+
     path.quadraticBezierTo(
-      size.width * 0.4, size.height * 0.5,
-      size.width * 0.3, size.height * 0.38
+      size.width * 0.4,
+      size.height * 0.5,
+      size.width * 0.3,
+      size.height * 0.38,
     );
-    
+
     path.close();
     return path;
   }
@@ -691,17 +746,17 @@ class _AnimatedGetStartedButtonState extends State<AnimatedGetStartedButton>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(
-        parent: _controller, 
+        parent: _controller,
         curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
       ),
     );
-    
+
     _glowAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
       CurvedAnimation(
-        parent: _controller, 
+        parent: _controller,
         curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
       ),
     );

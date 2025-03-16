@@ -49,15 +49,30 @@ class _PasswordPageState extends State<PasswordPage> {
 
       if (loginResponse.success && loginResponse.user != null) {
         final prefs = await SharedPreferences.getInstance();
+        // Save authentication details
         await prefs.setString('auth_token', loginResponse.token ?? '');
         await prefs.setString('user_id', loginResponse.user!.id);
         await prefs.setString('username', loginResponse.user!.firstName);
+        // Save profile image if it exists
+        if (widget.profileImage != null && widget.profileImage!.isNotEmpty) {
+          await prefs.setString('profileImage', widget.profileImage!);
+          developer.log('Saved profileImage to SharedPreferences: ${widget.profileImage}', name: 'PasswordPage');
+        } else {
+          await prefs.remove('profileImage'); // Clear if no profile image
+          developer.log('No profileImage to save', name: 'PasswordPage');
+        }
+        // Set isLoggedIn to true
+        await prefs.setBool('isLoggedIn', true);
+        developer.log('Set isLoggedIn to true', name: 'PasswordPage');
 
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(username: loginResponse.user!.firstName),
+            builder: (context) => HomePage(
+              username: loginResponse.user!.firstName,
+              profileImage: widget.profileImage, // Pass profileImage to HomePage
+            ),
           ),
         );
       } else {

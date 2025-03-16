@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/LoginPasswordPage.dart';
 import 'package:flutter_project/app/pages/services/auth_service.dart';
 import 'dart:developer' as developer;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,6 +34,10 @@ class _LoginPageState extends State<LoginPage> {
       final userResponse = await _authService.checkUser(_usernameController.text);
 
       if (userResponse.success && userResponse.user != null) {
+        // Save username to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', userResponse.user!.firstName);
+
         if (!mounted) return;
         Navigator.push(
           context,

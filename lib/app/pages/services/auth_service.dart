@@ -52,7 +52,7 @@ class User {
 }
 
 class AuthService {
-  static const String _baseUrl = 'http://192.168.174.137:5000/api';
+  static const String _baseUrl = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
 
   Future<UserResponse> checkUser(String username) async {
     final url = Uri.parse('$_baseUrl/login');

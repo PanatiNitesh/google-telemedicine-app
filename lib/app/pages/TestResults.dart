@@ -61,6 +61,8 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
 
   late AnimationController _controller;
   late Animation<double> _animation;
+  
+  get username => null;
 
   @override
   void initState() {
@@ -101,7 +103,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage(username: 'User')),
+          MaterialPageRoute(builder: (_) => HomePage(username: username)),
         );
         break;
       case 3:
@@ -218,7 +220,7 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage(username: 'User')),
+                MaterialPageRoute(builder: (context) => HomePage(username: username)),
               );
             },
             child: Image.asset(
