@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
+import 'package:flutter_project/app/pages/appointmentpage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/TestResults.dart';
@@ -607,84 +608,111 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              bottomLeft: Radius.circular(12),
-            ),
-            child: Image.asset(
-              doctor['image'],
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 100,
-                  height: 100,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.person, size: 50),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 8.0,
-                horizontal: 12.0,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to DoctorProfilePage when the card is tapped
+        _logger.info('Navigating to /doctor-profile for ${doctor['name']}');
+        Navigator.pushNamed(
+          context,
+          '/doctor-profile',
+          arguments: {
+            'doctorName': doctor['name'],
+            'specialty': doctor['specialty'],
+            'imagePath': doctor['image'],
+          },
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doctor['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    doctor['specialty'],
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    doctor['description'],
-                    style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                ],
+              child: Image.asset(
+                doctor['image'],
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.person, size: 50),
+                  );
+                },
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            child: ElevatedButton(
-              onPressed: () => _bookAppointment(doctor),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+            Expanded(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  vertical: 8.0,
+                  horizontal: 12.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doctor['name'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      doctor['specialty'],
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      doctor['description'],
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ],
                 ),
               ),
-              child: const Text('Book', style: TextStyle(color: Colors.white)),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: ElevatedButton(
+                onPressed: () {
+                  // Navigate to BookAppointmentPage when the "Book" button is clicked
+                  _logger.info('Navigating to /book-appointment for ${doctor['name']}');
+                  Navigator.pushNamed(
+                    context,
+                    '/book-appointment',
+                    arguments: {
+                      'doctorName': doctor['name'],
+                      'specialty': doctor['specialty'],
+                      'imagePath': doctor['image'],
+                    },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                child: const Text('Book', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1041,7 +1069,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         );
         break;
       case 2:
-        _logger.info('Navigate to Appointments');
+        _logger.info('Navigate to /book-appointment');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => AppointmentHistoryPage()),
+        );
         break;
       case 3:
         _logger.info('Navigating to /lab_tests');
@@ -1132,16 +1164,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _bookAppointment(Map<String, dynamic> doctor) {
-    _logger.info('Booking appointment with ${doctor['name']}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Appointment request sent to ${doctor["name"]}'),
-        backgroundColor: Colors.green,
       ),
     );
   }

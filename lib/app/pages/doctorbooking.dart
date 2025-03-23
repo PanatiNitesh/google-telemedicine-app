@@ -5,11 +5,13 @@ import 'package:intl/intl.dart'; // For date formatting
 class BookAppointmentPage extends StatefulWidget {
   final String doctorName;
   final String specialty;
+  final String imagePath; // Add imagePath parameter
 
   const BookAppointmentPage({
     Key? key,
     required this.doctorName,
     required this.specialty,
+    required this.imagePath, // Add imagePath to constructor
   }) : super(key: key);
 
   @override
@@ -51,7 +53,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
           'Book Appointment',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -85,22 +87,51 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    widget.doctorName,
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.bold,
+                  // Doctor Image (Updated to match HomePage)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      bottomLeft: Radius.circular(12),
+                    ),
+                    child: Image.asset(
+                      widget.imagePath,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.person, size: 50),
+                        );
+                      },
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.005),
-                  Text(
-                    widget.specialty,
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.035,
-                      color: Colors.grey,
+                  SizedBox(width: screenWidth * 0.04),
+                  // Doctor Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.doctorName,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.005),
+                        Text(
+                          widget.specialty,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -213,7 +244,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     id: DateTime.now().millisecondsSinceEpoch.toString(),
                     title: 'Consultation with ${widget.doctorName}',
                     dateTime: appointmentDateTime,
-                    location: 'Medical Center', // You can make this dynamic if needed
+                    location: 'Medical Center',
                     description: 'Appointment with ${widget.doctorName}, ${widget.specialty}',
                     category: 'Medical',
                   );

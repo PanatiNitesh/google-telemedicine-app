@@ -181,29 +181,31 @@ class TelemedicineApp extends StatelessWidget {
           return MedicinePage(medicineName: medicineName);
         },
       '/doctor-profile': (context) {
-  final args = ModalRoute.of(context)!.settings.arguments;
-  if (args is Map<String, dynamic> &&
-      args['doctorName'] is String &&
-      args['specialty'] is String &&
-      args['imagePath'] is String) {
-    return DoctorProfilePage(
-      doctorName: args['doctorName'] as String,
-      specialty: args['specialty'] as String,
-      imagePath: args['imagePath'] as String,
-    );
-  }
-  return const Scaffold(
-    body: Center(child: Text('Error: Invalid doctor profile arguments')),
-  );
-},
-'/book-appointment': (context) {
           final args = ModalRoute.of(context)!.settings.arguments;
           if (args is Map<String, dynamic> &&
               args['doctorName'] is String &&
-              args['specialty'] is String) {
+              args['specialty'] is String &&
+              args['imagePath'] is String) {
+            return DoctorProfilePage(
+              doctorName: args['doctorName'] as String,
+              specialty: args['specialty'] as String,
+              imagePath: args['imagePath'] as String,
+            );
+          }
+          return const Scaffold(
+            body: Center(child: Text('Error: Invalid doctor profile arguments')),
+          );
+        },
+        '/book-appointment': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is Map<String, dynamic> &&
+              args['doctorName'] is String &&
+              args['specialty'] is String &&
+              args['imagePath'] is String) {
             return BookAppointmentPage(
               doctorName: args['doctorName'] as String,
               specialty: args['specialty'] as String,
+              imagePath: args['imagePath'] as String,
             );
           }
           return const Scaffold(

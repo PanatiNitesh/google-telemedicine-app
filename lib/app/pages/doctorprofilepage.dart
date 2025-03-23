@@ -115,7 +115,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           'Doctor Profile',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -148,204 +148,207 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(height: screenHeight * 0.06),
-            // Doctor Info Section (Centered)
-            Column(
-              children: [
-                // Doctor Image
-                Container(
-                  width: screenWidth * 0.35,
-                  height: screenWidth * 0.35,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.transparent,
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      widget.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/doctor1.png',
+      body: SafeArea( // Wrap the body in SafeArea
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Removed the SizedBox since SafeArea handles the spacing
+              // Doctor Info Section (Centered)
+              Column(
+                children: [
+                  // Doctor Image
+                  Container(
+                    width: screenWidth * 0.35,
+                    height: screenWidth * 0.35,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.transparent,
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        widget.imagePath,
                         fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                // Doctor Details
-                Text(
-                  widget.doctorName,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.06,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  widget.specialty,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.04,
-                    color: Colors.grey,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                // Rating
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '5.0',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: screenWidth * 0.01),
-                    Row(
-                      children: List.generate(
-                        5,
-                        (index) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: screenWidth * 0.04,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/doctor1.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      '(100 reviews)',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.03,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                // Distance and Fees
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      color: Colors.grey,
-                      size: screenWidth * 0.04,
-                    ),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      '80m',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.035,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    SizedBox(width: screenWidth * 0.04),
-                    Icon(
-                      Icons.monetization_on,
-                      color: Colors.grey,
-                      size: screenWidth * 0.04,
-                    ),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      'Fees - ₹350',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.035,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                // Book Button
-                ElevatedButton(
-                  onPressed: () async {
-                    // Navigate to BookAppointmentPage and wait for the result
-                    final result = await Navigator.pushNamed(
-                      context,
-                      '/book-appointment',
-                      arguments: {
-                        'doctorName': widget.doctorName,
-                        'specialty': widget.specialty,
-                      },
-                    );
-
-                    // If an appointment was returned, pass it back to AppointmentHistoryPage
-                    if (result != null && result is Appointment) {
-                      Navigator.pop(context, result); // Pass the appointment back to AppointmentHistoryPage
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                    ),
-                    minimumSize: Size(screenWidth * 0.25, screenHeight * 0.05),
                   ),
-                  child: Text(
-                    'Book',
+                  SizedBox(height: screenHeight * 0.01),
+                  // Doctor Details
+                  Text(
+                    widget.doctorName,
                     style: TextStyle(
-                      color: Colors.white,
+                      fontSize: screenWidth * 0.06,
                       fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.04,
                     ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: screenHeight * 0.03),
-            // Stats Section
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatCard(context, 'Visits', '5.8k', Icons.home),
-                  SizedBox(width: screenWidth * 0.03),
-                  _buildStatCard(context, 'Patients', '4.2k', Icons.people),
-                  SizedBox(width: screenWidth * 0.03),
-                  _buildStatCard(context, 'Experience', '8 years', Icons.work),
+                  Text(
+                    widget.specialty,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  // Rating
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '5.0',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.01),
+                      Row(
+                        children: List.generate(
+                          5,
+                          (index) => Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: screenWidth * 0.04,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.01),
+                      Text(
+                        '(100 reviews)',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  // Distance and Fees
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        color: Colors.grey,
+                        size: screenWidth * 0.04,
+                      ),
+                      SizedBox(width: screenWidth * 0.01),
+                      Text(
+                        '80m',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.04),
+                      // Icon(
+                      //   Icons.price_check,
+                      //   color: Colors.grey,
+                      //   size: screenWidth * 0.04,
+                      // ),
+                      SizedBox(width: screenWidth * 0.01),
+                      Text(
+                        'Fees - ₹350',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  // Book Button
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Navigate to BookAppointmentPage and wait for the result
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/book-appointment',
+                        arguments: {
+                          'doctorName': widget.doctorName,
+                          'specialty': widget.specialty,
+                          'imagePath': widget.imagePath,
+                        },
+                      );
+
+                      // If an appointment was returned, pass it back to AppointmentHistoryPage
+                      if (result != null && result is Appointment) {
+                        Navigator.pop(context, result);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                      ),
+                      minimumSize: Size(screenWidth * 0.25, screenHeight * 0.05),
+                    ),
+                    child: Text(
+                      'Book',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
-            SizedBox(height: screenHeight * 0.03),
-            // Tab Navigation
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-              child: Container(
-                height: screenHeight * 0.06,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(screenWidth * 0.06),
-                ),
+              SizedBox(height: screenHeight * 0.03),
+              // Stats Section
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                 child: Row(
-                  children: List.generate(
-                    _tabLabels.length,
-                    (index) => Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedTabIndex = index;
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          decoration: BoxDecoration(
-                            color: _selectedTabIndex == index
-                                ? Colors.blue
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(screenWidth * 0.06),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            _tabLabels[index],
-                            style: TextStyle(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatCard(context, 'Visits', '5.8k', Icons.home),
+                    SizedBox(width: screenWidth * 0.03),
+                    _buildStatCard(context, 'Patients', '4.2k', Icons.people),
+                    SizedBox(width: screenWidth * 0.03),
+                    _buildStatCard(context, 'Experience', '8 years', Icons.work),
+                  ],
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.03),
+              // Tab Navigation
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                child: Container(
+                  height: screenHeight * 0.06,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(screenWidth * 0.06),
+                  ),
+                  child: Row(
+                    children: List.generate(
+                      _tabLabels.length,
+                      (index) => Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedTabIndex = index;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            decoration: BoxDecoration(
                               color: _selectedTabIndex == index
-                                  ? Colors.white
-                                  : Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: screenWidth * 0.04,
+                                  ? Colors.blue
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(screenWidth * 0.06),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _tabLabels[index],
+                              style: TextStyle(
+                                color: _selectedTabIndex == index
+                                    ? Colors.white
+                                    : Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: screenWidth * 0.04,
+                              ),
                             ),
                           ),
                         ),
@@ -354,14 +357,14 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   ),
                 ),
               ),
-            ),
-            SizedBox(height: screenHeight * 0.03),
-            // Tab Content
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-              child: _buildTabContent(),
-            ),
-          ],
+              SizedBox(height: screenHeight * 0.03),
+              // Tab Content
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                child: _buildTabContent(),
+              ),
+            ],
+          ),
         ),
       ),
     );
