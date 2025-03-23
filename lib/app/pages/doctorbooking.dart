@@ -75,7 +75,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
             ),
             SizedBox(height: screenHeight * 0.02),
             Container(
-              padding: EdgeInsets.all(screenWidth * 0.04),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.04),
@@ -88,12 +87,13 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 ],
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Doctor Image (Updated to match HomePage)
+                  // Doctor Image (Flush with left, top, and bottom edges)
                   ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      bottomLeft: Radius.circular(12),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(screenWidth * 0.04),
+                      bottomLeft: Radius.circular(screenWidth * 0.04),
                     ),
                     child: Image.asset(
                       widget.imagePath,
@@ -110,28 +110,33 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                       },
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.04),
-                  // Doctor Details
+                  // Add padding only on the right side of the image
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.doctorName,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.bold,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: screenWidth * 0.04,
+                        horizontal: screenWidth * 0.04,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.doctorName,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.045,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: screenHeight * 0.005),
-                        Text(
-                          widget.specialty,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.grey,
+                          SizedBox(height: screenHeight * 0.005),
+                          Text(
+                            widget.specialty,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.035,
+                              color: Colors.grey,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
