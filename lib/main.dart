@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/HomePage.dart' as home_page;
+import 'package:flutter_project/app/pages/doctorbooking.dart';
+import 'package:flutter_project/app/pages/doctorprofilepage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -177,6 +179,36 @@ class TelemedicineApp extends StatelessWidget {
         '/medicines-list': (context) {
           final String? medicineName = ModalRoute.of(context)?.settings.arguments as String?;
           return MedicinePage(medicineName: medicineName);
+        },
+      '/doctor-profile': (context) {
+  final args = ModalRoute.of(context)!.settings.arguments;
+  if (args is Map<String, dynamic> &&
+      args['doctorName'] is String &&
+      args['specialty'] is String &&
+      args['imagePath'] is String) {
+    return DoctorProfilePage(
+      doctorName: args['doctorName'] as String,
+      specialty: args['specialty'] as String,
+      imagePath: args['imagePath'] as String,
+    );
+  }
+  return const Scaffold(
+    body: Center(child: Text('Error: Invalid doctor profile arguments')),
+  );
+},
+'/book-appointment': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is Map<String, dynamic> &&
+              args['doctorName'] is String &&
+              args['specialty'] is String) {
+            return BookAppointmentPage(
+              doctorName: args['doctorName'] as String,
+              specialty: args['specialty'] as String,
+            );
+          }
+          return const Scaffold(
+            body: Center(child: Text('Error: Invalid booking arguments')),
+          );
         },
       },
       onGenerateRoute: (settings) {

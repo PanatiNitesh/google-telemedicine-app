@@ -35,7 +35,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       'name': 'Dr. Robert Brown',
       'specialty': 'Pediatrician',
       'description': 'Caring for children’s health and well-being.',
-      'image': 'assets/doctor3.png',
+      'image': 'assets/doctor1.png',
     },
   ];
 
@@ -114,84 +114,97 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     final imageHeight = screenHeight * 0.15; // Fixed height for consistency
     final imageWidth = imageHeight * aspectRatio;
 
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.03),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: screenWidth * 0.012,
-            spreadRadius: screenWidth * 0.005,
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(screenWidth * 0.03),
-              bottomLeft: Radius.circular(screenWidth * 0.03),
+    return GestureDetector(
+    onTap: () {
+      Navigator.pushNamed(
+        context,
+        '/doctor-profile',
+        arguments: {
+          'doctorName': doctor['name'],
+          'specialty': doctor['specialty'],
+          'imagePath': doctor['image'],
+        },
+      );
+    },
+    child: Container(
+        margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: screenWidth * 0.012,
+              spreadRadius: screenWidth * 0.005,
             ),
-            child: Image.asset(
-              doctor['image'],
-              width: imageWidth,
-              height: imageHeight,
-              fit: BoxFit.cover, // Maintain aspect ratio and fill the space
-              errorBuilder: (context, error, stackTrace) {
-                _logger.warning('Failed to load image ${doctor['image']}: $error');
-                return Container(
-                  width: imageWidth,
-                  height: imageHeight,
-                  color: Colors.grey[300],
-                  child: Icon(Icons.person, size: imageWidth * 0.4, color: Colors.grey[600]),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                vertical: screenHeight * 0.015,
-                horizontal: screenWidth * 0.03,
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(screenWidth * 0.03),
+                bottomLeft: Radius.circular(screenWidth * 0.03),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doctor['name'],
-                    style: textStyleName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    doctor['specialty'],
-                    style: textStyleSpecialty,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: screenHeight * 0.005),
-                  Text(
-                    doctor['description'],
-                    style: textStyleDescription,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Image.asset(
+                doctor['image'],
+                width: imageWidth,
+                height: imageHeight,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  _logger.warning('Failed to load image ${doctor['image']}: $error');
+                  return Container(
+                    width: imageWidth,
+                    height: imageHeight,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.person, size: imageWidth * 0.4, color: Colors.grey[600]),
+                  );
+                },
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(screenWidth * 0.03),
-            child: Icon(
-              Icons.arrow_forward_ios,
-              size: screenWidth * 0.045,
-              color: Colors.grey[600],
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: screenHeight * 0.015,
+                  horizontal: screenWidth * 0.03,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doctor['name'],
+                      style: textStyleName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      doctor['specialty'],
+                      style: textStyleSpecialty,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: screenHeight * 0.005),
+                    Text(
+                      doctor['description'],
+                      style: textStyleDescription,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: EdgeInsets.all(screenWidth * 0.03),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: screenWidth * 0.045,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,7 +240,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
           'Doctors List',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -245,7 +258,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     );
   }
 
-Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -307,8 +320,4 @@ Widget _buildBottomNavBar() {
       label: label,
     );
   }
-}
-
-void main() {
-  runApp(const MaterialApp(home: DoctorsListPage()));
 }

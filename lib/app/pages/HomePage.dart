@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
@@ -14,8 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
-  final String username; // Reverted to username
-  final String? profileImage; // Store profile image as base64 string
+  final String username;
+  final String? profileImage;
 
   const HomePage({super.key, required this.username, this.profileImage});
 
@@ -23,8 +24,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   final _logger = Logger('HomePage');
   int _selectedIndex = 2; // Home index
   final TextEditingController _searchController = TextEditingController();
@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage>
   late AnimationController _controller;
   late Animation<double> _animation;
   String? _storedProfileImage;
+  Uint8List? _decodedProfileImage; // Store the decoded image data
 
   // Sample data for doctors
   final List<Map<String, dynamic>> doctors = [
@@ -40,8 +41,7 @@ class _HomePageState extends State<HomePage>
       'name': 'Doctor-1',
       'specialty': 'Rheumatologist',
       'image': 'assets/doctor1.png',
-      'description':
-          'Experienced doctor specializing in joint and muscle conditions',
+      'description': 'Experienced doctor specializing in joint and muscle conditions',
     },
     {
       'name': 'Doctor-2',
@@ -80,6 +80,17 @@ class _HomePageState extends State<HomePage>
     // Set profile image from widget or load from shared preferences
     _storedProfileImage = widget.profileImage;
     _logger.info('Initial _storedProfileImage: $_storedProfileImage');
+
+    // Decode the profile image if it exists
+    if (_storedProfileImage != null) {
+      try {
+        _decodedProfileImage = base64Decode(_storedProfileImage!);
+        _logger.info('Successfully decoded profile image');
+      } catch (e) {
+        _logger.severe('Error decoding profile image: $e');
+        _decodedProfileImage = null;
+      }
+    }
 
     if (_storedProfileImage == null) {
       _loadUserSession();
@@ -124,9 +135,7 @@ class _HomePageState extends State<HomePage>
       await prefs.setString('username', widget.username);
       if (widget.profileImage != null) {
         await prefs.setString('profileImage', widget.profileImage!);
-        _logger.info(
-          'Saved profileImage to SharedPreferences: ${widget.profileImage}',
-        );
+        _logger.info('Saved profileImage to SharedPreferences: ${widget.profileImage}');
       } else {
         _logger.warning('No profileImage to save in SharedPreferences');
       }
@@ -143,13 +152,18 @@ class _HomePageState extends State<HomePage>
       final prefs = await SharedPreferences.getInstance();
       final storedImage = prefs.getString('profileImage');
       _logger.info('Loaded profileImage from SharedPreferences: $storedImage');
-      if (storedImage != null) {
+      if (storedImage != null && storedImage != _storedProfileImage) {
         setState(() {
           _storedProfileImage = storedImage;
+          try {
+            _decodedProfileImage = base64Decode(_storedProfileImage!);
+            _logger.info('Successfully decoded profile image from SharedPreferences');
+          } catch (e) {
+            _logger.severe('Error decoding profile image from SharedPreferences: $e');
+            _decodedProfileImage = null;
+          }
         });
-        _logger.info(
-          'Updated _storedProfileImage from SharedPreferences: $_storedProfileImage',
-        );
+        _logger.info('Updated _storedProfileImage from SharedPreferences: $_storedProfileImage');
       } else {
         _logger.warning('No profileImage found in SharedPreferences');
       }
@@ -241,9 +255,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildHeader() {
-    _logger.info(
-      'Building header with _storedProfileImage: $_storedProfileImage',
-    );
+    _logger.info('Building header with _storedProfileImage: $_storedProfileImage');
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -277,31 +289,28 @@ class _HomePageState extends State<HomePage>
               child: CircleAvatar(
                 backgroundColor: Colors.grey[300],
                 radius: 30,
-                child:
-                    _storedProfileImage != null
-                        ? ClipOval(
-                          child: Image.memory(
-                            base64Decode(_storedProfileImage!),
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              _logger.severe(
-                                'Error loading profile image: $error, StackTrace: $stackTrace',
-                              );
-                              return const Icon(
-                                Icons.person_outline,
-                                color: Colors.black54,
-                                size: 30,
-                              );
-                            },
-                          ),
-                        )
-                        : const Icon(
-                          Icons.person_outline,
-                          color: Colors.black54,
-                          size: 30,
+                child: _decodedProfileImage != null
+                    ? ClipOval(
+                        child: Image.memory(
+                          _decodedProfileImage!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            _logger.severe('Error loading profile image: $error, StackTrace: $stackTrace');
+                            return const Icon(
+                              Icons.person_outline,
+                              color: Colors.black54,
+                              size: 30,
+                            );
+                          },
                         ),
+                      )
+                    : const Icon(
+                        Icons.person_outline,
+                        color: Colors.black54,
+                        size: 30,
+                      ),
               ),
             ),
           ],
@@ -415,62 +424,59 @@ class _HomePageState extends State<HomePage>
     });
     FocusScope.of(context).unfocus();
     _logger.info('Navigating to /search with query: $query');
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushNamed('/search', arguments: {'query': query});
+    Navigator.of(context, rootNavigator: true).pushNamed('/search', arguments: {'query': query});
   }
 
-void _openGoogleLens() {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Google Lens'),
-      content: const Text('Open Google Lens for visual search'),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            Navigator.pop(context);
-            bool launched = false;
+  void _openGoogleLens() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Google Lens'),
+        content: const Text('Open Google Lens for visual search'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              bool launched = false;
 
-            // Try to launch Google Lens app (Android-specific intent)
-            if (Platform.isAndroid) {
-              const String googleLensPackage = 'com.google.ar.lens';
-              try {
-                final intent = AndroidIntent(
-                  action: 'android.intent.action.VIEW',
-                  package: googleLensPackage,
-                  data: 'https://lens.google.com/',
-                );
-                await intent.launch();
-                launched = true;
-              } catch (e) {
-                print('Error launching Google Lens app: $e');
+              // Try to launch Google Lens app (Android-specific intent)
+              if (Platform.isAndroid) {
+                const String googleLensPackage = 'com.google.ar.lens';
+                try {
+                  final intent = AndroidIntent(
+                    action: 'android.intent.action.VIEW',
+                    package: googleLensPackage,
+                    data: 'https://lens.google.com/',
+                  );
+                  await intent.launch();
+                  launched = true;
+                } catch (e) {
+                  print('Error launching Google Lens app: $e');
+                }
               }
-            }
 
-            // Fallback to web if app launch fails or on iOS
-            if (!launched) {
-              final Uri url = Uri.parse('https://lens.google.com/');
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Google Lens is not available')),
-                );
+              // Fallback to web if app launch fails or on iOS
+              if (!launched) {
+                final Uri url = Uri.parse('https://lens.google.com/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Google Lens is not available')),
+                  );
+                }
               }
-            }
-          },
-          child: const Text('Google Lens'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ],
-    ),
-  );
-}
+            },
+            child: const Text('Google Lens'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildFeatureTabs() {
     final List<Map<String, dynamic>> features = [
@@ -519,15 +525,14 @@ void _openGoogleLens() {
       childAspectRatio: 1.0,
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      children:
-          features.map((feature) {
-            return _buildFeatureItem(
-              icon: feature['icon'],
-              color: feature['color'],
-              title: feature['title'],
-              onTap: feature['onTap'],
-            );
-          }).toList(),
+      children: features.map((feature) {
+        return _buildFeatureItem(
+          icon: feature['icon'],
+          color: feature['color'],
+          title: feature['title'],
+          onTap: feature['onTap'],
+        );
+      }).toList(),
     );
   }
 
@@ -736,8 +741,7 @@ void _openGoogleLens() {
             child: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color:
-                    _selectedIndex == index ? Colors.blue : Colors.transparent,
+                color: _selectedIndex == index ? Colors.blue : Colors.transparent,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -957,68 +961,66 @@ void _openGoogleLens() {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.3,
-            maxChildSize: 0.9,
-            builder:
-                (_, controller) => Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Notifications',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: ListView.builder(
-                          controller: controller,
-                          itemCount: 5,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.blue[100],
-                                child: const Icon(
-                                  Icons.notifications,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                              title: Text('Notification ${index + 1}'),
-                              subtitle: const Text(
-                                'This is a notification message',
-                              ),
-                              trailing: Text('${index + 1}h ago'),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(20),
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Notifications',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: ListView.builder(
+                  controller: controller,
+                  itemCount: 5,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.blue[100],
+                        child: const Icon(
+                          Icons.notifications,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      title: Text('Notification ${index + 1}'),
+                      subtitle: const Text(
+                        'This is a notification message',
+                      ),
+                      trailing: Text('${index + 1}h ago'),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 
@@ -1082,60 +1084,55 @@ void _openGoogleLens() {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Filter Doctors',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                const Text('Specialty'),
-                Wrap(
-                  spacing: 8,
-                  children:
-                      [
-                        'All',
-                        'Rheumatologist',
-                        'Dermatologist',
-                        'Cardiologist',
-                        'Neurologist',
-                      ].map((specialty) {
-                        return ChoiceChip(
-                          label: Text(specialty),
-                          selected: specialty == 'All',
-                          onSelected: (selected) {
-                            Navigator.pop(context);
-                            _logger.info('Filter selected: $specialty');
-                          },
-                        );
-                      }).toList(),
-                ),
-                const SizedBox(height: 16),
-                const Text('Availability'),
-                Wrap(
-                  spacing: 8,
-                  children:
-                      ['Any time', 'Today', 'Tomorrow', 'This week'].map((
-                        time,
-                      ) {
-                        return ChoiceChip(
-                          label: Text(time),
-                          selected: time == 'Any time',
-                          onSelected: (selected) {
-                            Navigator.pop(context);
-                            _logger.info('Time filter selected: $time');
-                          },
-                        );
-                      }).toList(),
-                ),
-              ],
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Filter Doctors',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
+            const SizedBox(height: 16),
+            const Text('Specialty'),
+            Wrap(
+              spacing: 8,
+              children: [
+                'All',
+                'Rheumatologist',
+                'Dermatologist',
+                'Cardiologist',
+                'Neurologist',
+              ].map((specialty) {
+                return ChoiceChip(
+                  label: Text(specialty),
+                  selected: specialty == 'All',
+                  onSelected: (selected) {
+                    Navigator.pop(context);
+                    _logger.info('Filter selected: $specialty');
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            const Text('Availability'),
+            Wrap(
+              spacing: 8,
+              children: ['Any time', 'Today', 'Tomorrow', 'This week'].map((time) {
+                return ChoiceChip(
+                  label: Text(time),
+                  selected: time == 'Any time',
+                  onSelected: (selected) {
+                    Navigator.pop(context);
+                    _logger.info('Time filter selected: $time');
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1159,22 +1156,20 @@ class LineGraphPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = lineColor
-          ..strokeWidth = 2.0
-          ..style = PaintingStyle.stroke;
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
 
     final path = Path();
 
     if (points.isNotEmpty) {
-      final scaledPoints =
-          points.map((point) {
-            return Offset(
-              point.dx / 100 * size.width,
-              size.height - (point.dy / 30 * size.height),
-            );
-          }).toList();
+      final scaledPoints = points.map((point) {
+        return Offset(
+          point.dx / 100 * size.width,
+          size.height - (point.dy / 30 * size.height),
+        );
+      }).toList();
 
       path.moveTo(scaledPoints[0].dx, scaledPoints[0].dy);
 
@@ -1184,11 +1179,10 @@ class LineGraphPainter extends CustomPainter {
 
       canvas.drawPath(path, paint);
 
-      final pointPaint =
-          Paint()
-            ..color = Colors.blue
-            ..strokeWidth = 2.0
-            ..style = PaintingStyle.fill;
+      final pointPaint = Paint()
+        ..color = Colors.blue
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.fill;
 
       for (var point in scaledPoints) {
         canvas.drawCircle(point, 3.0, pointPaint);
@@ -1203,11 +1197,10 @@ class LineGraphPainter extends CustomPainter {
 class BarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.blue
-          ..strokeWidth = 8.0
-          ..style = PaintingStyle.stroke;
+    final paint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = 8.0
+      ..style = PaintingStyle.stroke;
 
     final barWidth = size.width / 8;
     final maxHeight = size.height - 10;
@@ -1223,11 +1216,10 @@ class BarChartPainter extends CustomPainter {
       );
     }
 
-    final arrowPaint =
-        Paint()
-          ..color = Colors.black
-          ..strokeWidth = 1.0
-          ..style = PaintingStyle.stroke;
+    final arrowPaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
 
     final path = Path();
     path.moveTo(0, maxHeight - 5);
@@ -1254,20 +1246,18 @@ class StepTrackerPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = min(size.width, size.height) / 2 - strokeWidth / 2;
 
-    final backgroundPaint =
-        Paint()
-          ..color = Colors.grey.withOpacity(0.2)
-          ..strokeWidth = strokeWidth
-          ..style = PaintingStyle.stroke;
+    final backgroundPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.2)
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
 
     canvas.drawCircle(center, radius, backgroundPaint);
 
-    final progressPaint =
-        Paint()
-          ..color = Colors.blue
-          ..strokeWidth = strokeWidth
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round;
+    final progressPaint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -1277,11 +1267,10 @@ class StepTrackerPainter extends CustomPainter {
       progressPaint,
     );
 
-    final iconPaint =
-        Paint()
-          ..color = Colors.black
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5;
+    final iconPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
 
     final iconPath = Path();
     final iconCenter = center;
