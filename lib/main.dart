@@ -6,112 +6,43 @@ import 'package:flutter_project/app/pages/doctorbooking.dart';
 import 'package:flutter_project/app/pages/doctorprofilepage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
+import 'package:flutter_project/app/pages/login.dart' as login_page;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_project/app/pages/login.dart';
 import 'package:flutter_project/app/pages/register.dart';
 import 'package:flutter_project/app/pages/chat_bot.dart' as chat_bot;
 import 'package:flutter_project/app/pages/search_page.dart';
 import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:developer' as developer;
 
-void main() {
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
-  runApp(const MyApp());
-}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  Future<Map<String, dynamic>> _initializeApp() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    try {
-      await dotenv.load(fileName: "assets/.env");
-      print("Loaded .env successfully");
-    } catch (e) {
-      print("Error loading .env: $e");
-    }
-
-    // Load SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    final String? username = prefs.getString('username');
-    final String? profileImage = prefs.getString('profileImage');
-
-    return {
-      'isLoggedIn': isLoggedIn,
-      'username': username ?? 'User',
-      'profileImage': profileImage,
-    };
+  // Load .env file
+  try {
+    await dotenv.load(fileName: "assets/.env");
+    developer.log("Loaded .env successfully", name: 'Main');
+  } catch (e) {
+    developer.log("Error loading .env: $e", name: 'Main');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _initializeApp(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (snapshot.hasError) {
-            return MaterialApp(
-              home: Scaffold(
-                body: Center(
-                  child: Text('Error initializing app: ${snapshot.error}'),
-                ),
-              ),
-            );
+  // Load SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final String? username = prefs.getString('username');
+  final String? profileImage = prefs.getString('profileImage');
+
+  runApp(TelemedicineApp(
+    initialRoute: isLoggedIn ? '/home' : '/',
+    initialArguments: isLoggedIn
+        ? {
+            'username': username ?? 'User',
+            'profileImage': profileImage,
           }
-
-          final bool isLoggedIn = snapshot.data?['isLoggedIn'] ?? false;
-          final String username = snapshot.data?['username'] ?? 'User';
-          final String? profileImage = snapshot.data?['profileImage'];
-
-          return TelemedicineApp(
-            initialRoute: isLoggedIn ? '/home' : '/',
-            initialArguments: isLoggedIn
-                ? {
-                    'username': username,
-                    'profileImage': profileImage,
-                  }
-                : null,
-          );
-        } else {
-          return MaterialApp(
-            home: Scaffold(
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: CircularProgressIndicator(
-                        color: Colors.blue,
-                        strokeWidth: 8,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      "Loading...",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-      },
-    );
-  }
+        : null,
+  ));
 }
 
 class TelemedicineApp extends StatelessWidget {
@@ -153,12 +84,13 @@ class TelemedicineApp extends StatelessWidget {
           primary: Colors.blue,
           secondary: Colors.blue.shade100,
           tertiary: Colors.blue.shade700,
+          surface: const Color(0xFFF5F7FA),
         ),
       ),
       initialRoute: initialRoute,
       routes: {
         '/': (context) => const MainPage(),
-        '/login': (context) => const LoginPage(),
+        '/login': (context) => const login_page.LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/home': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? initialArguments;
@@ -180,8 +112,8 @@ class TelemedicineApp extends StatelessWidget {
           final String? medicineName = ModalRoute.of(context)?.settings.arguments as String?;
           return MedicinePage(medicineName: medicineName);
         },
-      '/doctor-profile': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments;
+        '/doctor-profile': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
           if (args is Map<String, dynamic> &&
               args['doctorName'] is String &&
               args['specialty'] is String &&
@@ -197,7 +129,7 @@ class TelemedicineApp extends StatelessWidget {
           );
         },
         '/book-appointment': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments;
+          final args = ModalRoute.of(context)?.settings.arguments;
           if (args is Map<String, dynamic> &&
               args['doctorName'] is String &&
               args['specialty'] is String &&
@@ -214,6 +146,7 @@ class TelemedicineApp extends StatelessWidget {
         },
       },
       onGenerateRoute: (settings) {
+        developer.log('Navigating to: ${settings.name}', name: 'TelemedicineApp');
         return MaterialPageRoute(
           builder: (context) => Scaffold(
             body: Center(
@@ -223,7 +156,7 @@ class TelemedicineApp extends StatelessWidget {
                   Icon(
                     Icons.warning_amber_rounded,
                     size: 80,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                    color: Theme.of(context).colorScheme.primary.withOpacity( 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -300,7 +233,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
     );
     _fadeController.forward();
 
-    // Auto-scroll the PageView
     Future.delayed(const Duration(seconds: 3), () {
       _startAutoScroll();
     });
@@ -308,6 +240,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
 
   void _startAutoScroll() {
     Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted) return;
       if (_currentPage < _features.length - 1) {
         _pageController.animateToPage(
           _currentPage + 1,
@@ -340,7 +273,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
     return Scaffold(
       body: Stack(
         children: [
-          // Gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -350,8 +282,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
-          // Top clipper shapes
           Positioned(
             top: 0,
             left: 0,
@@ -370,8 +300,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
-          // Secondary clipper
           Positioned(
             top: 0,
             left: 0,
@@ -384,7 +312,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                   color: Colors.blue.shade100,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity( 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -393,8 +321,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
-          // Glass effect card at the bottom
           Positioned(
             bottom: 0,
             left: 0,
@@ -402,7 +328,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
             child: Container(
               height: screenHeight * 0.22,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withOpacity( 0.8),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(32),
                   topRight: Radius.circular(32),
@@ -417,8 +343,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
-          // Login button with glass effect
           Positioned(
             top: screenHeight * 0.06,
             right: screenWidth * 0.05,
@@ -460,8 +384,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
-          // Feature carousel with PageView
           Positioned(
             left: 0,
             right: 0,
@@ -487,8 +409,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               },
             ),
           ),
-
-          // Bottom controls (dots and buttons)
           Positioned(
             bottom: screenHeight * 0.03,
             left: 0,
@@ -497,7 +417,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
                 children: [
-                  // Dots indicator
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_features.length, (index) {
@@ -515,27 +434,23 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                       );
                     }),
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Get Started Button
                       Expanded(
                         child: AnimatedGetStartedButton(
                           onPressed: () => Navigator.pushNamed(context, '/register'),
                         ),
                       ),
                       const SizedBox(width: 16),
-                      // Learn More Button
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Learn more feature coming soon!'),
+                                content: const Text('Learn more feature coming soon!'),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -549,7 +464,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.blue,
                             elevation: 0,
-                            side: BorderSide(
+                            side: const BorderSide(
                               color: Colors.blue,
                               width: 2,
                             ),
@@ -581,7 +496,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Feature title with animated text
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
             duration: const Duration(milliseconds: 800),
@@ -604,10 +518,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
           SizedBox(height: screenHeight * 0.01),
-
-          // Feature subtitle with animated text
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
             duration: const Duration(milliseconds: 800),
@@ -630,10 +541,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
-
           const Spacer(),
-
-          // Feature image with animated fade
           Center(
             child: TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0, end: 1),
@@ -689,28 +597,23 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
   }
 }
 
-// Enhanced Custom Clipper for the blue background
 class CustomClip extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     Path path = Path();
     path.lineTo(0, size.height - 100);
-
-    // Create a more interesting curve
     path.quadraticBezierTo(
       size.width * 0.25,
       size.height - 50,
       size.width * 0.5,
       size.height - 70,
     );
-
     path.quadraticBezierTo(
       size.width * 0.75,
       size.height - 90,
       size.width,
       size.height * 0.3,
     );
-
     path.lineTo(size.width, 0);
     path.close();
     return path;
@@ -720,7 +623,6 @@ class CustomClip extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-// Enhanced Custom Clipper for the secondary shape
 class SecondaryClip extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -728,8 +630,6 @@ class SecondaryClip extends CustomClipper<Path> {
     path.moveTo(size.width * 0.4, 0);
     path.lineTo(size.width, 0);
     path.lineTo(size.width, size.height * 0.3);
-
-    // Create a more organic shape
     path.cubicTo(
       size.width * 0.8,
       size.height * 0.2,
@@ -738,14 +638,12 @@ class SecondaryClip extends CustomClipper<Path> {
       size.width * 0.5,
       size.height * 0.35,
     );
-
     path.quadraticBezierTo(
       size.width * 0.4,
       size.height * 0.5,
       size.width * 0.3,
       size.height * 0.38,
     );
-
     path.close();
     return path;
   }
@@ -754,7 +652,6 @@ class SecondaryClip extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-// Animated Get Started Button with improved effects
 class AnimatedGetStartedButton extends StatefulWidget {
   final VoidCallback onPressed;
 

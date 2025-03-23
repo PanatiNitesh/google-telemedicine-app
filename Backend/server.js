@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Middleware
 app.use(cors({
   origin: "*",
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "PUT"],
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -71,6 +71,26 @@ const userSchema = new mongoose.Schema({
 
 // User Model
 const User = mongoose.model('RegisteredUser', userSchema);
+
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+  if (!token) {
+    console.log('No token provided');
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      console.log('Token verification failed:', err);
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user; // Attach user info to request
+    next();
+  });
+};
 
 // Registration Route with Image Upload
 app.post('/api/register', upload.single('profileImage'), async (req, res) => {
@@ -219,6 +239,94 @@ app.post('/api/verify-password', async (req, res) => {
     });
   } catch (error) {
     console.error('Password verification error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get Profile Route
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  console.log('Received get profile request for user:', req.user.email);
+  try {
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      console.log('User not found:', req.user.email);
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      profile: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        gender: user.gender,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        dateOfBirth: user.dateOfBirth,
+        address: user.address,
+        governmentId: user.governmentId,
+        profileImage: user.profileImage ? user.profileImage.toString('base64') : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Update Profile Route
+app.put('/api/profile', authenticateToken, upload.single('profileImage'), async (req, res) => {
+  console.log('Received update profile request for user:', req.user.email);
+  try {
+    const {
+      firstName,
+      lastName,
+      gender,
+      email,
+      phoneNumber,
+      dateOfBirth,
+      address,
+      governmentId,
+    } = req.body;
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      console.log('User not found:', req.user.email);
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Update user fields
+    user.firstName = firstName || user.firstName;
+    user.lastName = lastName || user.lastName;
+    user.gender = gender || user.gender;
+    user.email = email || user.email;
+    user.phoneNumber = phoneNumber || user.phoneNumber;
+    user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+    user.address = address || user.address;
+    user.governmentId = governmentId || user.governmentId;
+    if (req.file) {
+      user.profileImage = req.file.buffer; // Update profile image if provided
+    } else if (req.body.profileImage) {
+      user.profileImage = Buffer.from(req.body.profileImage, 'base64'); // For web, where image is sent as base64
+    }
+
+    await user.save();
+    console.log('Profile updated successfully for user:', user.email);
+    res.status(200).json({
+      success: true,
+      profile: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        gender: user.gender,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        dateOfBirth: user.dateOfBirth,
+        address: user.address,
+        governmentId: user.governmentId,
+        profileImage: user.profileImage ? user.profileImage.toString('base64') : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });

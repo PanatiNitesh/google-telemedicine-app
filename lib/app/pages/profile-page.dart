@@ -1,12 +1,122 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shimmer/shimmer.dart';
+import 'dart:developer' as developer;
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+// Notification Service (Updated as above)
+class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
 
-void main() {
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  Future<void> initialize() async {
+    // Initialize time zone database for zonedSchedule (even if not used now)
+    tz.initializeTimeZones();
+    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+    // Initialize notification settings
+    const AndroidInitializationSettings androidInitializationSettings =
+        AndroidInitializationSettings('@drawable/app_logo');
+
+    const DarwinInitializationSettings iosInitializationSettings =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: androidInitializationSettings,
+      iOS: iosInitializationSettings,
+    );
+
+    // Create notification channel for Android
+    final AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'profile_channel',
+      'Profile Updates',
+      description: 'Notifications for profile updates',
+      importance: Importance.max,
+    );
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    // Request permissions for Android 13+
+    if (Platform.isAndroid) {
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
+  }
+
+  Future<void> scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    // Convert DateTime to TZDateTime
+    final tz.TZDateTime scheduledTZDateTime = tz.TZDateTime.from(
+      scheduledDate,
+      tz.local,
+    );
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'profile_channel',
+      'Profile Updates',
+      channelDescription: 'Notifications for profile updates',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledTZDateTime,
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  Future<void> cancelAllNotifications() async {
+    await _flutterLocalNotificationsPlugin.cancelAll();
+    developer.log('All notifications canceled', name: 'NotificationService');
+  }
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notifications
+  await NotificationService().initialize();
+
   runApp(MaterialApp(
     home: const ProfilePage(),
     initialRoute: '/',
@@ -16,10 +126,9 @@ void main() {
   ));
 }
 
-// Use Azure URL for web, localhost for mobile (adjust as needed)
-const String BASE_URL = kIsWeb
+String BASE_URL = kIsWeb
     ? 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api'
-    : 'http://localhost:5000/api';
+    : 'http://192.168.120.249:5000/api';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -31,9 +140,9 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   bool isEditing = false;
   bool isSaving = false;
+  bool isLoading = true;
   String? token;
 
-  // Form controllers
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -63,6 +172,9 @@ class _ProfilePageState extends State<ProfilePage> {
     if (token != null) {
       await _loadProfileData();
     } else {
+      setState(() {
+        isLoading = false;
+      });
       await _promptLogin();
     }
   }
@@ -96,6 +208,7 @@ class _ProfilePageState extends State<ProfilePage> {
               final password = passwordController.text;
               if (username.isNotEmpty && password.isNotEmpty) {
                 await _login(username, password);
+                if (!mounted) return;
                 Navigator.pop(context);
               }
             },
@@ -107,6 +220,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _login(String username, String password) async {
+    setState(() {
+      isLoading = true;
+    });
     try {
       final loginResponse = await http.post(
         Uri.parse('$BASE_URL/login'),
@@ -132,6 +248,7 @@ class _ProfilePageState extends State<ProfilePage> {
           });
           await prefs.setString('token', token!);
           await _loadProfileData();
+          // Removed the notification scheduling logic here
         } else {
           throw Exception('Login failed: ${verifyResponse.body}');
         }
@@ -139,10 +256,17 @@ class _ProfilePageState extends State<ProfilePage> {
         throw Exception('User not found: ${loginResponse.body}');
       }
     } catch (e) {
-      print('Login error: $e');
+      developer.log('Login error: $e', name: 'ProfilePage');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login failed: $e')),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -169,12 +293,18 @@ class _ProfilePageState extends State<ProfilePage> {
           profileImagePath = data['profileImage'] != null ? 'data:image/png;base64,${data['profileImage']}' : null;
         });
       } else {
-        print('Failed to load profile: ${response.body}');
+        developer.log('Failed to load profile: ${response.body}', name: 'ProfilePage');
         await _loadLocalProfileData();
       }
     } catch (e) {
-      print('Error loading profile: $e');
+      developer.log('Error loading profile: $e', name: 'ProfilePage');
       await _loadLocalProfileData();
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -243,7 +373,8 @@ class _ProfilePageState extends State<ProfilePage> {
         throw Exception('Failed to save profile: ${response.body}');
       }
     } catch (e) {
-      print('Error saving profile: $e');
+      developer.log('Error saving profile: $e', name: 'ProfilePage');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save profile: $e')),
       );
@@ -262,6 +393,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (data['profileImage'] != null) {
       await prefs.setString('profileImagePath', 'data:image/png;base64,${data['profileImage']}');
     }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile saved successfully!')),
     );
@@ -281,10 +413,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void logout() async {
     final prefs = await SharedPreferences.getInstance();
+    await NotificationService().cancelAllNotifications(); // Keep this for logout
     await prefs.remove('token');
     setState(() {
       token = null;
     });
+    if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
   }
 
@@ -295,6 +429,7 @@ class _ProfilePageState extends State<ProfilePage> {
           isSaving = true;
         });
         await _saveProfileData();
+        if (!mounted) return;
         setState(() {
           isEditing = false;
           isSaving = false;
@@ -388,11 +523,14 @@ class _ProfilePageState extends State<ProfilePage> {
             profileImagePath = image.path;
           });
         }
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile picture updated')),
+          const SnackBar(content: Text('Profile picture updated')),
         );
       }
     } catch (e) {
+      developer.log('Error picking image: $e', name: 'ProfilePage');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to select image: $e')),
       );
@@ -460,147 +598,149 @@ class _ProfilePageState extends State<ProfilePage> {
       body: SafeArea(
         child: Stack(
           children: [
-            SingleChildScrollView(
-              padding: EdgeInsets.all(screenWidth * 0.05),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
+            isLoading
+                ? _buildSkeletonLoading()
+                : SingleChildScrollView(
+                    padding: EdgeInsets.all(screenWidth * 0.05),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: screenWidth * 0.55,
-                          height: screenWidth * 0.55,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: screenWidth * 0.02,
-                                spreadRadius: screenWidth * 0.01,
+                        Center(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: screenWidth * 0.55,
+                                height: screenWidth * 0.55,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: screenWidth * 0.02,
+                                      spreadRadius: screenWidth * 0.01,
+                                    ),
+                                  ],
+                                ),
                               ),
+                              ClipOval(
+                                child: Container(
+                                  width: screenWidth * 0.3,
+                                  height: screenWidth * 0.3,
+                                  color: Colors.transparent,
+                                  child: profileImagePath != null
+                                      ? Image.network(
+                                          profileImagePath!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Icon(
+                                            Icons.person,
+                                            size: screenWidth * 0.15,
+                                            color: Colors.black,
+                                          ),
+                                        )
+                                      : Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange[300],
+                                          ),
+                                          child: Icon(
+                                            Icons.person,
+                                            size: screenWidth * 0.15,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              if (isEditing)
+                                Positioned(
+                                  bottom: 0,
+                                  right: screenWidth * 0.08,
+                                  child: GestureDetector(
+                                    onTap: _pickProfileImage,
+                                    child: CircleAvatar(
+                                      radius: screenWidth * 0.05,
+                                      backgroundColor: Colors.blue,
+                                      child: Icon(
+                                        Icons.camera_alt,
+                                        size: screenWidth * 0.05,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                        ClipOval(
-                          child: Container(
-                            width: screenWidth * 0.3,
-                            height: screenWidth * 0.3,
-                            color: Colors.transparent,
-                            child: profileImagePath != null
-                                ? Image.network(
-                                    profileImagePath!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Icon(
-                                      Icons.person,
-                                      size: screenWidth * 0.15,
-                                      color: Colors.black,
-                                    ),
-                                  )
-                                : Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange[300],
-                                    ),
-                                    child: Icon(
-                                      Icons.person,
-                                      size: screenWidth * 0.15,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        if (isEditing)
-                          Positioned(
-                            bottom: 0,
-                            right: screenWidth * 0.08,
-                            child: GestureDetector(
-                              onTap: _pickProfileImage,
-                              child: CircleAvatar(
-                                radius: screenWidth * 0.05,
-                                backgroundColor: Colors.blue,
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  size: screenWidth * 0.05,
+                        SizedBox(height: screenHeight * 0.04),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'First Name',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: screenWidth * 0.045,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: toggleEditing,
+                              child: Container(
+                                padding: EdgeInsets.all(screenWidth * 0.02),
+                                decoration: BoxDecoration(
                                   color: Colors.white,
+                                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isEditing ? Icons.save : Icons.edit_outlined,
+                                      size: screenWidth * 0.045,
+                                      color: Colors.black,
+                                    ),
+                                    SizedBox(width: screenWidth * 0.01),
+                                    Text(
+                                      isEditing ? 'Save' : 'Edit',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: screenWidth * 0.035,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ),
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.015),
+                        buildTextField(firstNameController, 'First Name'),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Last Name'),
+                        buildTextField(lastNameController, 'Last Name'),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Gender'),
+                        buildGenderDropdown(),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Email'),
+                        buildTextField(emailController, 'example@gmail.com'),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Phone Number (Optional)'),
+                        buildTextField(phoneController, '+91 12345 6789'),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Date of Birth'),
+                        buildDateField(context),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Full Address'),
+                        buildTextField(addressController, '7th street - medicine road, doctor 82'),
+                        SizedBox(height: screenHeight * 0.03),
+                        buildLabel('Government/Medical ID'),
+                        buildTextField(idController, '9999-8888-7777-6666'),
+                        SizedBox(height: screenHeight * 0.05),
                       ],
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.04),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'First Name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: screenWidth * 0.045,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: toggleEditing,
-                        child: Container(
-                          padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isEditing ? Icons.save : Icons.edit_outlined,
-                                size: screenWidth * 0.045,
-                                color: Colors.black,
-                              ),
-                              SizedBox(width: screenWidth * 0.01),
-                              Text(
-                                isEditing ? 'Save' : 'Edit',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth * 0.035,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: screenHeight * 0.015),
-                  buildTextField(firstNameController, 'First Name'),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Last Name'),
-                  buildTextField(lastNameController, 'Last Name'),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Gender'),
-                  buildGenderDropdown(),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Email'),
-                  buildTextField(emailController, 'example@gmail.com'),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Phone Number (Optional)'),
-                  buildTextField(phoneController, '+91 12345 6789'),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Date of Birth'),
-                  buildDateField(context),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Full Address'),
-                  buildTextField(addressController, '7th street - medicine road, doctor 82'),
-                  SizedBox(height: screenHeight * 0.03),
-                  buildLabel('Government/Medical ID'),
-                  buildTextField(idController, '9999-8888-7777-6666'),
-                  SizedBox(height: screenHeight * 0.05),
-                ],
-              ),
-            ),
             if (isSaving)
               Container(
                 color: Colors.black.withOpacity(0.5),
@@ -610,6 +750,95 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLoading() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(screenWidth * 0.05),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: screenWidth * 0.55,
+                height: screenWidth * 0.55,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.04),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: screenWidth * 0.3,
+                  height: screenHeight * 0.03,
+                  color: Colors.white,
+                ),
+                Container(
+                  width: screenWidth * 0.2,
+                  height: screenHeight * 0.05,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: screenHeight * 0.015),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.03),
+            _buildSkeletonLabel(),
+            _buildSkeletonField(),
+            SizedBox(height: screenHeight * 0.05),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLabel() {
+    return Padding(
+      padding: EdgeInsets.only(bottom: screenHeight * 0.015),
+      child: Container(
+        width: screenWidth * 0.3,
+        height: screenHeight * 0.03,
+        color: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildSkeletonField() {
+    return Container(
+      height: screenHeight * 0.06,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
       ),
     );
   }

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/appointmentpage.dart';
 import 'package:intl/intl.dart'; // For date formatting
 
 class BookAppointmentPage extends StatefulWidget {
   final String doctorName;
   final String specialty;
-  final String imagePath; // Add imagePath parameter
+  final String imagePath;
 
   const BookAppointmentPage({
     Key? key,
     required this.doctorName,
     required this.specialty,
-    required this.imagePath, // Add imagePath to constructor
+    required this.imagePath,
   }) : super(key: key);
 
   @override
@@ -40,11 +39,11 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
             },
             child: Image.asset(
               'assets/back.png',
-              width: screenWidth * 0.05,
-              height: screenWidth * 0.05,
+              width: screenWidth * 0.06,
+              height: screenWidth * 0.06,
               errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.arrow_back,
-                size: screenWidth * 0.05,
+                size: screenWidth * 0.06,
               ),
             ),
           ),
@@ -58,10 +57,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
           ),
         ),
         foregroundColor: Colors.black,
-        centerTitle: false,
       ),
       body: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.04),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,6 +72,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
             ),
             SizedBox(height: screenHeight * 0.02),
+
+            // Doctor Card
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -89,7 +89,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Doctor Image (Flush with left, top, and bottom edges)
                   ClipRRect(
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(screenWidth * 0.04),
@@ -97,26 +96,22 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     ),
                     child: Image.asset(
                       widget.imagePath,
-                      width: 100,
-                      height: 100,
+                      width: screenWidth * 0.25,
+                      height: screenWidth * 0.25,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          width: 100,
-                          height: 100,
+                          width: screenWidth * 0.25,
+                          height: screenWidth * 0.25,
                           color: Colors.grey[300],
                           child: const Icon(Icons.person, size: 50),
                         );
                       },
                     ),
                   ),
-                  // Add padding only on the right side of the image
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: screenWidth * 0.04,
-                        horizontal: screenWidth * 0.04,
-                      ),
+                      padding: EdgeInsets.all(screenWidth * 0.04),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -142,7 +137,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 ],
               ),
             ),
+
             SizedBox(height: screenHeight * 0.03),
+
             Text(
               'Select Date and Time',
               style: TextStyle(
@@ -151,6 +148,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
             ),
             SizedBox(height: screenHeight * 0.02),
+
+            // Date & Time Picker
             Container(
               padding: EdgeInsets.all(screenWidth * 0.04),
               decoration: BoxDecoration(
@@ -166,6 +165,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
               child: Column(
                 children: [
+                  // Date Picker
                   TextField(
                     decoration: InputDecoration(
                       labelText: 'Select Date',
@@ -195,6 +195,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     },
                   ),
                   SizedBox(height: screenHeight * 0.02),
+
+                  // Time Picker
                   TextField(
                     decoration: InputDecoration(
                       labelText: 'Select Time',
@@ -224,7 +226,10 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 ],
               ),
             ),
+
             SizedBox(height: screenHeight * 0.03),
+
+            // Confirm Button
             Center(
               child: ElevatedButton(
                 onPressed: () {
@@ -235,8 +240,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     return;
                   }
 
-                  // Combine date and time into a single DateTime object
-                  final appointmentDateTime = DateTime(
+                  final _ = DateTime(
                     _selectedDate!.year,
                     _selectedDate!.month,
                     _selectedDate!.day,
@@ -244,36 +248,25 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     _selectedTime!.minute,
                   );
 
-                  // Create a new Appointment object
-                  final newAppointment = Appointment(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    title: 'Consultation with ${widget.doctorName}',
-                    dateTime: appointmentDateTime,
-                    location: 'Medical Center',
-                    description: 'Appointment with ${widget.doctorName}, ${widget.specialty}',
-                    category: 'Medical',
-                  );
-
-                  // Return the new appointment to the previous page
-                  Navigator.pop(context, newAppointment);
-
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Appointment Confirmed!')),
                   );
+
+                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(screenWidth * 0.05),
                   ),
-                  minimumSize: Size(screenWidth * 0.5, screenHeight * 0.06),
+                  minimumSize: Size(screenWidth * 0.6, screenHeight * 0.06),
                 ),
                 child: Text(
                   'Confirm Appointment',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: screenWidth * 0.04,
+                    fontSize: screenWidth * 0.045,
                   ),
                 ),
               ),

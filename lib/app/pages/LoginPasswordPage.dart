@@ -7,13 +7,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PasswordPage extends StatefulWidget {
   final String userId;
-  final String username;
+  final String username; // This is the email
+  final String fullName; // Add fullName parameter
   final String? profileImage; // Base64 string from backend
 
   const PasswordPage({
     super.key,
     required this.userId,
     required this.username,
+    required this.fullName, // Add fullName to constructor
     this.profileImage,
   });
 
@@ -52,7 +54,8 @@ class _PasswordPageState extends State<PasswordPage> {
         // Save authentication details
         await prefs.setString('auth_token', loginResponse.token ?? '');
         await prefs.setString('user_id', loginResponse.user!.id);
-        await prefs.setString('username', loginResponse.user!.firstName);
+        await prefs.setString('username', widget.username); // Store email as username
+        await prefs.setString('fullName', widget.fullName); // Store fullName
         // Save profile image if it exists
         if (widget.profileImage != null && widget.profileImage!.isNotEmpty) {
           await prefs.setString('profileImage', widget.profileImage!);
@@ -70,7 +73,7 @@ class _PasswordPageState extends State<PasswordPage> {
           context,
           MaterialPageRoute(
             builder: (context) => HomePage(
-              username: loginResponse.user!.firstName,
+              username: widget.fullName, // Pass fullName to HomePage for display
               profileImage: widget.profileImage, // Pass profileImage to HomePage
             ),
           ),
@@ -139,8 +142,8 @@ class _PasswordPageState extends State<PasswordPage> {
             child: Container(
               width: 300,
               height: 300,
-              decoration: const BoxDecoration(
-                color: Colors.blue,
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.3), // Apply withOpacity as requested
                 shape: BoxShape.circle,
               ),
             ),
@@ -153,7 +156,7 @@ class _PasswordPageState extends State<PasswordPage> {
                 _buildProfileImage(),
                 const SizedBox(height: 20),
                 Text(
-                  "Hello ${widget.username}",
+                  "Hello ${widget.fullName}", // Use fullName for greeting
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),
