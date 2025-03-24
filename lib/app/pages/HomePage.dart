@@ -17,9 +17,15 @@ import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
+  final String fullName;
   final String? profileImage;
 
-  const HomePage({super.key, required this.username, this.profileImage});
+  const HomePage({
+    super.key,
+    required this.username,
+    required this.fullName,
+    this.profileImage,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -35,6 +41,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late Animation<double> _animation;
   String? _storedProfileImage;
   Uint8List? _decodedProfileImage; // Store the decoded image data
+  String? _firstName; // Store the first name for the greeting
 
   // Sample data for doctors
   final List<Map<String, dynamic>> doctors = [
@@ -75,7 +82,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     // Add listener for search bar suggestions
     _searchController.addListener(_onSearchChanged);
 
-    // Log the received profileImage for debugging
+    // Log the received username and profileImage for debugging
+    _logger.info('Received username: ${widget.username}');
+    _logger.info('Received fullName: ${widget.fullName}');
     _logger.info('Received profileImage: ${widget.profileImage}');
 
     // Set profile image from widget or load from shared preferences
@@ -93,11 +102,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     }
 
-    if (_storedProfileImage == null) {
-      _loadUserSession();
-    } else {
-      _logger.info('Using profileImage from widget: $_storedProfileImage');
-    }
+    // Load the first name and profile image
+    _loadUserSession();
 
     // Store user session data
     _saveUserSession();
@@ -133,7 +139,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Future<void> _saveUserSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', widget.username);
+      await prefs.setString('username', widget.username); // Store email as username
+      await prefs.setString('fullName', widget.fullName); // Store fullName
       if (widget.profileImage != null) {
         await prefs.setString('profileImage', widget.profileImage!);
         _logger.info('Saved profileImage to SharedPreferences: ${widget.profileImage}');
@@ -150,6 +157,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   // Load user session from SharedPreferences
   Future<void> _loadUserSession() async {
     try {
+      // Since fullName is required, use it directly to set _firstName
+      setState(() {
+        _firstName = widget.fullName.split(' ').first; // Extract the first name
+      });
+      _logger.info('Set _firstName from widget.fullName: $_firstName');
+
+      // Load the profile image from SharedPreferences if not already set
       final prefs = await SharedPreferences.getInstance();
       final storedImage = prefs.getString('profileImage');
       _logger.info('Loaded profileImage from SharedPreferences: $storedImage');
@@ -170,8 +184,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     } catch (e) {
       _logger.severe('Error loading user session: $e');
+      setState(() {
+        _firstName = 'User'; // Fallback
+      });
     }
   }
+
+  // Fetch the user profile from the backend (optional, can be removed if not needed)
 
   void _onItemTapped(int index) {
     setState(() {
@@ -268,7 +287,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             Text(
-              widget.username,
+              _firstName ?? 'User', // Use firstName instead of widget.username
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
@@ -610,7 +629,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
     return GestureDetector(
       onTap: () {
-        // Navigate to DoctorProfilePage when the card is tapped
         _logger.info('Navigating to /doctor-profile for ${doctor['name']}');
         Navigator.pushNamed(
           context,
@@ -686,7 +704,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               child: ElevatedButton(
                 onPressed: () {
-                  // Navigate to BookAppointmentPage when the "Book" button is clicked
                   _logger.info('Navigating to /book-appointment for ${doctor['name']}');
                   Navigator.pushNamed(
                     context,
@@ -1169,7 +1186,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 }
 
-// Custom painters (unchanged)
+// Custom painters
 class LineGraphPainter extends CustomPainter {
   final List<Offset> points;
   final Color lineColor;

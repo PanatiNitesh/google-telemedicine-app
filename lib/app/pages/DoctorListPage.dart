@@ -80,7 +80,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) => const HomePage(username: 'User')));
+                builder: (context) => const HomePage(username: '', fullName: '',)));
         break;
       case 3:
         themeColor = Colors.amber;

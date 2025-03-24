@@ -103,7 +103,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage(username: username)),
+          MaterialPageRoute(builder: (_) => HomePage(username: username, fullName: '',)),
         );
         break;
       case 3:
@@ -220,7 +220,7 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage(username: username)),
+                MaterialPageRoute(builder: (context) => HomePage(username: username, fullName: '',)),
               );
             },
             child: Image.asset(

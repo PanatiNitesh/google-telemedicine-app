@@ -82,7 +82,7 @@ class _MedicinePageState extends State<MedicinePage> with SingleTickerProviderSt
       case 1:
         break;
       case 2:
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const HomePage(username: 'User')));
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const HomePage(username: 'Email', fullName: 'User',)));
         break;
       case 3:
         break;

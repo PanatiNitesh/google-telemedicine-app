@@ -119,9 +119,7 @@ void main() async {
   ));
 }
 
-String BASE_URL = kIsWeb
-    ? 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api'
-    : 'http://192.168.120.249:5000/api';
+String BASE_URL = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

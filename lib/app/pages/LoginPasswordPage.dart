@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/homepage.dart';
 import 'package:flutter_project/app/pages/services/auth_service.dart';
 import 'dart:convert'; // For base64 decoding
 import 'dart:developer' as developer;
@@ -69,14 +68,15 @@ class _PasswordPageState extends State<PasswordPage> {
         developer.log('Set isLoggedIn to true', name: 'PasswordPage');
 
         if (!mounted) return;
-        Navigator.pushReplacement(
+        // Use named route to navigate to HomePage
+        Navigator.pushReplacementNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => HomePage(
-              username: widget.fullName, // Pass fullName to HomePage for display
-              profileImage: widget.profileImage, // Pass profileImage to HomePage
-            ),
-          ),
+          '/home',
+          arguments: {
+            'username': widget.username,
+            'fullName': widget.fullName,
+            'profileImage': widget.profileImage,
+          },
         );
       } else {
         if (!mounted) return;
@@ -143,7 +143,7 @@ class _PasswordPageState extends State<PasswordPage> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.3), // Apply withOpacity as requested
+                color: Colors.blue.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
             ),
@@ -156,7 +156,7 @@ class _PasswordPageState extends State<PasswordPage> {
                 _buildProfileImage(),
                 const SizedBox(height: 20),
                 Text(
-                  "Hello ${widget.fullName}", // Use fullName for greeting
+                  "Hello ${widget.fullName}",
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),

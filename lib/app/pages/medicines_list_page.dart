@@ -3,6 +3,7 @@ import 'package:flutter_project/app/pages/HomePage.dart';
 import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/search_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MedicinesListPage extends StatefulWidget {
   const MedicinesListPage({super.key});
@@ -72,7 +73,22 @@ class _MedicinesListPageState extends State<MedicinesListPage> with SingleTicker
           .toList();
     });
   }
+Future<void> navigateToHomePage(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  final username = prefs.getString('username') ?? 'User';
+  final fullName = prefs.getString('fullName') ?? 'User'; // Retrieve fullName
+  final profileImage = prefs.getString('profileImage');
 
+  Navigator.pushNamed(
+    context,
+    '/home',
+    arguments: {
+      'username': username,
+      'fullName': fullName, // Pass fullName
+      'profileImage': profileImage,
+    },
+  );
+}
   void _navigateToMedicineDetails(String medicineName) {
     Navigator.pushNamed(context, '/medicines-list', arguments: medicineName);
   }
@@ -88,7 +104,7 @@ class _MedicinesListPageState extends State<MedicinesListPage> with SingleTicker
       case 1:
         break;
       case 2:
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage(username: 'User')));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage(username: 'Email', fullName: 'User',)));
         break;
       case 3:
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SearchPage()));
@@ -317,7 +333,7 @@ void main() {
     home: const MedicinesListPage(),
     routes: {
       '/profile': (context) => const ProfilePage(),
-      '/home': (context) => const HomePage(username: 'User'),
+      '/home': (context) => const HomePage(username: 'Email', fullName: 'User',),
       '/search': (context) => const SearchPage(),
       '/medicines-list': (context) {
         final String? medicineName = ModalRoute.of(context)?.settings.arguments as String?;

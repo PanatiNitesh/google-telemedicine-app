@@ -20,7 +20,6 @@ import 'dart:developer' as developer;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env file
   try {
     await dotenv.load(fileName: "assets/.env");
     developer.log("Loaded .env successfully", name: 'Main');
@@ -28,10 +27,10 @@ void main() async {
     developer.log("Error loading .env: $e", name: 'Main');
   }
 
-  // Load SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final String? username = prefs.getString('username');
+  final String? fullName = prefs.getString('fullName'); // Retrieve fullName
   final String? profileImage = prefs.getString('profileImage');
 
   runApp(TelemedicineApp(
@@ -39,6 +38,7 @@ void main() async {
     initialArguments: isLoggedIn
         ? {
             'username': username ?? 'User',
+            'fullName': fullName ?? 'User', // Include fullName
             'profileImage': profileImage,
           }
         : null,
@@ -57,6 +57,12 @@ class TelemedicineApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultArguments = {
+      'username': 'User',
+      'fullName': 'User', // Include fullName
+      'profileImage': null,
+    };
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -93,11 +99,13 @@ class TelemedicineApp extends StatelessWidget {
         '/login': (context) => const login_page.LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/home': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? initialArguments;
-          final username = args?['username'] as String? ?? 'User';
-          final profileImage = args?['profileImage'] as String?;
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? (initialArguments ?? defaultArguments);
+          final username = args['username'] as String? ?? 'User';
+          final fullName = args['fullName'] as String? ?? 'User';
+          final profileImage = args['profileImage'] as String?;
           return home_page.HomePage(
             username: username,
+            fullName: fullName,
             profileImage: profileImage,
           );
         },
@@ -196,7 +204,8 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin {
+class _MainPageState extends State<MainPage>
+    with SingleTickerProviderStateMixin {
   late PageController _pageController;
   int _currentPage = 0;
   late AnimationController _fadeController;
@@ -228,9 +237,10 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
     _fadeController.forward();
 
     Future.delayed(const Duration(seconds: 3), () {
@@ -312,7 +322,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                   color: Colors.blue.shade100,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity( 0.05),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -328,7 +338,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
             child: Container(
               height: screenHeight * 0.22,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity( 0.8),
+                color: Colors.white.withOpacity(0.8),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(32),
                   topRight: Radius.circular(32),
@@ -427,9 +437,10 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                         height: 8,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          color: _currentPage == index
-                              ? Colors.blue
-                              : Colors.blue.withOpacity(0.3),
+                          color:
+                              _currentPage == index
+                                  ? Colors.blue
+                                  : Colors.blue.withOpacity(0.3),
                         ),
                       );
                     }),
@@ -440,7 +451,8 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                     children: [
                       Expanded(
                         child: AnimatedGetStartedButton(
-                          onPressed: () => Navigator.pushNamed(context, '/register'),
+                          onPressed:
+                              () => Navigator.pushNamed(context, '/register'),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -450,7 +462,9 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Learn more feature coming soon!'),
+                                content: const Text(
+                                  'Learn more feature coming soon!',
+                                ),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -490,7 +504,13 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildFeatureItem(
-      BuildContext context, String title, String subtitle, String image, double screenWidth, double screenHeight) {
+    BuildContext context,
+    String title,
+    String subtitle,
+    String image,
+    double screenWidth,
+    double screenHeight,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
       child: Column(
@@ -562,31 +582,32 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                   image,
                   height: screenHeight * 0.35,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: screenHeight * 0.35,
-                    width: screenWidth * 0.6,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.image_not_supported_outlined,
-                          size: 60,
-                          color: Colors.grey.shade400,
+                  errorBuilder:
+                      (context, error, stackTrace) => Container(
+                        height: screenHeight * 0.35,
+                        width: screenWidth * 0.6,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Image not found",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey.shade600,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 60,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Image not found",
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
                 ),
               ),
             ),
@@ -655,13 +676,11 @@ class SecondaryClip extends CustomClipper<Path> {
 class AnimatedGetStartedButton extends StatefulWidget {
   final VoidCallback onPressed;
 
-  const AnimatedGetStartedButton({
-    required this.onPressed,
-    super.key,
-  });
+  const AnimatedGetStartedButton({required this.onPressed, super.key});
 
   @override
-  _AnimatedGetStartedButtonState createState() => _AnimatedGetStartedButtonState();
+  _AnimatedGetStartedButtonState createState() =>
+      _AnimatedGetStartedButtonState();
 }
 
 class _AnimatedGetStartedButtonState extends State<AnimatedGetStartedButton>

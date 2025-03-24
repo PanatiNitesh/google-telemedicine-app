@@ -243,9 +243,9 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
               });
             }
           },
-          child: Icon(Icons.add),
           tooltip: 'Book New Appointment',
           backgroundColor: Colors.blue,
+          child: Icon(Icons.add),
         ),
       ),
     );
@@ -444,7 +444,7 @@ class TimelineTile extends StatelessWidget {
   final Widget endChild;
   final TimelineAlign alignment;
 
-  const TimelineTile({
+  const TimelineTile({super.key, 
     required this.isFirst,
     required this.isLast,
     required this.indicatorStyle,

@@ -673,7 +673,7 @@ final Map<String, List<String>> countryStates = {
               children: [
                 Stack(
                   children: [
-                    Container(
+                    SizedBox(
                       height: 200,
                       width: double.infinity,
                       child: CustomPaint(
@@ -1332,7 +1332,7 @@ class SuccessPageState extends State<SuccessPage> {
           SingleChildScrollView(
             child: Column(
               children: [
-                Container(
+                SizedBox(
                   height: 200,
                   width: double.infinity,
                   child: CustomPaint(

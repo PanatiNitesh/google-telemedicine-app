@@ -98,7 +98,7 @@ class _LabTestsPageState extends State<LabTestsPage>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (_) => const HomePage(username: 'User')),
+              builder: (_) => const HomePage(username: 'Email', fullName: 'User',)),
         );
         break;
       case 3:
@@ -193,7 +193,7 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const HomePage(username: 'User')),
+                MaterialPageRoute(builder: (context) => const HomePage(username: 'Email', fullName: 'User',)),
               );
             },
             child: Image.asset(

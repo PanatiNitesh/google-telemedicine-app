@@ -7,11 +7,11 @@ class DoctorProfilePage extends StatefulWidget {
   final String imagePath;
 
   const DoctorProfilePage({
-    Key? key,
+    super.key,
     required this.doctorName,
     required this.specialty,
     required this.imagePath,
-  }) : super(key: key);
+  });
 
   @override
   State<DoctorProfilePage> createState() => _DoctorProfilePageState();
@@ -439,7 +439,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                     review['date'],
                     review['comment'],
                   ),
-                )).toList(),
+                )),
           ],
         );
       case 1: // Docs
@@ -461,7 +461,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                     doc['date'],
                     doc['type'],
                   ),
-                )).toList(),
+                )),
           ],
         );
       case 2: // About

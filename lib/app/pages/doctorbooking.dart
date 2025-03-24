@@ -7,11 +7,11 @@ class BookAppointmentPage extends StatefulWidget {
   final String imagePath;
 
   const BookAppointmentPage({
-    Key? key,
+    super.key,
     required this.doctorName,
     required this.specialty,
     required this.imagePath,
-  }) : super(key: key);
+  });
 
   @override
   State<BookAppointmentPage> createState() => _BookAppointmentPageState();
