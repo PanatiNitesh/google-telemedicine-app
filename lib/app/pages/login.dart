@@ -53,96 +53,114 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _scheduleHealthTipsForTesting() async {
-    final now = DateTime.now();
-    for (int i = 0; i < 5; i++) {
-      final scheduledTime = now.add(Duration(minutes: 2 * i));
-      await NotificationService().scheduleNotification(
-        id: i,
-        title: 'Daily Health Tip 🌟',
-        body: HealthTips.getRandomTip(),
-        scheduledDate: scheduledTime,
-      );
-    }
+Future<void> _scheduleHealthTipsForTesting() async {
+  final now = DateTime.now();
+  for (int i = 0; i < 5; i++) {
+    // Add a 10-second buffer to ensure the time is in the future
+    final scheduledTime = now.add(Duration(seconds: 10, minutes: 1 + (2 * i)));
+    await NotificationService().scheduleNotification(
+      id: i,
+      title: 'Daily Health Tip 🌟',
+      body: HealthTips.getRandomTip(),
+      scheduledDate: scheduledTime,
+    );
+  }
+}
+
+ Future<void> _handleLogin() async {
+  if (_usernameController.text.isEmpty) {
+    setState(() {
+      _errorMessage = 'Email is required';
+    });
+    return;
   }
 
-  Future<void> _handleLogin() async {
-    if (_usernameController.text.isEmpty) {
-      setState(() {
-        _errorMessage = 'Email is required';
-      });
-      return;
-    }
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  try {
+    developer.log('Attempting to check user with email: ${_usernameController.text}', name: 'LoginPage');
+    final userResponse = await _authService.checkUser(_usernameController.text);
+    developer.log('User response received: ${userResponse.toString()}', name: 'LoginPage');
 
-    try {
-      developer.log('Attempting to check user with email: ${_usernameController.text}', name: 'LoginPage');
-      final userResponse = await _authService.checkUser(_usernameController.text);
-      developer.log('User response received: ${userResponse.toString()}', name: 'LoginPage');
+    if (userResponse.success && userResponse.user != null) {
+      developer.log('User found: ${userResponse.user!.toString()}', name: 'LoginPage');
+      developer.log('Email from user response: ${userResponse.user!.email}', name: 'LoginPage');
+      developer.log('First name: ${userResponse.user!.firstName}', name: 'LoginPage');
+      developer.log('Last name: ${userResponse.user!.lastName}', name: 'LoginPage');
 
-      if (userResponse.success && userResponse.user != null) {
-        developer.log('User found: ${userResponse.user!.toString()}', name: 'LoginPage');
-        developer.log('Email from user response: ${userResponse.user!.email}', name: 'LoginPage');
-        developer.log('First name: ${userResponse.user!.firstName}', name: 'LoginPage');
-        developer.log('Last name: ${userResponse.user!.lastName}', name: 'LoginPage');
+      final firstName = userResponse.user!.firstName;
+      final lastName = userResponse.user!.lastName ?? '';
+      final fullName = lastName.isEmpty ? firstName : '$firstName $lastName';
+      final email = _usernameController.text;
 
-        final firstName = userResponse.user!.firstName;
-        final lastName = userResponse.user!.lastName ?? '';
-        final fullName = lastName.isEmpty ? firstName : '$firstName $lastName';
-        final email = _usernameController.text; // Use the input email
+      developer.log('Constructed full name: $fullName', name: 'LoginPage');
+      developer.log('Email to save: $email', name: 'LoginPage');
 
-        developer.log('Constructed full name: $fullName', name: 'LoginPage');
-        developer.log('Email to save: $email', name: 'LoginPage');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('username', email);
+      await prefs.setString('userId', userResponse.user!.id);
+      await prefs.setString('fullName', fullName);
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('username', email);
-        await prefs.setString('userId', userResponse.user!.id);
-        await prefs.setString('fullName', fullName);
+      developer.log('Email saved as username: $email', name: 'LoginPage');
+      developer.log('Full name saved: $fullName', name: 'LoginPage');
+      developer.log('UserId saved: ${userResponse.user!.id}', name: 'LoginPage');
 
-        developer.log('Email saved as username: $email', name: 'LoginPage');
-        developer.log('Full name saved: $fullName', name: 'LoginPage');
-        developer.log('UserId saved: ${userResponse.user!.id}', name: 'LoginPage');
-
+      // Schedule notifications, but don't let it block navigation
+      try {
         await _scheduleHealthTipsForTesting();
-
-        if (!mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PasswordPage(
-              userId: userResponse.user!.id,
-              username: email,
-              fullName: fullName,
-              profileImage: userResponse.user!.profileImage ?? '',
-            ),
-          ),
-        );
-      } else {
-        if (!mounted) return;
+      } catch (e) {
+        developer.log('Failed to schedule health tips: $e', name: 'LoginPage');
         setState(() {
-          _errorMessage = userResponse.message;
+          _errorMessage = 'Login successful, but failed to schedule notifications: $e';
         });
-        developer.log('User check failed: ${userResponse.message}', name: 'LoginPage');
       }
-    } catch (e) {
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PasswordPage(
+            userId: userResponse.user!.id,
+            username: email,
+            fullName: fullName,
+            profileImage: userResponse.user!.profileImage ?? '',
+          ),
+        ),
+      );
+    } else {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Connection error. Please check your network and try again.';
+        _errorMessage = userResponse.message;
       });
-      developer.log('Login error: $e', name: 'LoginPage');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      developer.log('User check failed: ${userResponse.message}', name: 'LoginPage');
+    }
+  } catch (e) {
+    if (!mounted) return;
+    String errorMessage;
+    if (e.toString().contains('Request timed out')) {
+      errorMessage = 'Request timed out. Please check your network and try again.';
+    } else if (e.toString().contains('Network error')) {
+      errorMessage = 'Network error. Please check your internet connection.';
+    } else if (e.toString().contains('Failed host lookup')) {
+      errorMessage = 'Unable to reach the server. The server might be down or the URL is incorrect.';
+    } else {
+      errorMessage = 'An unexpected error occurred: $e';
+    }
+    setState(() {
+      _errorMessage = errorMessage;
+    });
+    developer.log('Login error: $e', name: 'LoginPage');
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
-
+}
   @override
   void dispose() {
     _usernameController.dispose();

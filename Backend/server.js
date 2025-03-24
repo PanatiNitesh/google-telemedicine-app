@@ -331,7 +331,7 @@ app.put('/api/profile', authenticateToken, upload.single('profileImage'), async 
   }
 });
 
-// Social Sign-in Routes (placeholders)
+
 app.post('/api/login/google', (req, res) => {
   console.log('Google login request received');
   res.status(200).json({ success: true, message: 'Google login successful' });

@@ -70,40 +70,56 @@ class NotificationService {
   }
 
   Future<void> scheduleNotification({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledDate,
-  }) async {
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'health_tips_channel',
-          'Health Tips',
-          channelDescription: 'Daily health tips notifications',
-          importance: Importance.high,
-          priority: Priority.high,
-          showWhen: true,
+  required int id,
+  required String title,
+  required String body,
+  required DateTime scheduledDate,
+  int retries = 3,
+}) async {
+  for (int attempt = 1; attempt <= retries; attempt++) {
+    try {
+      final tz.TZDateTime scheduledTZDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
+      final now = tz.TZDateTime.now(tz.local);
+      if (scheduledTZDateTime.isBefore(now) || scheduledTZDateTime.isAtSameMomentAs(now)) {
+        throw Exception(
+          'Scheduled date must be in the future. Current time: $now, Scheduled time: $scheduledTZDateTime',
+        );
+      }
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledTZDateTime,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'health_tips_channel',
+            'Health Tips',
+            channelDescription: 'Daily health tips notifications',
+            importance: Importance.high,
+            priority: Priority.high,
+            showWhen: true,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      androidAllowWhileIdle: true,
-    );
-    developer.log('Scheduled notification with id: $id, title: $title', name: 'NotificationService');
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        androidAllowWhileIdle: true,
+      );
+      developer.log('Scheduled notification with id: $id, title: $title at $scheduledTZDateTime', name: 'NotificationService');
+      return; // Success, exit the loop
+    } catch (e) {
+      if (attempt == retries) {
+        developer.log('Failed to schedule notification after $retries attempts: $e', name: 'NotificationService');
+        rethrow;
+      }
+      developer.log('Attempt $attempt failed, retrying... Error: $e', name: 'NotificationService');
+      await Future.delayed(Duration(seconds: 1)); // Wait before retrying
+    }
   }
+}
 
   Future<void> cancelNotification(int id) async {
     await _flutterLocalNotificationsPlugin.cancel(id);
-    developer.log('Canceled notification with id: $id', name: 'NotificationService');
-  }
-
-  Future<void> cancelAllNotifications() async {
-    await _flutterLocalNotificationsPlugin.cancelAll();
-    developer.log('All notifications canceled', name: 'NotificationService');
+    developer.log('Cancelled notification with id: $id', name: 'NotificationService');
   }
 }

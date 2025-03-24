@@ -12,7 +12,8 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:developer' as developer;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-// Notification Service (Updated as above)
+
+// Notification Service (unchanged)
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -22,12 +23,10 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
-    // Initialize time zone database for zonedSchedule (even if not used now)
     tz.initializeTimeZones();
     final String timeZoneName = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-    // Initialize notification settings
     const AndroidInitializationSettings androidInitializationSettings =
         AndroidInitializationSettings('@drawable/app_logo');
 
@@ -43,7 +42,6 @@ class NotificationService {
       iOS: iosInitializationSettings,
     );
 
-    // Create notification channel for Android
     final AndroidNotificationChannel channel = AndroidNotificationChannel(
       'profile_channel',
       'Profile Updates',
@@ -57,7 +55,6 @@ class NotificationService {
 
     await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-    // Request permissions for Android 13+
     if (Platform.isAndroid) {
       await _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -72,7 +69,6 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
-    // Convert DateTime to TZDateTime
     final tz.TZDateTime scheduledTZDateTime = tz.TZDateTime.from(
       scheduledDate,
       tz.local,
@@ -113,10 +109,7 @@ class NotificationService {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize notifications
   await NotificationService().initialize();
-
   runApp(MaterialApp(
     home: const ProfilePage(),
     initialRoute: '/',
@@ -142,6 +135,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool isSaving = false;
   bool isLoading = true;
   String? token;
+  String? username;
 
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
@@ -161,237 +155,290 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadTokenAndProfile();
+    _loadUserData();
+  }
+Future<void> _loadLocalProfileData() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    firstNameController.text = prefs.getString('firstName') ?? 'John';
+    lastNameController.text = prefs.getString('lastName') ?? 'Doe';
+    emailController.text = prefs.getString('email') ?? 'example@gmail.com';
+    phoneController.text = prefs.getString('phone') ?? '';
+    dobController.text = prefs.getString('dob') ?? '1990-01-01';
+    addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
+    idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
+    gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
+    profileImagePath = prefs.getString('profileImagePath');
+    
+    // Set loading to false when local data is loaded
+    isLoading = false;
+  });
+  
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Loaded profile from local storage')),
+  );
+}
+Future<void> _loadUserData() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    token = prefs.getString('auth_token');
+    username = prefs.getString('username');
+  });
+
+  // Migration: Clear username if it matches fullName or doesn't look like an email
+  final storedFullName = prefs.getString('fullName');
+  if (username != null && storedFullName != null && (username == storedFullName || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(username!))) {
+    developer.log('Detected invalid username: $username, clearing it', name: 'ProfilePage');
+    await prefs.remove('username');
+    setState(() {
+      username = null;
+    });
   }
 
-  Future<void> _loadTokenAndProfile() async {
-    final prefs = await SharedPreferences.getInstance();
+  developer.log('SharedPreferences - token: $token, username: $username', name: 'ProfilePage');
+
+  if (token != null && username != null) {
+    await _loadProfileData();
+  } else {
     setState(() {
-      token = prefs.getString('token');
+      isLoading = false;
     });
-    if (token != null) {
-      await _loadProfileData();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+    }
+  }
+}
+
+  // Update the _loadProfileData method
+Future<void> _loadProfileData() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$BASE_URL/profile'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['profile'];
+      setState(() {
+        firstNameController.text = data['firstName'] ?? '';
+        lastNameController.text = data['lastName'] ?? '';
+        emailController.text = data['email'] ?? '';
+        phoneController.text = data['phoneNumber'] ?? '';
+        dobController.text = data['dateOfBirth'] ?? '';
+        addressController.text = data['address'] ?? '';
+        idController.text = data['governmentId'] ?? '';
+        gender = genderOptions.contains(data['gender']) ? data['gender'] : null;
+        
+        // Improved profile image handling
+        if (data['profileImage'] != null) {
+          profileImagePath = 'data:image/jpeg;base64,${data['profileImage']}';
+        } else {
+          profileImagePath = null;
+        }
+      });
     } else {
+      developer.log('Failed to load profile: ${response.body}', name: 'ProfilePage');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load profile data from server')),
+      );
+      await _loadLocalProfileData();
+    }
+  } catch (e) {
+    developer.log('Error loading profile: $e', name: 'ProfilePage');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error loading profile: ${e.toString()}')),
+    );
+    await _loadLocalProfileData();
+  } finally {
+    if (mounted) {
       setState(() {
         isLoading = false;
       });
-      await _promptLogin();
     }
   }
+}
 
-  Future<void> _promptLogin() async {
-    final TextEditingController usernameController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Login Required'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username (Email or First Name)'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final username = usernameController.text;
-              final password = passwordController.text;
-              if (username.isNotEmpty && password.isNotEmpty) {
-                await _login(username, password);
-                if (!mounted) return;
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Login'),
-          ),
-        ],
+// Update the profile image widget in the build method
+Widget buildProfileImage() {
+  return Container(
+    width: screenWidth * 0.3,
+    height: screenWidth * 0.3,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(
+        color: Colors.white,
+        width: 2.0,
       ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 6.0,
+          spreadRadius: 2.0,
+        ),
+      ],
+    ),
+    child: ClipOval(
+      child: profileImagePath != null
+          ? Image.network(
+              profileImagePath!,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.person,
+                  size: screenWidth * 0.15,
+                  color: Colors.white,
+                );
+              },
+            )
+          : Container(
+              color: Colors.grey[300],
+              child: Icon(
+                Icons.person,
+                size: screenWidth * 0.15,
+                color: Colors.white,
+              ),
+            ),
+    ),
+  );
+}
+
+// Update the image picker method
+Future<void> _pickProfileImage() async {
+  if (!isEditing) return;
+
+  try {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 800,
+    );
+    
+    if (image != null) {
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        });
+      } else {
+        setState(() {
+          profileImagePath = image.path;
+        });
+      }
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile picture updated')),
+      );
+    }
+  } catch (e) {
+    developer.log('Error picking image: $e', name: 'ProfilePage');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to select image: ${e.toString()}')),
     );
   }
+}
 
-  Future<void> _login(String username, String password) async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      final loginResponse = await http.post(
-        Uri.parse('$BASE_URL/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username}),
-      );
+// Update the _saveProfileData method to handle image upload
+Future<void> _saveProfileData() async {
+  final prefs = await SharedPreferences.getInstance();
+  final profileData = {
+    'firstName': firstNameController.text,
+    'lastName': lastNameController.text,
+    'email': emailController.text,
+    'phoneNumber': phoneController.text.isEmpty ? null : phoneController.text,
+    'dateOfBirth': dobController.text,
+    'address': addressController.text,
+    'governmentId': idController.text,
+    'gender': gender ?? 'Male',
+  };
 
-      if (loginResponse.statusCode == 200) {
-        final loginData = jsonDecode(loginResponse.body);
-        final userId = loginData['user']['id'];
-
-        final verifyResponse = await http.post(
-          Uri.parse('$BASE_URL/verify-password'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'userId': userId, 'password': password}),
-        );
-
-        if (verifyResponse.statusCode == 200) {
-          final verifyData = jsonDecode(verifyResponse.body);
-          final prefs = await SharedPreferences.getInstance();
-          setState(() {
-            token = verifyData['token'];
-          });
-          await prefs.setString('token', token!);
-          await _loadProfileData();
-          // Removed the notification scheduling logic here
-        } else {
-          throw Exception('Login failed: ${verifyResponse.body}');
+  try {
+    if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
+      // If image is already in base64 format (from web or previous load)
+      final base64Image = profileImagePath!.split(',')[1];
+      profileData['profileImage'] = base64Image;
+    } else if (!kIsWeb && profileImagePath != null) {
+      // For mobile platforms with file path
+      var request = http.MultipartRequest('PUT', Uri.parse('$BASE_URL/profile'));
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      // Add all fields
+      profileData.forEach((key, value) {
+        if (value != null) {
+          request.fields[key] = value.toString();
         }
-      } else {
-        throw Exception('User not found: ${loginResponse.body}');
+      });
+      
+      // Add image file
+      final file = await http.MultipartFile.fromPath('profileImage', profileImagePath!);
+      request.files.add(file);
+      
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to save profile: $responseBody');
       }
-    } catch (e) {
-      developer.log('Login error: $e', name: 'ProfilePage');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      final data = jsonDecode(responseBody)['profile'];
+      await _savePrefs(prefs, data);
+      return;
     }
-  }
 
-  Future<void> _loadProfileData() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$BASE_URL/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body)['profile'];
-        setState(() {
-          firstNameController.text = data['firstName'];
-          lastNameController.text = data['lastName'];
-          emailController.text = data['email'];
-          phoneController.text = data['phoneNumber'] ?? '';
-          dobController.text = data['dateOfBirth'];
-          addressController.text = data['address'];
-          idController.text = data['governmentId'];
-          gender = genderOptions.contains(data['gender']) ? data['gender'] : null;
-          profileImagePath = data['profileImage'] != null ? 'data:image/png;base64,${data['profileImage']}' : null;
-        });
-      } else {
-        developer.log('Failed to load profile: ${response.body}', name: 'ProfilePage');
-        await _loadLocalProfileData();
-      }
-    } catch (e) {
-      developer.log('Error loading profile: $e', name: 'ProfilePage');
-      await _loadLocalProfileData();
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+    // For web or when no image is being uploaded
+    final response = await http.put(
+      Uri.parse('$BASE_URL/profile'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(profileData),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['profile'];
+      await _savePrefs(prefs, data);
+    } else {
+      throw Exception('Failed to save profile: ${response.body}');
     }
+  } catch (e) {
+    developer.log('Error saving profile: $e', name: 'ProfilePage');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to save profile: ${e.toString()}')),
+    );
   }
-
-  Future<void> _loadLocalProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      firstNameController.text = prefs.getString('firstName') ?? 'John';
-      lastNameController.text = prefs.getString('lastName') ?? 'Doe';
-      emailController.text = prefs.getString('email') ?? 'example@gmail.com';
-      phoneController.text = prefs.getString('phone') ?? '';
-      dobController.text = prefs.getString('dob') ?? '1990-01-01';
-      addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
-      idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
-      gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
-      profileImagePath = prefs.getString('profileImagePath');
-    });
-  }
-
-  Future<void> _saveProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final profileData = {
-      'firstName': firstNameController.text,
-      'lastName': lastNameController.text,
-      'email': emailController.text,
-      'phoneNumber': phoneController.text.isEmpty ? '' : phoneController.text,
-      'dateOfBirth': dobController.text,
-      'address': addressController.text,
-      'governmentId': idController.text,
-      'gender': gender ?? 'Male',
-    };
-
-    try {
-      if (kIsWeb && profileImagePath != null && profileImagePath!.startsWith('data:image')) {
-        final base64Image = profileImagePath!.split(',')[1];
-        profileData['profileImage'] = base64Image;
-      } else if (!kIsWeb && profileImagePath != null && !profileImagePath!.startsWith('data:image')) {
-        var request = http.MultipartRequest('PUT', Uri.parse('$BASE_URL/profile'));
-        request.headers['Authorization'] = 'Bearer $token';
-        request.fields.addAll(profileData);
-        final file = await http.MultipartFile.fromPath('profileImage', profileImagePath!);
-        request.files.add(file);
-        final response = await request.send();
-        final responseBody = await response.stream.bytesToString();
-
-        if (response.statusCode != 200) {
-          throw Exception('Failed to save profile: $responseBody');
-        }
-        final data = jsonDecode(responseBody)['profile'];
-        await _savePrefs(prefs, data);
-        return;
-      }
-
-      final response = await http.put(
-        Uri.parse('$BASE_URL/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(profileData),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body)['profile'];
-        await _savePrefs(prefs, data);
-      } else {
-        throw Exception('Failed to save profile: ${response.body}');
-      }
-    } catch (e) {
-      developer.log('Error saving profile: $e', name: 'ProfilePage');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save profile: $e')),
-      );
-    }
-  }
+}
 
   Future<void> _savePrefs(SharedPreferences prefs, Map<String, dynamic> data) async {
-    await prefs.setString('firstName', data['firstName']);
-    await prefs.setString('lastName', data['lastName']);
-    await prefs.setString('email', data['email']);
+    final fullName = '${data['firstName']} ${data['lastName']}'.trim();
+    await prefs.setString('fullName', fullName);
+    await prefs.setString('username', data['email']);
     await prefs.setString('phone', data['phoneNumber'] ?? '');
     await prefs.setString('dob', data['dateOfBirth']);
     await prefs.setString('address', data['address']);
     await prefs.setString('id', data['governmentId']);
     await prefs.setString('gender', data['gender']);
     if (data['profileImage'] != null) {
-      await prefs.setString('profileImagePath', 'data:image/png;base64,${data['profileImage']}');
+      await prefs.setString('profileImage', 'data:image/png;base64,${data['profileImage']}');
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -412,14 +459,35 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await NotificationService().cancelAllNotifications(); // Keep this for logout
-    await prefs.remove('token');
-    setState(() {
-      token = null;
-    });
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+    final bool? confirmLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmLogout == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await NotificationService().cancelAllNotifications();
+      await prefs.clear();
+      setState(() {
+        token = null;
+        username = null;
+      });
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+    }
   }
 
   void toggleEditing() async {
@@ -505,38 +573,6 @@ class _ProfilePageState extends State<ProfilePage> {
       });
     }
   }
-
-  Future<void> _pickProfileImage() async {
-    if (!isEditing) return;
-
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        if (kIsWeb) {
-          final bytes = await image.readAsBytes();
-          setState(() {
-            profileImagePath = 'data:image/png;base64,${base64Encode(bytes)}';
-          });
-        } else {
-          setState(() {
-            profileImagePath = image.path;
-          });
-        }
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated')),
-        );
-      }
-    } catch (e) {
-      developer.log('Error picking image: $e', name: 'ProfilePage');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to select image: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
@@ -552,9 +588,19 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: Icon(
-              Icons.arrow_back,
-              size: screenWidth * 0.05,
+            child: Image.asset(
+              'assets/back.png',
+              width: screenWidth * 0.05,
+              height: screenWidth * 0.05,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                developer.log('Error loading back icon: $error', name: 'ProfilePage');
+                return Icon(
+                  Icons.arrow_back,
+                  size: screenWidth * 0.05,
+                  color: Colors.black,
+                );
+              },
             ),
           ),
         ),
@@ -609,35 +655,28 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Container(
-                                width: screenWidth * 0.55,
-                                height: screenWidth * 0.55,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: screenWidth * 0.02,
-                                      spreadRadius: screenWidth * 0.01,
-                                    ),
-                                  ],
-                                ),
-                              ),
                               ClipOval(
                                 child: Container(
                                   width: screenWidth * 0.3,
                                   height: screenWidth * 0.3,
                                   color: Colors.transparent,
-                                  child: profileImagePath != null
-                                      ? Image.network(
-                                          profileImagePath!,
+                                  child: profileImagePath != null && profileImagePath!.startsWith('data:image')
+                                      ? Image.memory(
+                                          base64Decode(profileImagePath!.split(',')[1]),
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Icon(
-                                            Icons.person,
-                                            size: screenWidth * 0.15,
-                                            color: Colors.black,
-                                          ),
+                                          errorBuilder: (context, error, stackTrace) {
+                                            developer.log('Error loading profile image: $error', name: 'ProfilePage');
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.orange[300],
+                                              ),
+                                              child: Icon(
+                                                Icons.person,
+                                                size: screenWidth * 0.15,
+                                                color: Colors.black,
+                                              ),
+                                            );
+                                          },
                                         )
                                       : Container(
                                           decoration: BoxDecoration(
@@ -765,8 +804,8 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             Center(
               child: Container(
-                width: screenWidth * 0.55,
-                height: screenWidth * 0.55,
+                width: screenWidth * 0.3,
+                height: screenWidth * 0.3,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,

@@ -10,6 +10,9 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_project/app/pages/notificationservice.dart'; // Import NotificationService
+import 'health_tips.dart'; // Import HealthTips for scheduling notifications
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -386,6 +389,12 @@ final Map<String, List<String>> countryStates = {
   'Zimbabwe': [],
 };
 
+@override
+  void initState() {
+    super.initState();
+    NotificationService().init(); // Initialize NotificationService
+  }
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -452,6 +461,20 @@ final Map<String, List<String>> countryStates = {
           );
         }
       }
+    }
+  }
+
+  Future<void> _scheduleHealthTipsForTesting() async {
+    final now = DateTime.now();
+    for (int i = 0; i < 5; i++) {
+      // Add a 10-second buffer to ensure the time is in the future
+      final scheduledTime = now.add(Duration(seconds: 10, minutes: 1 + (2 * i)));
+      await NotificationService().scheduleNotification(
+        id: i,
+        title: 'Daily Health Tip 🌟',
+        body: HealthTips.getRandomTip(),
+        scheduledDate: scheduledTime,
+      );
     }
   }
 
@@ -523,16 +546,71 @@ final Map<String, List<String>> countryStates = {
         developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
 
         if (response.statusCode == 201) {
-          final jsonResponse = jsonDecode(responseData.body);
-          if (jsonResponse['success']) {
+  final jsonResponse = jsonDecode(responseData.body);
+  if (jsonResponse['success']) {
+    final user = jsonResponse['user'];
+    final userId = user['id']?.toString() ?? '';
+    final token = jsonResponse['token']?.toString() ?? '';
+    final profileImage = user['profileImage']?.toString();
+    final firstName = _firstNameController.text;
+    final lastName = _lastNameController.text;
+    final fullName = lastName.isEmpty ? firstName : '$firstName $lastName';
+    final email = _emailController.text;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('username', email);
+    await prefs.setString('userId', userId);
+    await prefs.setString('fullName', fullName);
+    await prefs.setString('auth_token', token);
+    await prefs.setString('user_id', userId);
+    await prefs.setBool('isLoggedIn', true);
+    // Store additional fields
+    await prefs.setString('phone', _completePhoneNumber ?? _phoneNumberController.text);
+    await prefs.setString('dob', _dateOfBirthController.text);
+    await prefs.setString('address', _fullAddressController.text);
+    await prefs.setString('id', _govMedicalIdController.text);
+    await prefs.setString('gender', _genderController.text);
+
+    if (_profileImageBytes != null) {
+      final profileImageBase64 = base64Encode(_profileImageBytes!);
+      await prefs.setString('profileImage', profileImageBase64);
+    } else if (profileImage != null && profileImage.isNotEmpty) {
+      await prefs.setString('profileImage', profileImage);
+    } else {
+      await prefs.remove('profileImage');
+    }
+
+    developer.log('Saved username: $email', name: 'RegisterPage');
+    developer.log('Saved userId: $userId', name: 'RegisterPage');
+    developer.log('Saved fullName: $fullName', name: 'RegisterPage');
+    developer.log('Saved auth_token: $token', name: 'RegisterPage');
+    developer.log('Saved phone: ${_completePhoneNumber ?? _phoneNumberController.text}', name: 'RegisterPage');
+    developer.log('Saved dob: ${_dateOfBirthController.text}', name: 'RegisterPage');
+    developer.log('Saved address: ${_fullAddressController.text}', name: 'RegisterPage');
+    developer.log('Saved id: ${_govMedicalIdController.text}', name: 'RegisterPage');
+    developer.log('Saved gender: ${_genderController.text}', name: 'RegisterPage');
+            // Schedule health tips notifications (same as LoginPage)
+            try {
+              await _scheduleHealthTipsForTesting();
+            } catch (e) {
+              developer.log('Failed to schedule health tips: $e', name: 'RegisterPage');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Registration successful, but failed to schedule notifications: $e'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            }
+
             if (mounted) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => SuccessPage(
-                    fullName: '${_firstNameController.text} ${_lastNameController.text}',
-                    profileImageBytes: _profileImageBytes,
-                    profileImageFile: _profileImageFile,
+                    fullName: fullName,
+                    profileImage: profileImage ?? (_profileImageBytes != null ? base64Encode(_profileImageBytes!) : null),
                   ),
                 ),
               );
@@ -1215,14 +1293,12 @@ final Map<String, List<String>> countryStates = {
 
 class SuccessPage extends StatefulWidget {
   final String fullName;
-  final Uint8List? profileImageBytes;
-  final File? profileImageFile;
+  final String? profileImage; // Base64 string
 
   const SuccessPage({
     super.key,
     required this.fullName,
-    this.profileImageBytes,
-    this.profileImageFile,
+    this.profileImage,
   });
 
   @override
@@ -1235,13 +1311,13 @@ class SuccessPageState extends State<SuccessPage> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
+        // Navigate to HomePage with the same arguments as PasswordPage
         Navigator.pushReplacementNamed(
           context,
           '/home',
           arguments: {
-            'fullName': widget.fullName,
-            'profileImageBytes': widget.profileImageBytes,
-            'profileImageFile': widget.profileImageFile,
+            'username': widget.fullName, // Pass fullName as username (for display)
+            'profileImage': widget.profileImage, // Pass profileImage as a base64 string
           },
         );
       }
@@ -1283,8 +1359,7 @@ class SuccessPageState extends State<SuccessPage> {
                     size: 60,
                     color: Colors.white,
                   ),
-                ),
-                const SizedBox(height: 20),
+                ), SizedBox(height: 20),
                 const Text(
                   'Account created successfully',
                   style: TextStyle(

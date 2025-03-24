@@ -1,12 +1,14 @@
-import 'dart:convert';
+import 'dart:async';
+
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 class UserResponse {
   final bool success;
   final String message;
   final User? user;
-  final String? token; // Add token field for JWT
+  final String? token;
 
   UserResponse({
     required this.success,
@@ -20,7 +22,7 @@ class UserResponse {
       success: json['success'] ?? false,
       message: json['message'] ?? 'Unknown error',
       user: json['user'] != null ? User.fromJson(json['user']) : null,
-      token: json['token'], // Extract token from response
+      token: json['token'],
     );
   }
 }
@@ -66,7 +68,7 @@ class AuthService {
       final response = await http
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw Exception('Request timed out after 30 seconds.');
+        throw TimeoutException('Request timed out after 30 seconds.');
       });
 
       developer.log('Response status: ${response.statusCode}', name: 'AuthService');
@@ -79,12 +81,18 @@ class AuthService {
         final jsonResponse = jsonDecode(response.body);
         return UserResponse(
           success: false,
-          message: jsonResponse['message'] ?? 'Failed to check user',
+          message: jsonResponse['message'] ?? 'Failed to check user (Status: ${response.statusCode})',
         );
       }
-    } catch (e) {
+    } on TimeoutException catch (e) {
       developer.log('Error in checkUser: $e', name: 'AuthService');
-      rethrow;
+      throw Exception('Request timed out: $e');
+    } on http.ClientException catch (e) {
+      developer.log('Error in checkUser: $e', name: 'AuthService');
+      throw Exception('Network error: $e');
+    } on Exception catch (e) {
+      developer.log('Error in checkUser: $e', name: 'AuthService');
+      throw Exception('Unexpected error: $e');
     }
   }
 
@@ -100,7 +108,7 @@ class AuthService {
       final response = await http
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw Exception('Request timed out after 30 seconds.');
+        throw TimeoutException('Request timed out after 30 seconds.');
       });
 
       developer.log('Response status: ${response.statusCode}', name: 'AuthService');
@@ -113,12 +121,18 @@ class AuthService {
         final jsonResponse = jsonDecode(response.body);
         return UserResponse(
           success: false,
-          message: jsonResponse['message'] ?? 'Failed to verify password',
+          message: jsonResponse['message'] ?? 'Failed to verify password (Status: ${response.statusCode})',
         );
       }
-    } catch (e) {
+    } on TimeoutException catch (e) {
       developer.log('Error in verifyPassword: $e', name: 'AuthService');
-      rethrow;
+      throw Exception('Request timed out: $e');
+    } on http.ClientException catch (e) {
+      developer.log('Error in verifyPassword: $e', name: 'AuthService');
+      throw Exception('Network error: $e');
+    } on Exception catch (e) {
+      developer.log('Error in verifyPassword: $e', name: 'AuthService');
+      throw Exception('Unexpected error: $e');
     }
   }
 }
