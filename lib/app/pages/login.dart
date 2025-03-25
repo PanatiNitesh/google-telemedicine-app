@@ -56,14 +56,15 @@ class _LoginPageState extends State<LoginPage> {
 Future<void> _scheduleHealthTipsForTesting() async {
   final now = DateTime.now();
   for (int i = 0; i < 5; i++) {
-    // Add a 10-second buffer to ensure the time is in the future
     final scheduledTime = now.add(Duration(seconds: 10, minutes: 1 + (2 * i)));
+    developer.log('Scheduling notification $i for $scheduledTime', name: 'LoginPage');
     await NotificationService().scheduleNotification(
       id: i,
       title: 'Daily Health Tip 🌟',
       body: HealthTips.getRandomTip(),
       scheduledDate: scheduledTime,
     );
+    developer.log('Notification $i scheduled successfully', name: 'LoginPage');
   }
 }
 

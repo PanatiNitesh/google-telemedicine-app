@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -13,7 +14,7 @@ import 'dart:developer' as developer;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-// Notification Service (unchanged)
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -96,8 +97,6 @@ class NotificationService {
       scheduledTZDateTime,
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -119,7 +118,7 @@ void main() async {
   ));
 }
 
-String BASE_URL = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
+String baseUrl = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -155,276 +154,265 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _loadUserData();
   }
-Future<void> _loadLocalProfileData() async {
-  final prefs = await SharedPreferences.getInstance();
-  setState(() {
-    firstNameController.text = prefs.getString('firstName') ?? 'John';
-    lastNameController.text = prefs.getString('lastName') ?? 'Doe';
-    emailController.text = prefs.getString('email') ?? 'example@gmail.com';
-    phoneController.text = prefs.getString('phone') ?? '';
-    dobController.text = prefs.getString('dob') ?? '1990-01-01';
-    addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
-    idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
-    gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
-    profileImagePath = prefs.getString('profileImagePath');
-    
-    // Set loading to false when local data is loaded
-    isLoading = false;
-  });
-  
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Loaded profile from local storage')),
-  );
-}
-Future<void> _loadUserData() async {
-  final prefs = await SharedPreferences.getInstance();
-  setState(() {
-    token = prefs.getString('auth_token');
-    username = prefs.getString('username');
-  });
 
-  // Migration: Clear username if it matches fullName or doesn't look like an email
-  final storedFullName = prefs.getString('fullName');
-  if (username != null && storedFullName != null && (username == storedFullName || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(username!))) {
-    developer.log('Detected invalid username: $username, clearing it', name: 'ProfilePage');
-    await prefs.remove('username');
+  Future<void> _loadLocalProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      username = null;
-    });
-  }
-
-  developer.log('SharedPreferences - token: $token, username: $username', name: 'ProfilePage');
-
-  if (token != null && username != null) {
-    await _loadProfileData();
-  } else {
-    setState(() {
+      firstNameController.text = prefs.getString('firstName') ?? 'John';
+      lastNameController.text = prefs.getString('lastName') ?? 'Doe';
+      emailController.text = prefs.getString('email') ?? 'example@gmail.com';
+      phoneController.text = prefs.getString('phone') ?? '';
+      dobController.text = prefs.getString('dob') ?? '1990-01-01';
+      addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
+      idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
+      gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
+      profileImagePath = prefs.getString('profileImagePath');
       isLoading = false;
     });
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-    }
-  }
-}
 
-  // Update the _loadProfileData method
-Future<void> _loadProfileData() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$BASE_URL/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-    
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)['profile'];
-      setState(() {
-        firstNameController.text = data['firstName'] ?? '';
-        lastNameController.text = data['lastName'] ?? '';
-        emailController.text = data['email'] ?? '';
-        phoneController.text = data['phoneNumber'] ?? '';
-        dobController.text = data['dateOfBirth'] ?? '';
-        addressController.text = data['address'] ?? '';
-        idController.text = data['governmentId'] ?? '';
-        gender = genderOptions.contains(data['gender']) ? data['gender'] : null;
-        
-        // Improved profile image handling
-        if (data['profileImage'] != null) {
-          profileImagePath = 'data:image/jpeg;base64,${data['profileImage']}';
-        } else {
-          profileImagePath = null;
-        }
-      });
-    } else {
-      developer.log('Failed to load profile: ${response.body}', name: 'ProfilePage');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load profile data from server')),
-      );
-      await _loadLocalProfileData();
-    }
-  } catch (e) {
-    developer.log('Error loading profile: $e', name: 'ProfilePage');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error loading profile: ${e.toString()}')),
+      const SnackBar(content: Text('Loaded profile from local storage')),
     );
-    await _loadLocalProfileData();
-  } finally {
-    if (mounted) {
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      token = prefs.getString('auth_token');
+      username = prefs.getString('username');
+    });
+
+    final storedFullName = prefs.getString('fullName');
+    if (username != null && storedFullName != null && (username == storedFullName || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(username!))) {
+      developer.log('Detected invalid username: $username, clearing it', name: 'ProfilePage');
+      await prefs.remove('username');
+      setState(() {
+        username = null;
+      });
+    }
+
+    developer.log('SharedPreferences - token: $token, username: $username', name: 'ProfilePage');
+
+    if (token != null && username != null) {
+      await _loadProfileData();
+    } else {
       setState(() {
         isLoading = false;
       });
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
     }
   }
-}
 
-// Update the profile image widget in the build method
-Widget buildProfileImage() {
-  return Container(
-    width: screenWidth * 0.3,
-    height: screenWidth * 0.3,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      border: Border.all(
-        color: Colors.white,
-        width: 2.0,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 6.0,
-          spreadRadius: 2.0,
+  Future<void> _loadProfileData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['profile'];
+        setState(() {
+          firstNameController.text = data['firstName'] ?? '';
+          lastNameController.text = data['lastName'] ?? '';
+          emailController.text = data['email'] ?? '';
+          phoneController.text = data['phoneNumber'] ?? '';
+          dobController.text = data['dateOfBirth'] ?? '';
+          addressController.text = data['address'] ?? '';
+          idController.text = data['governmentId'] ?? '';
+          gender = genderOptions.contains(data['gender']) ? data['gender'] : null;
+          
+          if (data['profileImage'] != null) {
+            profileImagePath = 'data:image/jpeg;base64,${data['profileImage']}';
+          } else {
+            profileImagePath = null;
+          }
+        });
+      } else {
+        developer.log('Failed to load profile: ${response.body}', name: 'ProfilePage');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load profile data from server')),
+        );
+        await _loadLocalProfileData();
+      }
+    } catch (e) {
+      developer.log('Error loading profile: $e', name: 'ProfilePage');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading profile: ${e.toString()}')),
+      );
+      await _loadLocalProfileData();
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Widget buildProfileImage() {
+    return Container(
+      width: screenWidth * 0.3,
+      height: screenWidth * 0.3,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white,
+          width: 2.0,
         ),
-      ],
-    ),
-    child: ClipOval(
-      child: profileImagePath != null
-          ? Image.network(
-              profileImagePath!,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.1 * 255).round()),
+            blurRadius: 6.0,
+            spreadRadius: 2.0,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: profileImagePath != null
+            ? Image.network(
+                profileImagePath!,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.person,
+                    size: screenWidth * 0.15,
+                    color: Colors.white,
+                  );
+                },
+              )
+            : Container(
+                color: Colors.grey[300],
+                child: Icon(
                   Icons.person,
                   size: screenWidth * 0.15,
                   color: Colors.white,
-                );
-              },
-            )
-          : Container(
-              color: Colors.grey[300],
-              child: Icon(
-                Icons.person,
-                size: screenWidth * 0.15,
-                color: Colors.white,
+                ),
               ),
-            ),
-    ),
-  );
-}
-
-// Update the image picker method
-Future<void> _pickProfileImage() async {
-  if (!isEditing) return;
-
-  try {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-      maxWidth: 800,
+      ),
     );
-    
-    if (image != null) {
-      if (kIsWeb) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-        });
-      } else {
-        setState(() {
-          profileImagePath = image.path;
-        });
+  }
+
+  Future<void> _pickProfileImage() async {
+    if (!isEditing) return;
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 800,
+      );
+
+      if (image != null) {
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+          });
+        } else {
+          setState(() {
+            profileImagePath = image.path;
+          });
+        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated')),
+        );
       }
-      
+    } catch (e) {
+      developer.log('Error picking image: $e', name: 'ProfilePage');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile picture updated')),
+        SnackBar(content: Text('Failed to select image: ${e.toString()}')),
       );
     }
-  } catch (e) {
-    developer.log('Error picking image: $e', name: 'ProfilePage');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to select image: ${e.toString()}')),
-    );
   }
-}
 
-// Update the _saveProfileData method to handle image upload
-Future<void> _saveProfileData() async {
-  final prefs = await SharedPreferences.getInstance();
-  final profileData = {
-    'firstName': firstNameController.text,
-    'lastName': lastNameController.text,
-    'email': emailController.text,
-    'phoneNumber': phoneController.text.isEmpty ? null : phoneController.text,
-    'dateOfBirth': dobController.text,
-    'address': addressController.text,
-    'governmentId': idController.text,
-    'gender': gender ?? 'Male',
-  };
+  Future<void> _saveProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileData = {
+      'firstName': firstNameController.text,
+      'lastName': lastNameController.text,
+      'email': emailController.text,
+      'phoneNumber': phoneController.text.isEmpty ? null : phoneController.text,
+      'dateOfBirth': dobController.text,
+      'address': addressController.text,
+      'governmentId': idController.text,
+      'gender': gender ?? 'Male',
+    };
 
-  try {
-    if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
-      // If image is already in base64 format (from web or previous load)
-      final base64Image = profileImagePath!.split(',')[1];
-      profileData['profileImage'] = base64Image;
-    } else if (!kIsWeb && profileImagePath != null) {
-      // For mobile platforms with file path
-      var request = http.MultipartRequest('PUT', Uri.parse('$BASE_URL/profile'));
-      request.headers['Authorization'] = 'Bearer $token';
-      
-      // Add all fields
-      profileData.forEach((key, value) {
-        if (value != null) {
-          request.fields[key] = value.toString();
+    try {
+      if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
+        final base64Image = profileImagePath!.split(',')[1];
+        profileData['profileImage'] = base64Image;
+      } else if (!kIsWeb && profileImagePath != null) {
+        var request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/profile'));
+        request.headers['Authorization'] = 'Bearer $token';
+        
+        profileData.forEach((key, value) {
+          if (value != null) {
+            request.fields[key] = value.toString();
+          }
+        });
+        
+        final file = await http.MultipartFile.fromPath('profileImage', profileImagePath!);
+        request.files.add(file);
+        
+        final response = await request.send();
+        final responseBody = await response.stream.bytesToString();
+
+        if (response.statusCode != 200) {
+          throw Exception('Failed to save profile: $responseBody');
         }
-      });
-      
-      // Add image file
-      final file = await http.MultipartFile.fromPath('profileImage', profileImagePath!);
-      request.files.add(file);
-      
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to save profile: $responseBody');
+        final data = jsonDecode(responseBody)['profile'];
+        await _savePrefs(prefs, data);
+        return;
       }
-      final data = jsonDecode(responseBody)['profile'];
-      await _savePrefs(prefs, data);
-      return;
-    }
 
-    // For web or when no image is being uploaded
-    final response = await http.put(
-      Uri.parse('$BASE_URL/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(profileData),
-    );
+      final response = await http.put(
+        Uri.parse('$baseUrl/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(profileData),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)['profile'];
-      await _savePrefs(prefs, data);
-    } else {
-      throw Exception('Failed to save profile: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['profile'];
+        await _savePrefs(prefs, data);
+      } else {
+        throw Exception('Failed to save profile: ${response.body}');
+      }
+    } catch (e) {
+      developer.log('Error saving profile: $e', name: 'ProfilePage');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save profile: ${e.toString()}')),
+      );
     }
-  } catch (e) {
-    developer.log('Error saving profile: $e', name: 'ProfilePage');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to save profile: ${e.toString()}')),
-    );
   }
-}
 
   Future<void> _savePrefs(SharedPreferences prefs, Map<String, dynamic> data) async {
     final fullName = '${data['firstName']} ${data['lastName']}'.trim();
@@ -571,6 +559,7 @@ Future<void> _saveProfileData() async {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
@@ -726,7 +715,7 @@ Future<void> _saveProfileData() async {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                                  border: Border.all(color: Colors.grey.withAlpha((0.3 * 255).round())),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -780,7 +769,7 @@ Future<void> _saveProfileData() async {
                   ),
             if (isSaving)
               Container(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withAlpha((0.5 * 255).round()),
                 child: const Center(
                   child: CircularProgressIndicator(),
                 ),
@@ -900,7 +889,7 @@ Future<void> _saveProfileData() async {
         color: Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.03),
         border: Border.all(
-          color: Colors.black.withOpacity(0.7),
+          color: Colors.black.withAlpha((0.7 * 255).round()),
           width: 1,
         ),
       ),
@@ -927,7 +916,7 @@ Future<void> _saveProfileData() async {
         color: Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.03),
         border: Border.all(
-          color: Colors.black.withOpacity(0.7),
+          color: Colors.black.withAlpha((0.7 * 255).round()),
           width: 1,
         ),
       ),
@@ -964,7 +953,7 @@ Future<void> _saveProfileData() async {
           color: Colors.white,
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withAlpha((0.7 * 255).round()),
             width: 1,
           ),
         ),

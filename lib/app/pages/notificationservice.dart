@@ -1,125 +1,139 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'dart:developer' as developer;
+import 'health_tips.dart';
 
 class NotificationService {
-  static final NotificationService _notificationService =
-      NotificationService._internal();
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  factory NotificationService() {
-    return _notificationService;
+  /// ✅ **Added the init method**
+  Future<void> init() async {
+    await initialize();
   }
 
-  NotificationService._internal();
-
-  Future<void> init() async {
+  /// ✅ *Initialize Notifications*
+  Future<void> initialize() async {
     tz.initializeTimeZones();
     final String timeZoneName = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@drawable/app_logo');
 
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
     );
 
-    final AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'health_tips_channel',
-      'Health Tips',
-      description: 'Daily health tips notifications',
+    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> showImmediateNotification() async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'instant_channel',
+      'Instant Notifications',
       importance: Importance.high,
-    );
-    await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        developer.log('Notification tapped: ${response.payload}', name: 'NotificationService');
-      },
+      priority: Priority.high,
     );
 
-    if (await _flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
-            ?.areNotificationsEnabled() ==
-        false) {
-      await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
-    }
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails, iOS: DarwinNotificationDetails());
 
-    developer.log('NotificationService initialized', name: 'NotificationService');
+    await _flutterLocalNotificationsPlugin.show(
+      0,
+      'Login Successful 🎉',
+      'Welcome back! Stay healthy & active!',
+      details,
+    );
+
+    developer.log('Instant notification displayed', name: 'NotificationService');
   }
 
   Future<void> scheduleNotification({
-  required int id,
-  required String title,
-  required String body,
-  required DateTime scheduledDate,
-  int retries = 3,
-}) async {
-  for (int attempt = 1; attempt <= retries; attempt++) {
-    try {
-      final tz.TZDateTime scheduledTZDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
-      final now = tz.TZDateTime.now(tz.local);
-      if (scheduledTZDateTime.isBefore(now) || scheduledTZDateTime.isAtSameMomentAs(now)) {
-        throw Exception(
-          'Scheduled date must be in the future. Current time: $now, Scheduled time: $scheduledTZDateTime',
-        );
-      }
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    final tz.TZDateTime scheduledTZDateTime = tz.TZDateTime.from(
+      scheduledDate,
+      tz.local,
+    );
 
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        scheduledTZDateTime,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'health_tips_channel',
-            'Health Tips',
-            channelDescription: 'Daily health tips notifications',
-            importance: Importance.high,
-            priority: Priority.high,
-            showWhen: true,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        androidAllowWhileIdle: true,
-      );
-      developer.log('Scheduled notification with id: $id, title: $title at $scheduledTZDateTime', name: 'NotificationService');
-      return; // Success, exit the loop
-    } catch (e) {
-      if (attempt == retries) {
-        developer.log('Failed to schedule notification after $retries attempts: $e', name: 'NotificationService');
-        rethrow;
-      }
-      developer.log('Attempt $attempt failed, retrying... Error: $e', name: 'NotificationService');
-      await Future.delayed(Duration(seconds: 1)); // Wait before retrying
-    }
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'profile_channel',
+      'Profile Updates',
+      channelDescription: 'Notifications for profile updates',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledTZDateTime,
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
-}
 
-  Future<void> cancelNotification(int id) async {
-    await _flutterLocalNotificationsPlugin.cancel(id);
-    developer.log('Cancelled notification with id: $id', name: 'NotificationService');
+  void scheduleHealthTipsNotification() {
+    Timer.periodic(const Duration(minutes: 2), (timer) {
+      sendHealthTipNotification();
+    });
+
+    developer.log('Health tips notifications scheduled every 2 minutes',
+        name: 'NotificationService');
+  }
+
+  Future<void> sendHealthTipNotification() async {
+    final String tip = HealthTips.getRandomTip();
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'health_tips_channel',
+      'Health Tips',
+      channelDescription: 'Get daily health tips to stay healthy',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails, iOS: DarwinNotificationDetails());
+
+    await _flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch % 1000,
+      'Health Tip 🌟',
+      tip,
+      details,
+    );
+
+    developer.log('Sent Health Tip Notification: $tip', name: 'NotificationService');
+  }
+
+  Future<void> cancelAllNotifications() async {
+    await _flutterLocalNotificationsPlugin.cancelAll();
+    developer.log('All notifications canceled', name: 'NotificationService');
   }
 }

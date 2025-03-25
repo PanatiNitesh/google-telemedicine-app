@@ -1,10 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert'; // For jsonDecode and jsonEncode
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -22,14 +23,15 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
   bool _isListening = false;
   late AnimationController _animationController;
   Animation<Offset>? _slideAnimation;
+  late final GenerativeModel _model;
 
-  static const String cohereEndpoint = 'https://api.cohere.ai/v1/chat';
   final List<List<Map<String, String>>> _chatHistory = [];
   List<Map<String, String>> _currentChat = [];
 
   @override
   void initState() {
     super.initState();
+    _initializeVertexAI();
     _initializeSpeech();
     _loadChatHistory();
     _animationController = AnimationController(
@@ -43,15 +45,6 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
 
     _startNewChat();
 
-    if (!dotenv.isInitialized) {
-      _addErrorMessage('Warning: Environment variables not yet loaded. Chat may not work until initialization completes.');
-    } else {
-      final apiKey = dotenv.env['COHERE_API_KEY'];
-      if (apiKey == null || apiKey.isEmpty) {
-        _addErrorMessage('Warning: Cohere API key not found. Chat functionality may not work.');
-      }
-    }
-
     _controller.addListener(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_textScrollController.hasClients) {
@@ -59,6 +52,25 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
         }
       });
     });
+  }
+
+  Future<void> _initializeVertexAI() async {
+    try {
+      // Ensure Firebase is initialized in main.dart
+      _model = FirebaseVertexAI.instance.generativeModel(
+        model: 'gemini-1.5-flash',
+        generationConfig: GenerationConfig(
+          maxOutputTokens: 100,
+          temperature: 0.7,
+        ),
+        systemInstruction: Content(
+          'system',
+          [TextPart('You are a Level 1 Health Assistant. Provide very basic health information only and always recommend consulting a doctor for any specific medical concerns.')],
+        ),
+      );
+    } catch (e) {
+      _addErrorMessage('Failed to initialize Vertex AI: $e');
+    }
   }
 
   void _addErrorMessage(String message) {
@@ -113,63 +125,34 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
       _messages.add({'sender': 'user', 'message': message});
     });
 
-    final cohereApiKey = dotenv.env['COHERE_API_KEY'];
-    if (cohereApiKey == null || cohereApiKey.isEmpty) {
-      _addErrorMessage('Error: Cohere API key not configured. Please check app settings.');
-      return;
-    }
-
     try {
-      final response = await http.post(
-        Uri.parse(cohereEndpoint),
-        headers: {
-          'Authorization': 'Bearer $cohereApiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'message': 'You are a Level 1 Health Assistant. Provide very basic health information only and always recommend consulting a doctor for any specific medical concerns. Respond briefly to this query: $message',
-          'max_tokens': 100,
-        }),
-      );
+      final content = Content('user', [TextPart(message)]);
+      final response = await _model.generateContent([content]);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        String botResponse = data['text'] ?? 'No response text received.';
-        debugPrint("Raw Cohere response: $botResponse");
-        
-        botResponse = botResponse
-            .replaceAll('\r\n', '\n')
-            .replaceAll('\r', '\n')
-            .replaceAll(RegExp(r'[^\x20-\x7E\n]'), '');
-        botResponse = _formatListResponse(botResponse);
-        botResponse += '\n\nPlease consult a doctor for personalized medical advice.';
-        
-        setState(() {
-          _currentChat.add({'sender': 'bot', 'message': botResponse});
-          _messages.add({'sender': 'bot', 'message': botResponse});
-        });
-      } else {
-        String errorMessage;
-        switch (response.statusCode) {
-          case 401:
-            errorMessage = 'Error: Invalid API key. Please check your Cohere API key.';
-            break;
-          case 429:
-            errorMessage = 'Error: Too many requests. Please try again later.';
-            break;
-          case 500:
-            errorMessage = 'Error: Server issue at Cohere. Please try again later.';
-            break;
-          default:
-            errorMessage = 'Error: Server returned status ${response.statusCode}. Please try again or consult a doctor.';
-        }
-        _addErrorMessage(errorMessage);
-      }
+      String botResponse = response.text ?? 'No response received.';
+      debugPrint("Raw Vertex AI response: $botResponse");
+
+      botResponse = botResponse
+          .replaceAll('\r\n', '\n')
+          .replaceAll('\r', '\n')
+          .replaceAll(RegExp(r'[^\x20-\x7E\n]'), '');
+      botResponse = _formatListResponse(botResponse);
+      botResponse += '\n\nPlease consult a doctor for personalized medical advice.';
+
+      setState(() {
+        _currentChat.add({'sender': 'bot', 'message': botResponse});
+        _messages.add({'sender': 'bot', 'message': botResponse});
+      });
     } catch (e) {
-      debugPrint('Error sending message: $e');
-      String errorMessage = e is http.ClientException
-          ? 'Error: Network issue. Please check your internet connection.'
-          : 'Error: Unexpected issue ($e). Please try again or consult a doctor.';
+      debugPrint('Error sending message to Vertex AI: $e');
+      String errorMessage;
+      if (e.toString().contains('Quota')) {
+        errorMessage = 'Error: Quota exceeded. Please try again later.';
+      } else if (e.toString().contains('Network')) {
+        errorMessage = 'Error: Network issue. Please check your internet connection.';
+      } else {
+        errorMessage = 'Error: Unexpected issue ($e). Please try again or consult a doctor.';
+      }
       _addErrorMessage(errorMessage);
     }
   }
@@ -224,11 +207,11 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
       _currentChat = [];
       _currentChat.add({
         'sender': 'bot',
-        'message': 'Hello, I am a Level 1 Health Assistant. I can help answer basic health questions, but I am not a substitute for professional medical advice. What can I help with today?',
+        'message': 'Hello, I am a Level 1 Health Assistant powered by Google Vertex AI. I can help with basic health questions, but I’m not a substitute for professional medical advice. What can I assist you with today?',
       });
       _messages.add({
         'sender': 'bot',
-        'message': 'Hello, I am a Level 1 Health Assistant. I can help answer basic health questions, but I am not a substitute for professional medical advice. What can I help with today?',
+        'message': 'Hello, I am a Level 1 Health Assistant powered by Google Vertex AI. I can help with basic health questions, but I’m not a substitute for professional medical advice. What can I assist you with today?',
       });
     });
   }
@@ -276,10 +259,24 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
           _currentChat.add({'sender': 'user', 'message': 'Image uploaded (path: ${image.path})'});
           _messages.add({'sender': 'user', 'message': 'Image uploaded (path: ${image.path})'});
         });
-        _sendMessage('User uploaded an image for analysis. Please note that I can only provide basic health information and you should consult a doctor for proper diagnosis.');
+
+        final bytes = await image.readAsBytes();
+        final content = Content.multi([
+          TextPart('Analyze this image for basic health information.'),
+          DataPart('image/jpeg', bytes), // Fixed: Correct DataPart syntax
+        ]);
+
+        final response = await _model.generateContent([content]);
+
+        String botResponse = response.text ?? 'No response received.';
+        botResponse += '\n\nPlease consult a doctor for personalized medical advice.';
+        setState(() {
+          _currentChat.add({'sender': 'bot', 'message': botResponse});
+          _messages.add({'sender': 'bot', 'message': botResponse});
+        });
       }
     } catch (e) {
-      _addErrorMessage('Failed to open camera or upload image: $e');
+      _addErrorMessage('Failed to process image with Vertex AI: $e');
     }
   }
 
@@ -292,10 +289,24 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
           _currentChat.add({'sender': 'user', 'message': 'File attached (path: ${file.path})'});
           _messages.add({'sender': 'user', 'message': 'File attached (path: ${file.path})'});
         });
-        _sendMessage('User attached a file for analysis. Please note that I can only provide basic health information and you should consult a doctor for proper diagnosis.');
+
+        final bytes = await file.readAsBytes();
+        final content = Content.multi([
+          TextPart('Analyze this file for basic health information.'),
+          DataPart('image/jpeg', bytes), // Fixed: Correct DataPart syntax
+        ]);
+
+        final response = await _model.generateContent([content]);
+
+        String botResponse = response.text ?? 'No response received.';
+        botResponse += '\n\nPlease consult a doctor for personalized medical advice.';
+        setState(() {
+          _currentChat.add({'sender': 'bot', 'message': botResponse});
+          _messages.add({'sender': 'bot', 'message': botResponse});
+        });
       }
     } catch (e) {
-      _addErrorMessage('Failed to attach file: $e');
+      _addErrorMessage('Failed to process file with Vertex AI: $e');
     }
   }
 
@@ -344,15 +355,12 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
     final safePaddingBottom = MediaQuery.of(context).padding.bottom;
     final orientation = MediaQuery.of(context).orientation;
 
-    // Responsive panel width
     final panelWidth = screenWidth > 600
         ? screenWidth * 0.4
         : screenWidth * (orientation == Orientation.portrait ? 0.75 : 0.5);
 
-    // Responsive input box height
     final inputBoxHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
-    // Responsive panel height
     final appBarHeight = kToolbarHeight + safePaddingTop;
     final disclaimerHeight = screenHeight * 0.06;
     final panelHeight = screenHeight - appBarHeight - inputBoxHeight - disclaimerHeight - safePaddingBottom;
@@ -822,9 +830,11 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
                   ),
                 ),
               ),
-          ],  
+          ],
         ),
       ),
     );
   }
+
+  DataPart(String s, Uint8List bytes) {}
 }

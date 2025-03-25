@@ -1,3 +1,5 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_project/app/pages/doctorprofilepage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/login.dart' as login_page;
+import 'package:flutter_project/firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_project/app/pages/register.dart';
 import 'package:flutter_project/app/pages/chat_bot.dart' as chat_bot;
@@ -19,7 +22,10 @@ import 'dart:developer' as developer;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+);
+   await FirebaseAppCheck.instance.activate();
   try {
     await dotenv.load(fileName: "assets/.env");
     developer.log("Loaded .env successfully", name: 'Main');

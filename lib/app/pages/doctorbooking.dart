@@ -187,12 +187,10 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                         firstDate: DateTime.now(),
                         lastDate: DateTime(2026),
                       );
-                      if (pickedDate != null) {
-                        setState(() {
-                          _selectedDate = pickedDate;
-                        });
-                      }
-                    },
+                      setState(() {
+                        _selectedDate = pickedDate;
+                      });
+                                        },
                   ),
                   SizedBox(height: screenHeight * 0.02),
 
