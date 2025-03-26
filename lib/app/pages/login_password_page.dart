@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_project/app/pages/profile-page.dart'; // Ensure this import is correct
 import 'package:flutter_project/app/pages/services/auth_service.dart';
 import 'dart:convert'; // For base64 decoding
 import 'dart:developer' as developer;
@@ -28,6 +29,16 @@ class _PasswordPageState extends State<PasswordPage> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Instance of NotificationService
+  final NotificationService _notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Ensure NotificationService is initialized
+    _notificationService.initialize();
+  }
 
   Future<void> _verifyPassword() async {
     if (_passwordController.text.isEmpty) {
@@ -66,6 +77,10 @@ class _PasswordPageState extends State<PasswordPage> {
         // Set isLoggedIn to true
         await prefs.setBool('isLoggedIn', true);
         developer.log('Set isLoggedIn to true', name: 'PasswordPage');
+
+        // Show the "Login Successful" notification
+        await _notificationService.showImmediateNotification();
+        developer.log('Login successful, notification shown', name: 'PasswordPage');
 
         if (!mounted) return;
         // Use named route to navigate to HomePage
@@ -118,14 +133,14 @@ class _PasswordPageState extends State<PasswordPage> {
         developer.log('Error decoding profile image: $e', name: 'PasswordPage');
         return CircleAvatar(
           radius: 40,
-          backgroundColor: Colors.grey[300],
+          backgroundColor: Color.fromRGBO(158, 158, 158, 0.3), // Updated to Color.fromRGBO
           child: const Icon(Icons.person, size: 50, color: Colors.black),
         );
       }
     }
     return CircleAvatar(
       radius: 40,
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Color.fromRGBO(158, 158, 158, 0.3), // Updated to Color.fromRGBO
       child: const Icon(Icons.person, size: 50, color: Colors.black),
     );
   }
@@ -143,7 +158,7 @@ class _PasswordPageState extends State<PasswordPage> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.3),
+                color: Color.fromRGBO(33, 150, 243, 0.3), // Updated to Color.fromRGBO
                 shape: BoxShape.circle,
               ),
             ),

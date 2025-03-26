@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -13,7 +12,6 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:developer' as developer;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -97,6 +95,8 @@ class NotificationService {
       scheduledTZDateTime,
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -104,6 +104,10 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.cancelAll();
     developer.log('All notifications canceled', name: 'NotificationService');
   }
+
+  void init() {}
+
+  showImmediateNotification() {}
 }
 
 void main() async {
@@ -156,25 +160,36 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadLocalProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      firstNameController.text = prefs.getString('firstName') ?? 'John';
-      lastNameController.text = prefs.getString('lastName') ?? 'Doe';
-      emailController.text = prefs.getString('email') ?? 'example@gmail.com';
-      phoneController.text = prefs.getString('phone') ?? '';
-      dobController.text = prefs.getString('dob') ?? '1990-01-01';
-      addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
-      idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
-      gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
-      profileImagePath = prefs.getString('profileImagePath');
-      isLoading = false;
-    });
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    firstNameController.text = prefs.getString('firstName') ?? 'John';
+    lastNameController.text = prefs.getString('lastName') ?? 'Doe';
+    emailController.text = prefs.getString('username') ?? 'example@gmail.com'; // Use 'username' instead of 'email'
+    phoneController.text = prefs.getString('phone') ?? '';
+    dobController.text = prefs.getString('dob') ?? '1990-01-01';
+    addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
+    idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
+    gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
+    profileImagePath = prefs.getString('profileImage'); // Use 'profileImage' instead of 'profileImagePath'
+    isLoading = false;
+  });
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Loaded profile from local storage')),
-    );
-  }
+  developer.log('Loaded local profile data:', name: 'ProfilePage');
+  developer.log('firstName: ${firstNameController.text}', name: 'ProfilePage');
+  developer.log('lastName: ${lastNameController.text}', name: 'ProfilePage');
+  developer.log('email: ${emailController.text}', name: 'ProfilePage');
+  developer.log('phone: ${phoneController.text}', name: 'ProfilePage');
+  developer.log('dob: ${dobController.text}', name: 'ProfilePage');
+  developer.log('address: ${addressController.text}', name: 'ProfilePage');
+  developer.log('id: ${idController.text}', name: 'ProfilePage');
+  developer.log('gender: $gender', name: 'ProfilePage');
+  developer.log('profileImagePath: $profileImagePath', name: 'ProfilePage');
+
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Loaded profile from local storage')),
+  );
+}
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -227,7 +242,7 @@ class _ProfilePageState extends State<ProfilePage> {
           addressController.text = data['address'] ?? '';
           idController.text = data['governmentId'] ?? '';
           gender = genderOptions.contains(data['gender']) ? data['gender'] : null;
-          
+
           if (data['profileImage'] != null) {
             profileImagePath = 'data:image/jpeg;base64,${data['profileImage']}';
           } else {
@@ -259,58 +274,78 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget buildProfileImage() {
-    return Container(
-      width: screenWidth * 0.3,
-      height: screenWidth * 0.3,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white,
-          width: 2.0,
+  return Container(
+    width: screenWidth * 0.3,
+    height: screenWidth * 0.3,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(
+        color: Colors.white,
+        width: 2.0,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withAlpha((0.1 * 255).round()),
+          blurRadius: 6.0,
+          spreadRadius: 2.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.1 * 255).round()),
-            blurRadius: 6.0,
-            spreadRadius: 2.0,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: profileImagePath != null
-            ? Image.network(
-                profileImagePath!,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.person,
-                    size: screenWidth * 0.15,
-                    color: Colors.white,
-                  );
-                },
-              )
-            : Container(
-                color: Colors.grey[300],
-                child: Icon(
-                  Icons.person,
-                  size: screenWidth * 0.15,
-                  color: Colors.white,
-                ),
+      ],
+    ),
+    child: ClipOval(
+      child: profileImagePath != null
+          ? profileImagePath!.startsWith('data:image')
+              ? Image.memory(
+                  base64Decode(profileImagePath!.split(',')[1]),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    developer.log('Error loading profile image in buildProfileImage: $error', name: 'ProfilePage');
+                    return Container(
+                      color: Colors.grey[300],
+                      child: Icon(
+                        Icons.person,
+                        size: screenWidth * 0.15,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                )
+              : Image.network(
+                  profileImagePath!,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    developer.log('Error loading profile image from network: $error', name: 'ProfilePage');
+                    return Container(
+                      color: Colors.grey[300],
+                      child: Icon(
+                        Icons.person,
+                        size: screenWidth * 0.15,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                )
+          : Container(
+              color: Colors.grey[300],
+              child: Icon(
+                Icons.person,
+                size: screenWidth * 0.15,
+                color: Colors.white,
               ),
-      ),
-    );
-  }
+            ),
+  ),
+  );
+}
 
   Future<void> _pickProfileImage() async {
     if (!isEditing) return;
@@ -369,16 +404,16 @@ class _ProfilePageState extends State<ProfilePage> {
       } else if (!kIsWeb && profileImagePath != null) {
         var request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/profile'));
         request.headers['Authorization'] = 'Bearer $token';
-        
+
         profileData.forEach((key, value) {
           if (value != null) {
             request.fields[key] = value.toString();
           }
         });
-        
+
         final file = await http.MultipartFile.fromPath('profileImage', profileImagePath!);
         request.files.add(file);
-        
+
         final response = await request.send();
         final responseBody = await response.stream.bytesToString();
 

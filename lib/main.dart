@@ -19,13 +19,19 @@ import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
+import 'package:flutter_project/app/pages/background_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-);
-   await FirebaseAppCheck.instance.activate();
+  );
+  await FirebaseAppCheck.instance.activate();
+
+  // Load .env file
   try {
     await dotenv.load(fileName: "assets/.env");
     developer.log("Loaded .env successfully", name: 'Main');
@@ -33,10 +39,19 @@ void main() async {
     developer.log("Error loading .env: $e", name: 'Main');
   }
 
+  // Initialize the background service for notifications
+  await initializeService();
+
+  // Request notification permission for Android 13+
+  if (await Permission.notification.isDenied) {
+    await Permission.notification.request();
+  }
+
+  // Check login status
   final prefs = await SharedPreferences.getInstance();
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final String? username = prefs.getString('username');
-  final String? fullName = prefs.getString('fullName'); // Retrieve fullName
+  final String? fullName = prefs.getString('fullName');
   final String? profileImage = prefs.getString('profileImage');
 
   runApp(TelemedicineApp(
@@ -44,13 +59,14 @@ void main() async {
     initialArguments: isLoggedIn
         ? {
             'username': username ?? 'User',
-            'fullName': fullName ?? 'User', // Include fullName
+            'fullName': fullName ?? 'User',
             'profileImage': profileImage,
           }
         : null,
   ));
 }
 
+// Rest of the main.dart code remains the same (omitted for brevity)
 class TelemedicineApp extends StatelessWidget {
   final String initialRoute;
   final Map<String, dynamic>? initialArguments;
@@ -65,7 +81,7 @@ class TelemedicineApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final defaultArguments = {
       'username': 'User',
-      'fullName': 'User', // Include fullName
+      'fullName': 'User',
       'profileImage': null,
     };
 
@@ -170,7 +186,7 @@ class TelemedicineApp extends StatelessWidget {
                   Icon(
                     Icons.warning_amber_rounded,
                     size: 80,
-                    color: Theme.of(context).colorScheme.primary.withOpacity( 0.5),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -210,8 +226,7 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage>
-    with SingleTickerProviderStateMixin {
+class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin {
   late PageController _pageController;
   int _currentPage = 0;
   late AnimationController _fadeController;
@@ -443,10 +458,7 @@ class _MainPageState extends State<MainPage>
                         height: 8,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          color:
-                              _currentPage == index
-                                  ? Colors.blue
-                                  : Colors.blue.withOpacity(0.3),
+                          color: _currentPage == index ? Colors.blue : Colors.blue.withOpacity(0.3),
                         ),
                       );
                     }),
@@ -457,8 +469,7 @@ class _MainPageState extends State<MainPage>
                     children: [
                       Expanded(
                         child: AnimatedGetStartedButton(
-                          onPressed:
-                              () => Navigator.pushNamed(context, '/register'),
+                          onPressed: () => Navigator.pushNamed(context, '/register'),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -588,32 +599,31 @@ class _MainPageState extends State<MainPage>
                   image,
                   height: screenHeight * 0.35,
                   fit: BoxFit.contain,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        height: screenHeight * 0.35,
-                        width: screenWidth * 0.6,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(16),
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: screenHeight * 0.35,
+                    width: screenWidth * 0.6,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported_outlined,
+                          size: 60,
+                          color: Colors.grey.shade400,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.image_not_supported_outlined,
-                              size: 60,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              "Image not found",
-                              style: GoogleFonts.poppins(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 16),
+                        Text(
+                          "Image not found",
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey.shade600,
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -685,12 +695,10 @@ class AnimatedGetStartedButton extends StatefulWidget {
   const AnimatedGetStartedButton({required this.onPressed, super.key});
 
   @override
-  _AnimatedGetStartedButtonState createState() =>
-      _AnimatedGetStartedButtonState();
+  _AnimatedGetStartedButtonState createState() => _AnimatedGetStartedButtonState();
 }
 
-class _AnimatedGetStartedButtonState extends State<AnimatedGetStartedButton>
-    with SingleTickerProviderStateMixin {
+class _AnimatedGetStartedButtonState extends State<AnimatedGetStartedButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _glowAnimation;

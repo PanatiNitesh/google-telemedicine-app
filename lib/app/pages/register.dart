@@ -26,8 +26,8 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _consentGiven = false;
   bool isLoading = false;
 
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  var _firstNameController = TextEditingController();
+  var _lastNameController = TextEditingController();
   final _genderController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneNumberController = TextEditingController();
@@ -41,357 +41,1870 @@ class _RegisterPageState extends State<RegisterPage> {
   Uint8List? _profileImageBytes;
   String? _completePhoneNumber;
 
-  final String _backendUrl = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api/register';
+  final String _backendUrl =
+      'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api/register';
 
   final ImagePicker _picker = ImagePicker();
 
-final List<String> countries = [
-  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados',
-  'Belarus',
-  'Belgium',
-  'Belize',
-  'Benin',
-  'Bhutan',
-  'Bolivia',
-  'Bosnia and Herzegovina',
-  'Botswana',
-  'Brazil',
-  'Brunei',
-  'Bulgaria',
-  'Burkina Faso',
-  'Burundi',
-  'Cabo Verde',
-  'Cambodia',
-  'Cameroon',
-  'Canada',
-  'Central African Republic',
-  'Chad',
-  'Chile',
-  'China',
-  'Colombia',
-  'Comoros',
-  'Congo, Democratic Republic of the',
-  'Congo, Republic of the',
-  'Costa Rica',
-  'Croatia',
-  'Cuba',
-  'Cyprus',
-  'Czech Republic',
-  'Denmark',
-  'Djibouti',
-  'Dominica',
-  'Dominican Republic',
-  'East Timor',
-  'Ecuador',
-  'Egypt',
-  'El Salvador',
-  'Equatorial Guinea',
-  'Eritrea',
-  'Estonia',
-  'Eswatini',
-  'Ethiopia',
-  'Fiji',
-  'Finland',
-  'France',
-  'Gabon',
-  'Gambia',
-  'Georgia',
-  'Germany',
-  'Ghana',
-  'Greece',
-  'Grenada',
-  'Guatemala',
-  'Guinea',
-  'Guinea-Bissau',
-  'Guyana',
-  'Haiti',
-  'Honduras',
-  'Hungary',
-  'Iceland',
-  'India',
-  'Indonesia',
-  'Iran',
-  'Iraq',
-  'Ireland',
-  'Israel',
-  'Italy',
-  'Jamaica',
-  'Japan',
-  'Jordan',
-  'Kazakhstan',
-  'Kenya',
-  'Kiribati',
-  'Korea, North',
-  'Korea, South',
-  'Kosovo',
-  'Kuwait',
-  'Kyrgyzstan',
-  'Laos',
-  'Latvia',
-  'Lebanon',
-  'Lesotho',
-  'Liberia',
-  'Libya',
-  'Liechtenstein',
-  'Lithuania',
-  'Luxembourg',
-  'Madagascar',
-  'Malawi',
-  'Malaysia',
-  'Maldives',
-  'Mali',
-  'Malta',
-  'Marshall Islands',
-  'Mauritania',
-  'Mauritius',
-  'Mexico',
-  'Micronesia',
-  'Moldova',
-  'Monaco',
-  'Mongolia',
-  'Montenegro',
-  'Morocco',
-  'Mozambique',
-  'Myanmar',
-  'Namibia',
-  'Nauru',
-  'Nepal',
-  'Netherlands',
-  'New Zealand',
-  'Nicaragua',
-  'Niger',
-  'Nigeria',
-  'North Macedonia',
-  'Norway',
-  'Oman',
-  'Pakistan',
-  'Palau',
-  'Panama',
-  'Papua New Guinea',
-  'Paraguay',
-  'Peru',
-  'Philippines',
-  'Poland',
-  'Portugal',
-  'Qatar',
-  'Romania',
-  'Russia',
-  'Rwanda',
-  'Saint Kitts and Nevis',
-  'Saint Lucia',
-  'Saint Vincent and the Grenadines',
-  'Samoa',
-  'San Marino',
-  'Sao Tome and Principe',
-  'Saudi Arabia',
-  'Senegal',
-  'Serbia',
-  'Seychelles',
-  'Sierra Leone',
-  'Singapore',
-  'Slovakia',
-  'Slovenia',
-  'Solomon Islands',
-  'Somalia',
-  'South Africa',
-  'South Sudan',
-  'Spain',
-  'Sri Lanka',
-  'Sudan',
-  'Suriname',
-  'Sweden',
-  'Switzerland',
-  'Syria',
-  'Taiwan',
-  'Tajikistan',
-  'Tanzania',
-  'Thailand',
-  'Togo',
-  'Tonga',
-  'Trinidad and Tobago',
-  'Tunisia',
-  'Turkey',
-  'Turkmenistan',
-  'Tuvalu',
-  'Uganda',
-  'Ukraine',
-  'United Arab Emirates',
-  'United Kingdom',
-  'United States',
-  'Uruguay',
-  'Uzbekistan',
-  'Vanuatu',
-  'Vatican City',
-  'Venezuela',
-  'Vietnam',
-  'Yemen',
-  'Zambia',
-  'Zimbabwe',
-];
+  final List<String> countries = [
+    'Afghanistan',
+    'Albania',
+    'Algeria',
+    'Andorra',
+    'Angola',
+    'Antigua and Barbuda',
+    'Argentina',
+    'Armenia',
+    'Australia',
+    'Austria',
+    'Azerbaijan',
+    'Bahamas',
+    'Bahrain',
+    'Bangladesh',
+    'Barbados',
+    'Belarus',
+    'Belgium',
+    'Belize',
+    'Benin',
+    'Bhutan',
+    'Bolivia',
+    'Bosnia and Herzegovina',
+    'Botswana',
+    'Brazil',
+    'Brunei',
+    'Bulgaria',
+    'Burkina Faso',
+    'Burundi',
+    'Cabo Verde',
+    'Cambodia',
+    'Cameroon',
+    'Canada',
+    'Central African Republic',
+    'Chad',
+    'Chile',
+    'China',
+    'Colombia',
+    'Comoros',
+    'Congo, Democratic Republic of the',
+    'Congo, Republic of the',
+    'Costa Rica',
+    'Croatia',
+    'Cuba',
+    'Cyprus',
+    'Czech Republic',
+    'Denmark',
+    'Djibouti',
+    'Dominica',
+    'Dominican Republic',
+    'East Timor',
+    'Ecuador',
+    'Egypt',
+    'El Salvador',
+    'Equatorial Guinea',
+    'Eritrea',
+    'Estonia',
+    'Eswatini',
+    'Ethiopia',
+    'Fiji',
+    'Finland',
+    'France',
+    'Gabon',
+    'Gambia',
+    'Georgia',
+    'Germany',
+    'Ghana',
+    'Greece',
+    'Grenada',
+    'Guatemala',
+    'Guinea',
+    'Guinea-Bissau',
+    'Guyana',
+    'Haiti',
+    'Honduras',
+    'Hungary',
+    'Iceland',
+    'India',
+    'Indonesia',
+    'Iran',
+    'Iraq',
+    'Ireland',
+    'Israel',
+    'Italy',
+    'Jamaica',
+    'Japan',
+    'Jordan',
+    'Kazakhstan',
+    'Kenya',
+    'Kiribati',
+    'Korea, North',
+    'Korea, South',
+    'Kosovo',
+    'Kuwait',
+    'Kyrgyzstan',
+    'Laos',
+    'Latvia',
+    'Lebanon',
+    'Lesotho',
+    'Liberia',
+    'Libya',
+    'Liechtenstein',
+    'Lithuania',
+    'Luxembourg',
+    'Madagascar',
+    'Malawi',
+    'Malaysia',
+    'Maldives',
+    'Mali',
+    'Malta',
+    'Marshall Islands',
+    'Mauritania',
+    'Mauritius',
+    'Mexico',
+    'Micronesia',
+    'Moldova',
+    'Monaco',
+    'Mongolia',
+    'Montenegro',
+    'Morocco',
+    'Mozambique',
+    'Myanmar',
+    'Namibia',
+    'Nauru',
+    'Nepal',
+    'Netherlands',
+    'New Zealand',
+    'Nicaragua',
+    'Niger',
+    'Nigeria',
+    'North Macedonia',
+    'Norway',
+    'Oman',
+    'Pakistan',
+    'Palau',
+    'Panama',
+    'Papua New Guinea',
+    'Paraguay',
+    'Peru',
+    'Philippines',
+    'Poland',
+    'Portugal',
+    'Qatar',
+    'Romania',
+    'Russia',
+    'Rwanda',
+    'Saint Kitts and Nevis',
+    'Saint Lucia',
+    'Saint Vincent and the Grenadines',
+    'Samoa',
+    'San Marino',
+    'Sao Tome and Principe',
+    'Saudi Arabia',
+    'Senegal',
+    'Serbia',
+    'Seychelles',
+    'Sierra Leone',
+    'Singapore',
+    'Slovakia',
+    'Slovenia',
+    'Solomon Islands',
+    'Somalia',
+    'South Africa',
+    'South Sudan',
+    'Spain',
+    'Sri Lanka',
+    'Sudan',
+    'Suriname',
+    'Sweden',
+    'Switzerland',
+    'Syria',
+    'Taiwan',
+    'Tajikistan',
+    'Tanzania',
+    'Thailand',
+    'Togo',
+    'Tonga',
+    'Trinidad and Tobago',
+    'Tunisia',
+    'Turkey',
+    'Turkmenistan',
+    'Tuvalu',
+    'Uganda',
+    'Ukraine',
+    'United Arab Emirates',
+    'United Kingdom',
+    'United States',
+    'Uruguay',
+    'Uzbekistan',
+    'Vanuatu',
+    'Vatican City',
+    'Venezuela',
+    'Vietnam',
+    'Yemen',
+    'Zambia',
+    'Zimbabwe',
+  ];
 
-final Map<String, List<String>> countryStates = {
-  'Afghanistan': ['Badakhshan', 'Badghis', 'Baghlan', 'Balkh', 'Bamyan', 'Daykundi', 'Farah', 'Faryab', 'Ghazni', 'Ghor', 'Helmand', 'Herat', 'Jowzjan', 'Kabul', 'Kandahar', 'Kapisa', 'Khost', 'Kunar', 'Kunduz', 'Laghman', 'Logar', 'Nangarhar', 'Nimroz', 'Nuristan', 'Paktia', 'Paktika', 'Panjshir', 'Parwan', 'Samangan', 'Sar-e Pol', 'Takhar', 'Urozgan', 'Zabul'],
-  'Albania': ['Berat', 'Dibër', 'Durrës', 'Elbasan', 'Fier', 'Gjirokastër', 'Korçë', 'Kukës', 'Lezhë', 'Shkodër', 'Tirana', 'Vlorë'],
-  'Algeria': ['Adrar', 'Aïn Defla', 'Aïn Témouchent', 'Alger', 'Annaba', 'Batna', 'Béchar', 'Béjaïa', 'Biskra', 'Blida', 'Bordj Bou Arréridj', 'Bouira', 'Boumerdès', 'Chlef', 'Constantine', 'Djelfa', 'El Bayadh', 'El Oued', 'El Tarf', 'Ghardaïa', 'Guelma', 'Illizi', 'Jijel', 'Khenchela', 'Laghouat', 'Mascara', 'Médéa', 'Mila', 'Mostaganem', 'Msila', 'Naâma', 'Oran', 'Ouargla', 'Oum El Bouaghi', 'Relizane', 'Saïda', 'Sétif', 'Sidi Bel Abbès', 'Skikda', 'Souk Ahras', 'Tamanghasset', 'Tébessa', 'Tiaret', 'Tindouf', 'Tipaza', 'Tissemsilt', 'Tizi Ouzou', 'Tlemcen'],
-  'Argentina': ['Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'],
-  'Australia': ['Australian Capital Territory', 'New South Wales', 'Northern Territory', 'Queensland', 'South Australia', 'Tasmania', 'Victoria', 'Western Australia'],
-  'Austria': ['Burgenland', 'Carinthia', 'Lower Austria', 'Salzburg', 'Styria', 'Tyrol', 'Upper Austria', 'Vienna', 'Vorarlberg'],
-  'Bangladesh': ['Barisal', 'Chittagong', 'Dhaka', 'Khulna', 'Rajshahi', 'Rangpur', 'Sylhet'],
-  'Belarus': ['Brest', 'Gomel', 'Grodno', 'Minsk', 'Mogilev', 'Vitebsk'],
-  'Belgium': ['Antwerp', 'Brussels', 'East Flanders', 'Flemish Brabant', 'Hainaut', 'Liège', 'Limburg', 'Luxembourg', 'Namur', 'Walloon Brabant', 'West Flanders'],
-  'Bolivia': ['Beni', 'Chuquisaca', 'Cochabamba', 'La Paz', 'Oruro', 'Pando', 'Potosí', 'Santa Cruz', 'Tarija'],
-  'Bosnia and Herzegovina': ['Federation of Bosnia and Herzegovina', 'Republika Srpska', 'Brčko District'],
-  'Brazil': ['Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará', 'Espírito Santo', 'Goiás', 'Maranhão', 'Mato Grosso', 'Mato Grosso do Sul', 'Minas Gerais', 'Pará', 'Paraíba', 'Paraná', 'Pernambuco', 'Piauí', 'Rio de Janeiro', 'Rio Grande do Norte', 'Rio Grande do Sul', 'Rondônia', 'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'],
-  'Bulgaria': ['Blagoevgrad', 'Burgas', 'Dobrich', 'Gabrovo', 'Haskovo', 'Kardzhali', 'Kyustendil', 'Lovech', 'Montana', 'Pazardzhik', 'Pernik', 'Pleven', 'Plovdiv', 'Razgrad', 'Ruse', 'Shumen', 'Silistra', 'Sliven', 'Smolyan', 'Sofia', 'Sofia City', 'Stara Zagora', 'Targovishte', 'Varna', 'Veliko Tarnovo', 'Vidin', 'Vratsa', 'Yambol'],
-  'Canada': ['Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador', 'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan'],
-  'Chile': ['Aisén', 'Antofagasta', 'Araucanía', 'Arica and Parinacota', 'Atacama', 'Bío Bío', 'Coquimbo', 'La Araucanía', 'Los Lagos', 'Los Ríos', 'Magallanes', 'Maule', 'Ñuble', 'O’Higgins', 'Santiago Metropolitan', 'Tarapacá', 'Valparaíso'],
-  'China': ['Anhui', 'Beijing', 'Chongqing', 'Fujian', 'Gansu', 'Guangdong', 'Guangxi', 'Guizhou', 'Hainan', 'Hebei', 'Heilongjiang', 'Henan', 'Hubei', 'Hunan', 'Inner Mongolia', 'Jiangsu', 'Jiangxi', 'Jilin', 'Liaoning', 'Ningxia', 'Qinghai', 'Shaanxi', 'Shandong', 'Shanghai', 'Shanxi', 'Sichuan', 'Tianjin', 'Tibet', 'Xinjiang', 'Yunnan', 'Zhejiang'],
-  'Colombia': ['Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá', 'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cesar', 'Chocó', 'Córdoba', 'Cundinamarca', 'Guainía', 'Guaviare', 'Huila', 'La Guajira', 'Magdalena', 'Meta', 'Nariño', 'Norte de Santander', 'Putumayo', 'Quindío', 'Risaralda', 'San Andrés and Providencia', 'Santander', 'Sucre', 'Tolima', 'Valle del Cauca', 'Vaupés', 'Vichada'],
-  'Croatia': ['Bjelovar-Bilogora', 'Dubrovnik-Neretva', 'Istria', 'Karlovac', 'Koprivnica-Križevci', 'Lika-Senj', 'Međimurje', 'Osijek-Baranja', 'Požega-Slavonia', 'Primorje-Gorski Kotar', 'Sisak-Moslavina', 'Split-Dalmatia', 'Šibenik-Knin', 'Varaždin', 'Virovitica-Podravina', 'Vukovar-Srijem', 'Zadar', 'Zagreb', 'Zagreb County'],
-  'Czech Republic': ['Central Bohemian', 'Hradec Králové', 'Karlovy Vary', 'Liberec', 'Moravian-Silesian', 'Olomouc', 'Pardubice', 'Plzeň', 'Prague', 'South Bohemian', 'South Moravian', 'Ústí nad Labem', 'Vysočina', 'Zlín'],
-  'Denmark': ['Capital Region', 'Central Denmark Region', 'North Denmark Region', 'Region of Southern Denmark', 'Zealand'],
-  'Ecuador': ['Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro', 'Esmeraldas', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos', 'Manabí', 'Morona-Santiago', 'Napo', 'Orellana', 'Pastaza', 'Pichincha', 'Santa Elena', 'Santo Domingo de los Tsáchilas', 'Sucumbíos', 'Tungurahua', 'Zamora-Chinchipe'],
-  'Egypt': ['Alexandria', 'Aswan', 'Asyut', 'Beheira', 'Beni Suef', 'Cairo', 'Dakahlia', 'Damietta', 'Faiyum', 'Gharbia', 'Giza', 'Ismailia', 'Kafr El Sheikh', 'Luxor', 'Matrouh', 'Minya', 'Monufia', 'New Valley', 'North Sinai', 'Port Said', 'Qalyubia', 'Qena', 'Red Sea', 'Sharqia', 'Sohag', 'South Sinai', 'Suez'],
-  'Ethiopia': ['Afar', 'Amhara', 'Benishangul-Gumuz', 'Dire Dawa', 'Gambela', 'Harari', 'Oromia', 'Sidama', 'Somali', 'Southern Nations, Nationalities, and Peoples\' Region', 'Tigray'],
-  'Finland': ['Åland', 'Central Finland', 'Finland Proper', 'Kainuu', 'Lapland', 'North Karelia', 'North Ostrobothnia', 'North Savo', 'Ostrobothnia', 'Päijänne Tavastia', 'Pirkanmaa', 'Satakunta', 'South Karelia', 'South Ostrobothnia', 'South Savo', 'Uusimaa'],
-  'France': ['Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Brittany', 'Centre-Val de Loire', 'Corsica', 'Grand Est', 'Hauts-de-France', 'Île-de-France', 'Normandy', 'Nouvelle-Aquitaine', 'Occitanie', 'Pays de la Loire', 'Provence-Alpes-Côte d\'Azur'],
-  'Germany': ['Baden-Württemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse', 'Lower Saxony', 'Mecklenburg-Vorpommern', 'North Rhine-Westphalia', 'Rhineland-Palatinate', 'Saarland', 'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia'],
-  'Greece': ['Attica', 'Central Greece', 'Central Macedonia', 'Crete', 'East Macedonia and Thrace', 'Epirus', 'Ionian Islands', 'North Aegean', 'Peloponnese', 'South Aegean', 'Thessaly', 'West Greece', 'West Macedonia'],
-  'Hungary': ['Bács-Kiskun', 'Baranya', 'Békés', 'Borsod-Abaúj-Zemplén', 'Csongrád-Csanád', 'Fejér', 'Győr-Moson-Sopron', 'Hajdú-Bihar', 'Heves', 'Jász-Nagykun-Szolnok', 'Komárom-Esztergom', 'Nógrád', 'Pest', 'Somogy', 'Szabolcs-Szatmár-Bereg', 'Tolna', 'Vas', 'Veszprém', 'Zala'],
-  'India': ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'],
-  'Indonesia': ['Aceh', 'Bali', 'Bangka Belitung Islands', 'Banten', 'Bengkulu', 'Central Java', 'Central Kalimantan', 'Central Sulawesi', 'East Java', 'East Kalimantan', 'East Nusa Tenggara', 'Gorontalo', 'Jakarta', 'Jambi', 'Lampung', 'Maluku', 'North Kalimantan', 'North Maluku', 'North Sulawesi', 'North Sumatra', 'Papua', 'Riau', 'South Kalimantan', 'South Sulawesi', 'South Sumatra', 'Southeast Sulawesi', 'West Java', 'West Kalimantan', 'West Nusa Tenggara', 'West Papua', 'West Sulawesi', 'West Sumatra', 'Yogyakarta'],
-  'Iran': ['Alborz', 'Ardabil', 'Bushehr', 'Chahar Mahaal and Bakhtiari', 'East Azerbaijan', 'Fars', 'Gilan', 'Golestan', 'Hamadan', 'Hormozgan', 'Ilam', 'Isfahan', 'Kerman', 'Kermanshah', 'Khuzestan', 'Kohgiluyeh and Boyer-Ahmad', 'Kurdistan', 'Lorestan', 'Markazi', 'Mazandaran', 'North Khorasan', 'Qazvin', 'Qom', 'Razavi Khorasan', 'Semnan', 'Sistan and Baluchestan', 'South Khorasan', 'Tehran', 'West Azerbaijan', 'Yazd', 'Zanjan'],
-  'Iraq': ['Anbar', 'Babil', 'Baghdad', 'Basra', 'Dhi Qar', 'Diyala', 'Dohuk', 'Erbil', 'Karbala', 'Kirkuk', 'Maysan', 'Muthanna', 'Najaf', 'Nineveh', 'Saladin', 'Sulaymaniyah', 'Wasit'],
-  'Italy': ['Abruzzo', 'Aosta Valley', 'Apulia', 'Basilicata', 'Calabria', 'Campania', 'Emilia-Romagna', 'Friuli-Venezia Giulia', 'Lazio', 'Liguria', 'Lombardy', 'Marche', 'Molise', 'Piedmont', 'Sardinia', 'Sicily', 'Trentino-South Tyrol', 'Tuscany', 'Umbria', 'Veneto'],
-  'Japan': ['Aichi', 'Akita', 'Aomori', 'Chiba', 'Ehime', 'Fukui', 'Fukuoka', 'Fukushima', 'Gifu', 'Gunma', 'Hiroshima', 'Hokkaido', 'Hyogo', 'Ibaraki', 'Ishikawa', 'Iwate', 'Kagawa', 'Kagoshima', 'Kanagawa', 'Kochi', 'Kumamoto', 'Kyoto', 'Mie', 'Miyagi', 'Miyazaki', 'Nagano', 'Nagasaki', 'Nara', 'Niigata', 'Oita', 'Okayama', 'Okinawa', 'Osaka', 'Saga', 'Saitama', 'Shiga', 'Shimane', 'Shizuoka', 'Tochigi', 'Tokushima', 'Tokyo', 'Tottori', 'Toyama', 'Wakayama', 'Yamagata', 'Yamaguchi', 'Yamanashi'],
-  'Kenya': ['Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo-Marakwet', 'Embu', 'Garissa', 'Homa Bay', 'Isiolo', 'Kajiado', 'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga', 'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia', 'Lamu', 'Machakos', 'Makueni', 'Mandera', 'Marsabit', 'Meru', 'Migori', 'Mombasa', 'Murang\'a', 'Nairobi', 'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua', 'Nyeri', 'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River', 'Tharaka-Nithi', 'Trans Nzoia', 'Turkana', 'Uasin Gishu', 'Vihiga', 'Wajir', 'West Pokot'],
-  'Malaysia': ['Johor', 'Kedah', 'Kelantan', 'Malacca', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu'],
-  'Mexico': ['Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua', 'Coahuila', 'Colima', 'Durango', 'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Mexico City', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'],
-  'Morocco': ['Béni Mellal-Khénifra', 'Casablanca-Settat', 'Dakhla-Oued Ed-Dahab', 'Drâa-Tafilalet', 'Fès-Meknès', 'Guelmim-Oued Noun', 'Laâyoune-Sakia El Hamra', 'Marrakech-Safi', 'Oriental', 'Rabat-Salé-Kénitra', 'Souss-Massa', 'Tangier-Tétouan-Al Hoceïma'],
-  'Myanmar': ['Ayeyarwady', 'Bago', 'Chin', 'Kachin', 'Kayah', 'Kayin', 'Magway', 'Mandalay', 'Mon', 'Naypyidaw', 'Rakhine', 'Sagaing', 'Shan', 'Tanintharyi', 'Yangon'],
-  'Nepal': ['Bagmati', 'Gandaki', 'Karnali', 'Koshi', 'Lumbini', 'Madhesh', 'Sudurpashchim'],
-  'Netherlands': ['Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg', 'North Brabant', 'North Holland', 'Overijssel', 'South Holland', 'Utrecht', 'Zeeland'],
-  'New Zealand': ['Auckland', 'Bay of Plenty', 'Canterbury', 'Hawke\'s Bay', 'Manawatu-Whanganui', 'Marlborough', 'Nelson', 'Northland', 'Otago', 'Southland', 'Taranaki', 'Tasman', 'Waikato', 'Wellington', 'West Coast'],
-  'Nigeria': ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'],
-  'Pakistan': ['Balochistan', 'Khyber Pakhtunkhwa', 'Punjab', 'Sindh', 'Gilgit-Baltistan', 'Azad Jammu and Kashmir'],
-  'Peru': ['Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho', 'Cajamarca', 'Callao', 'Cusco', 'Huancavelica', 'Huanuco', 'Ica', 'Junín', 'La Libertad', 'Lambayeque', 'Lima', 'Loreto', 'Madre de Dios', 'Moquegua', 'Pasco', 'Piura', 'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'],
-  'Philippines': ['Abra', 'Agusan del Norte', 'Agusan del Sur', 'Aklan', 'Albay', 'Antique', 'Apayao', 'Aurora', 'Basilan', 'Bataan', 'Batanes', 'Batangas', 'Benguet', 'Biliran', 'Bohol', 'Bukidnon', 'Bulacan', 'Cagayan', 'Camarines Norte', 'Camarines Sur', 'Camiguin', 'Capiz', 'Catanduanes', 'Cavite', 'Cebu', 'Cotabato', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Occidental', 'Davao Oriental', 'Dinagat Islands', 'Eastern Samar', 'Guimaras', 'Ifugao', 'Ilocos Norte', 'Ilocos Sur', 'Iloilo', 'Isabela', 'Kalinga', 'La Union', 'Laguna', 'Lanao del Norte', 'Lanao del Sur', 'Leyte', 'Maguindanao', 'Marinduque', 'Masbate', 'Misamis Occidental', 'Misamis Oriental', 'Mountain Province', 'Negros Occidental', 'Negros Oriental', 'Northern Samar', 'Nueva Ecija', 'Nueva Vizcaya', 'Occidental Mindoro', 'Oriental Mindoro', 'Palawan', 'Pampanga', 'Pangasinan', 'Quezon', 'Quirino', 'Rizal', 'Romblon', 'Samar', 'Sarangani', 'Siquijor', 'Sorsogon', 'South Cotabato', 'Southern Leyte', 'Sultan Kudarat', 'Sulu', 'Surigao del Norte', 'Surigao del Sur', 'Tarlac', 'Tawi-Tawi', 'Zambales', 'Zamboanga del Norte', 'Zamboanga del Sur', 'Zamboanga Sibugay'],
-  'Poland': ['Greater Poland', 'Kuyavian-Pomeranian', 'Lesser Poland', 'Lodz', 'Lower Silesian', 'Lublin', 'Lubusz', 'Masovian', 'Opole', 'Podlaskie', 'Pomeranian', 'Silesian', 'Subcarpathian', 'Świętokrzyskie', 'Warmian-Masurian', 'West Pomeranian'],
-  'Romania': ['Alba', 'Arad', 'Argeș', 'Bacău', 'Bihor', 'Bistrița-Năsăud', 'Botoșani', 'Brașov', 'Brăila', 'București', 'Buzău', 'Călărași', 'Caraș-Severin', 'Cluj', 'Constanța', 'Covasna', 'Dâmbovița', 'Dolj', 'Galați', 'Giurgiu', 'Gorj', 'Harghita', 'Hunedoara', 'Ialomița', 'Iași', 'Ilfov', 'Maramureș', 'Mehedinți', 'Mureș', 'Neamț', 'Olt', 'Prahova', 'Satu Mare', 'Sălaj', 'Sibiu', 'Suceava', 'Teleorman', 'Timiș', 'Tulcea', 'Vâlcea', 'Vaslui', 'Vrancea'],
-  'Russia': ['Adygea', 'Altai Republic', 'Bashkortostan', 'Buryatia', 'Chechnya', 'Chuvashia', 'Dagestan', 'Ingushetia', 'Kabardino-Balkaria', 'Kalmykia', 'Karachay-Cherkessia', 'Karelia', 'Khakassia', 'Komi', 'Mari El', 'Mordovia', 'North Ossetia-Alania', 'Sakha', 'Tatarstan', 'Tuva', 'Udmurtia'],
-  'South Africa': ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'North West', 'Northern Cape', 'Western Cape'],
-  'Spain': ['Andalusia', 'Aragon', 'Asturias', 'Balearic Islands', 'Basque Country', 'Canary Islands', 'Cantabria', 'Castile and León', 'Castile-La Mancha', 'Catalonia', 'Community of Madrid', 'Extremadura', 'Galicia', 'La Rioja', 'Navarre', 'Region of Murcia', 'Valencian Community'],
-  'Sudan': ['Blue Nile', 'Central Darfur', 'East Darfur', 'Gedaref', 'Kassala', 'Khartoum', 'North Darfur', 'North Kordofan', 'Northern', 'Red Sea', 'River Nile', 'Sennar', 'South Darfur', 'South Kordofan', 'West Darfur', 'West Kordofan'],
-  'Sweden': ['Blekinge', 'Dalarna', 'Gävleborg', 'Gotland', 'Halland', 'Jämtland', 'Jönköping', 'Kalmar', 'Kronoberg', 'Norrbotten', 'Örebro', 'Östergötland', 'Skåne', 'Södermanland', 'Stockholm', 'Uppsala', 'Värmland', 'Västerbotten', 'Västernorrland', 'Västmanland', 'Västra Götaland'],
-  'Switzerland': ['Aargau', 'Appenzell Ausserrhoden', 'Appenzell Innerrhoden', 'Basel-Landschaft', 'Basel-Stadt', 'Bern', 'Fribourg', 'Geneva', 'Glarus', 'Graubünden', 'Jura', 'Lucerne', 'Neuchâtel', 'Nidwalden', 'Obwalden', 'Schaffhausen', 'Schwyz', 'Solothurn', 'St. Gallen', 'Thurgau', 'Ticino', 'Uri', 'Vaud', 'Valais', 'Zug', 'Zurich'],
-  'Thailand': ['Amnat Charoen', 'Ang Thong', 'Bueng Kan', 'Buri Ram', 'Chachoengsao', 'Chai Nat', 'Chaiyaphum', 'Chanthaburi', 'Chiang Mai', 'Chiang Rai', 'Chon Buri', 'Chumphon', 'Kalasin', 'Kamphaeng Phet', 'Kanchanaburi', 'Khon Kaen', 'Krabi', 'Lampang', 'Lamphun', 'Loei', 'Lop Buri', 'Mae Hong Son', 'Maha Sarakham', 'Mukdahan', 'Nakhon Pathom', 'Nakhon Phanom', 'Nakhon Ratchasima', 'Nakhon Sawan', 'Nakhon Si Thammarat', 'Nan', 'Narathiwat', 'Nong Bua Lamphu', 'Nong Khai', 'Nonthaburi', 'Pathum Thani', 'Pattani', 'Phang Nga', 'Phatthalung', 'Phayao', 'Phetchabun', 'Phetchaburi', 'Phichit', 'Phitsanulok', 'Phrae', 'Phuket', 'Prachin Buri', 'Prachuap Khiri Khan', 'Ranong', 'Ratchaburi', 'Rayong', 'Roi Et', 'Sa Kaeo', 'Sakon Nakhon', 'Samut Prakan', 'Samut Sakhon', 'Samut Songkhram', 'Saraburi', 'Satun', 'Sing Buri', 'Sisaket', 'Songkhla', 'Sukhothai', 'Suphan Buri', 'Surat Thani', 'Surin', 'Tak', 'Trang', 'Trat', 'Ubon Ratchathani', 'Udon Thani', 'Uthai Thani', 'Uttaradit', 'Yala', 'Yasothon'],
-  'Turkey': ['Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya', 'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'Istanbul', 'Izmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis', 'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa', 'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize', 'Sakarya', 'Samsun', 'Şanlıurfa', 'Siirt', 'Sinop', 'Sivas', 'Şırnak', 'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'],
-  'Ukraine': ['Cherkasy', 'Chernihiv', 'Chernivtsi', 'Dnipropetrovsk', 'Donetsk', 'Ivano-Frankivsk', 'Kharkiv', 'Kherson', 'Khmelnytskyi', 'Kiev', 'Kirovohrad', 'Luhansk', 'Lviv', 'Mykolaiv', 'Odessa', 'Poltava', 'Rivne', 'Sumy', 'Ternopil', 'Vinnytsia', 'Volyn', 'Zakarpattia', 'Zaporizhzhia', 'Zhytomyr'],
-  'United Kingdom': ['England', 'Northern Ireland', 'Scotland', 'Wales'],
-  'United States': ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'],
-  'Venezuela': ['Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 'Carabobo', 'Cojedes', 'Delta Amacuro', 'Falcón', 'Guárico', 'Lara', 'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta', 'Portuguesa', 'Sucre', 'Táchira', 'Trujillo', 'Yaracuy', 'Zulia'],
-  'Vietnam': ['An Giang', 'Bà Rịa-Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước', 'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hải Phòng', 'Hậu Giang', 'Hòa Bình', 'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'],
-  // Unitary states or countries with no formal provinces/states
-  'Andorra': [],
-  'Antigua and Barbuda': [],
-  'Bahamas': [],
-  'Bahrain': [],
-  'Barbados': [],
-  'Belize': [],
-  'Bhutan': [],
-  'Brunei': [],
-  'Comoros': [],
-  'Cyprus': [],
-  'Djibouti': [],
-  'Dominica': [],
-  'East Timor': [],
-  'El Salvador': [],
-  'Equatorial Guinea': [],
-  'Eritrea': [],
-  'Estonia': [],
-  'Eswatini': [],
-  'Fiji': [],
-  'Gabon': [],
-  'Gambia': [],
-  'Grenada': [],
-  'Guinea': [],
-  'Guinea-Bissau': [],
-  'Guyana': [],
-  'Haiti': [],
-  'Iceland': [],
-  'Ireland': [],
-  'Israel': [],
-  'Jamaica': [],
-  'Jordan': [],
-  'Kiribati': [],
-  'Korea, North': [],
-  'Korea, South': [],
-  'Kosovo': [],
-  'Kuwait': [],
-  'Kyrgyzstan': [],
-  'Laos': [],
-  'Latvia': [],
-  'Lebanon': [],
-  'Lesotho': [],
-  'Liberia': [],
-  'Liechtenstein': [],
-  'Lithuania': [],
-  'Luxembourg': [],
-  'Malawi': [],
-  'Maldives': [],
-  'Malta': [],
-  'Marshall Islands': [],
-  'Mauritania': [],
-  'Mauritius': [],
-  'Micronesia': [],
-  'Moldova': [],
-  'Monaco': [],
-  'Montenegro': [],
-  'Nauru': [],
-  'Nicaragua': [],
-  'Niger': [],
-  'North Macedonia': [],
-  'Norway': [],
-  'Oman': [],
-  'Palau': [],
-  'Panama': [],
-  'Qatar': [],
-  'Saint Kitts and Nevis': [],
-  'Saint Lucia': [],
-  'Saint Vincent and the Grenadines': [],
-  'Samoa': [],
-  'San Marino': [],
-  'Sao Tome and Principe': [],
-  'Saudi Arabia': [],
-  'Senegal': [],
-  'Seychelles': [],
-  'Sierra Leone': [],
-  'Singapore': [],
-  'Slovakia': [],
-  'Slovenia': [],
-  'Solomon Islands': [],
-  'Somalia': [],
-  'South Sudan': [],
-  'Suriname': [],
-  'Togo': [],
-  'Tonga': [],
-  'Trinidad and Tobago': [],
-  'Tunisia': [],
-  'Turkmenistan': [],
-  'Tuvalu': [],
-  'United Arab Emirates': [],
-  'Uruguay': [],
-  'Uzbekistan': [],
-  'Vanuatu': [],
-  'Vatican City': [],
-  'Yemen': [],
-  'Zambia': [],
-  'Zimbabwe': [],
-};
+  final Map<String, List<String>> countryStates = {
+    'Afghanistan': [
+      'Badakhshan',
+      'Badghis',
+      'Baghlan',
+      'Balkh',
+      'Bamyan',
+      'Daykundi',
+      'Farah',
+      'Faryab',
+      'Ghazni',
+      'Ghor',
+      'Helmand',
+      'Herat',
+      'Jowzjan',
+      'Kabul',
+      'Kandahar',
+      'Kapisa',
+      'Khost',
+      'Kunar',
+      'Kunduz',
+      'Laghman',
+      'Logar',
+      'Nangarhar',
+      'Nimroz',
+      'Nuristan',
+      'Paktia',
+      'Paktika',
+      'Panjshir',
+      'Parwan',
+      'Samangan',
+      'Sar-e Pol',
+      'Takhar',
+      'Urozgan',
+      'Zabul',
+    ],
+    'Albania': [
+      'Berat',
+      'Dibër',
+      'Durrës',
+      'Elbasan',
+      'Fier',
+      'Gjirokastër',
+      'Korçë',
+      'Kukës',
+      'Lezhë',
+      'Shkodër',
+      'Tirana',
+      'Vlorë',
+    ],
+    'Algeria': [
+      'Adrar',
+      'Aïn Defla',
+      'Aïn Témouchent',
+      'Alger',
+      'Annaba',
+      'Batna',
+      'Béchar',
+      'Béjaïa',
+      'Biskra',
+      'Blida',
+      'Bordj Bou Arréridj',
+      'Bouira',
+      'Boumerdès',
+      'Chlef',
+      'Constantine',
+      'Djelfa',
+      'El Bayadh',
+      'El Oued',
+      'El Tarf',
+      'Ghardaïa',
+      'Guelma',
+      'Illizi',
+      'Jijel',
+      'Khenchela',
+      'Laghouat',
+      'Mascara',
+      'Médéa',
+      'Mila',
+      'Mostaganem',
+      'Msila',
+      'Naâma',
+      'Oran',
+      'Ouargla',
+      'Oum El Bouaghi',
+      'Relizane',
+      'Saïda',
+      'Sétif',
+      'Sidi Bel Abbès',
+      'Skikda',
+      'Souk Ahras',
+      'Tamanghasset',
+      'Tébessa',
+      'Tiaret',
+      'Tindouf',
+      'Tipaza',
+      'Tissemsilt',
+      'Tizi Ouzou',
+      'Tlemcen',
+    ],
+    'Argentina': [
+      'Buenos Aires',
+      'Catamarca',
+      'Chaco',
+      'Chubut',
+      'Córdoba',
+      'Corrientes',
+      'Entre Ríos',
+      'Formosa',
+      'Jujuy',
+      'La Pampa',
+      'La Rioja',
+      'Mendoza',
+      'Misiones',
+      'Neuquén',
+      'Río Negro',
+      'Salta',
+      'San Juan',
+      'San Luis',
+      'Santa Cruz',
+      'Santa Fe',
+      'Santiago del Estero',
+      'Tierra del Fuego',
+      'Tucumán',
+    ],
+    'Australia': [
+      'Australian Capital Territory',
+      'New South Wales',
+      'Northern Territory',
+      'Queensland',
+      'South Australia',
+      'Tasmania',
+      'Victoria',
+      'Western Australia',
+    ],
+    'Austria': [
+      'Burgenland',
+      'Carinthia',
+      'Lower Austria',
+      'Salzburg',
+      'Styria',
+      'Tyrol',
+      'Upper Austria',
+      'Vienna',
+      'Vorarlberg',
+    ],
+    'Bangladesh': [
+      'Barisal',
+      'Chittagong',
+      'Dhaka',
+      'Khulna',
+      'Rajshahi',
+      'Rangpur',
+      'Sylhet',
+    ],
+    'Belarus': ['Brest', 'Gomel', 'Grodno', 'Minsk', 'Mogilev', 'Vitebsk'],
+    'Belgium': [
+      'Antwerp',
+      'Brussels',
+      'East Flanders',
+      'Flemish Brabant',
+      'Hainaut',
+      'Liège',
+      'Limburg',
+      'Luxembourg',
+      'Namur',
+      'Walloon Brabant',
+      'West Flanders',
+    ],
+    'Bolivia': [
+      'Beni',
+      'Chuquisaca',
+      'Cochabamba',
+      'La Paz',
+      'Oruro',
+      'Pando',
+      'Potosí',
+      'Santa Cruz',
+      'Tarija',
+    ],
+    'Bosnia and Herzegovina': [
+      'Federation of Bosnia and Herzegovina',
+      'Republika Srpska',
+      'Brčko District',
+    ],
+    'Brazil': [
+      'Acre',
+      'Alagoas',
+      'Amapá',
+      'Amazonas',
+      'Bahia',
+      'Ceará',
+      'Espírito Santo',
+      'Goiás',
+      'Maranhão',
+      'Mato Grosso',
+      'Mato Grosso do Sul',
+      'Minas Gerais',
+      'Pará',
+      'Paraíba',
+      'Paraná',
+      'Pernambuco',
+      'Piauí',
+      'Rio de Janeiro',
+      'Rio Grande do Norte',
+      'Rio Grande do Sul',
+      'Rondônia',
+      'Roraima',
+      'Santa Catarina',
+      'São Paulo',
+      'Sergipe',
+      'Tocantins',
+    ],
+    'Bulgaria': [
+      'Blagoevgrad',
+      'Burgas',
+      'Dobrich',
+      'Gabrovo',
+      'Haskovo',
+      'Kardzhali',
+      'Kyustendil',
+      'Lovech',
+      'Montana',
+      'Pazardzhik',
+      'Pernik',
+      'Pleven',
+      'Plovdiv',
+      'Razgrad',
+      'Ruse',
+      'Shumen',
+      'Silistra',
+      'Sliven',
+      'Smolyan',
+      'Sofia',
+      'Sofia City',
+      'Stara Zagora',
+      'Targovishte',
+      'Varna',
+      'Veliko Tarnovo',
+      'Vidin',
+      'Vratsa',
+      'Yambol',
+    ],
+    'Canada': [
+      'Alberta',
+      'British Columbia',
+      'Manitoba',
+      'New Brunswick',
+      'Newfoundland and Labrador',
+      'Nova Scotia',
+      'Ontario',
+      'Prince Edward Island',
+      'Quebec',
+      'Saskatchewan',
+    ],
+    'Chile': [
+      'Aisén',
+      'Antofagasta',
+      'Araucanía',
+      'Arica and Parinacota',
+      'Atacama',
+      'Bío Bío',
+      'Coquimbo',
+      'La Araucanía',
+      'Los Lagos',
+      'Los Ríos',
+      'Magallanes',
+      'Maule',
+      'Ñuble',
+      'O’Higgins',
+      'Santiago Metropolitan',
+      'Tarapacá',
+      'Valparaíso',
+    ],
+    'China': [
+      'Anhui',
+      'Beijing',
+      'Chongqing',
+      'Fujian',
+      'Gansu',
+      'Guangdong',
+      'Guangxi',
+      'Guizhou',
+      'Hainan',
+      'Hebei',
+      'Heilongjiang',
+      'Henan',
+      'Hubei',
+      'Hunan',
+      'Inner Mongolia',
+      'Jiangsu',
+      'Jiangxi',
+      'Jilin',
+      'Liaoning',
+      'Ningxia',
+      'Qinghai',
+      'Shaanxi',
+      'Shandong',
+      'Shanghai',
+      'Shanxi',
+      'Sichuan',
+      'Tianjin',
+      'Tibet',
+      'Xinjiang',
+      'Yunnan',
+      'Zhejiang',
+    ],
+    'Colombia': [
+      'Amazonas',
+      'Antioquia',
+      'Arauca',
+      'Atlántico',
+      'Bolívar',
+      'Boyacá',
+      'Caldas',
+      'Caquetá',
+      'Casanare',
+      'Cauca',
+      'Cesar',
+      'Chocó',
+      'Córdoba',
+      'Cundinamarca',
+      'Guainía',
+      'Guaviare',
+      'Huila',
+      'La Guajira',
+      'Magdalena',
+      'Meta',
+      'Nariño',
+      'Norte de Santander',
+      'Putumayo',
+      'Quindío',
+      'Risaralda',
+      'San Andrés and Providencia',
+      'Santander',
+      'Sucre',
+      'Tolima',
+      'Valle del Cauca',
+      'Vaupés',
+      'Vichada',
+    ],
+    'Croatia': [
+      'Bjelovar-Bilogora',
+      'Dubrovnik-Neretva',
+      'Istria',
+      'Karlovac',
+      'Koprivnica-Križevci',
+      'Lika-Senj',
+      'Međimurje',
+      'Osijek-Baranja',
+      'Požega-Slavonia',
+      'Primorje-Gorski Kotar',
+      'Sisak-Moslavina',
+      'Split-Dalmatia',
+      'Šibenik-Knin',
+      'Varaždin',
+      'Virovitica-Podravina',
+      'Vukovar-Srijem',
+      'Zadar',
+      'Zagreb',
+      'Zagreb County',
+    ],
+    'Czech Republic': [
+      'Central Bohemian',
+      'Hradec Králové',
+      'Karlovy Vary',
+      'Liberec',
+      'Moravian-Silesian',
+      'Olomouc',
+      'Pardubice',
+      'Plzeň',
+      'Prague',
+      'South Bohemian',
+      'South Moravian',
+      'Ústí nad Labem',
+      'Vysočina',
+      'Zlín',
+    ],
+    'Denmark': [
+      'Capital Region',
+      'Central Denmark Region',
+      'North Denmark Region',
+      'Region of Southern Denmark',
+      'Zealand',
+    ],
+    'Ecuador': [
+      'Azuay',
+      'Bolívar',
+      'Cañar',
+      'Carchi',
+      'Chimborazo',
+      'Cotopaxi',
+      'El Oro',
+      'Esmeraldas',
+      'Guayas',
+      'Imbabura',
+      'Loja',
+      'Los Ríos',
+      'Manabí',
+      'Morona-Santiago',
+      'Napo',
+      'Orellana',
+      'Pastaza',
+      'Pichincha',
+      'Santa Elena',
+      'Santo Domingo de los Tsáchilas',
+      'Sucumbíos',
+      'Tungurahua',
+      'Zamora-Chinchipe',
+    ],
+    'Egypt': [
+      'Alexandria',
+      'Aswan',
+      'Asyut',
+      'Beheira',
+      'Beni Suef',
+      'Cairo',
+      'Dakahlia',
+      'Damietta',
+      'Faiyum',
+      'Gharbia',
+      'Giza',
+      'Ismailia',
+      'Kafr El Sheikh',
+      'Luxor',
+      'Matrouh',
+      'Minya',
+      'Monufia',
+      'New Valley',
+      'North Sinai',
+      'Port Said',
+      'Qalyubia',
+      'Qena',
+      'Red Sea',
+      'Sharqia',
+      'Sohag',
+      'South Sinai',
+      'Suez',
+    ],
+    'Ethiopia': [
+      'Afar',
+      'Amhara',
+      'Benishangul-Gumuz',
+      'Dire Dawa',
+      'Gambela',
+      'Harari',
+      'Oromia',
+      'Sidama',
+      'Somali',
+      'Southern Nations, Nationalities, and Peoples\' Region',
+      'Tigray',
+    ],
+    'Finland': [
+      'Åland',
+      'Central Finland',
+      'Finland Proper',
+      'Kainuu',
+      'Lapland',
+      'North Karelia',
+      'North Ostrobothnia',
+      'North Savo',
+      'Ostrobothnia',
+      'Päijänne Tavastia',
+      'Pirkanmaa',
+      'Satakunta',
+      'South Karelia',
+      'South Ostrobothnia',
+      'South Savo',
+      'Uusimaa',
+    ],
+    'France': [
+      'Auvergne-Rhône-Alpes',
+      'Bourgogne-Franche-Comté',
+      'Brittany',
+      'Centre-Val de Loire',
+      'Corsica',
+      'Grand Est',
+      'Hauts-de-France',
+      'Île-de-France',
+      'Normandy',
+      'Nouvelle-Aquitaine',
+      'Occitanie',
+      'Pays de la Loire',
+      'Provence-Alpes-Côte d\'Azur',
+    ],
+    'Germany': [
+      'Baden-Württemberg',
+      'Bavaria',
+      'Berlin',
+      'Brandenburg',
+      'Bremen',
+      'Hamburg',
+      'Hesse',
+      'Lower Saxony',
+      'Mecklenburg-Vorpommern',
+      'North Rhine-Westphalia',
+      'Rhineland-Palatinate',
+      'Saarland',
+      'Saxony',
+      'Saxony-Anhalt',
+      'Schleswig-Holstein',
+      'Thuringia',
+    ],
+    'Greece': [
+      'Attica',
+      'Central Greece',
+      'Central Macedonia',
+      'Crete',
+      'East Macedonia and Thrace',
+      'Epirus',
+      'Ionian Islands',
+      'North Aegean',
+      'Peloponnese',
+      'South Aegean',
+      'Thessaly',
+      'West Greece',
+      'West Macedonia',
+    ],
+    'Hungary': [
+      'Bács-Kiskun',
+      'Baranya',
+      'Békés',
+      'Borsod-Abaúj-Zemplén',
+      'Csongrád-Csanád',
+      'Fejér',
+      'Győr-Moson-Sopron',
+      'Hajdú-Bihar',
+      'Heves',
+      'Jász-Nagykun-Szolnok',
+      'Komárom-Esztergom',
+      'Nógrád',
+      'Pest',
+      'Somogy',
+      'Szabolcs-Szatmár-Bereg',
+      'Tolna',
+      'Vas',
+      'Veszprém',
+      'Zala',
+    ],
+    'India': [
+      'Andhra Pradesh',
+      'Arunachal Pradesh',
+      'Assam',
+      'Bihar',
+      'Chhattisgarh',
+      'Goa',
+      'Gujarat',
+      'Haryana',
+      'Himachal Pradesh',
+      'Jharkhand',
+      'Karnataka',
+      'Kerala',
+      'Madhya Pradesh',
+      'Maharashtra',
+      'Manipur',
+      'Meghalaya',
+      'Mizoram',
+      'Nagaland',
+      'Odisha',
+      'Punjab',
+      'Rajasthan',
+      'Sikkim',
+      'Tamil Nadu',
+      'Telangana',
+      'Tripura',
+      'Uttar Pradesh',
+      'Uttarakhand',
+      'West Bengal',
+    ],
+    'Indonesia': [
+      'Aceh',
+      'Bali',
+      'Bangka Belitung Islands',
+      'Banten',
+      'Bengkulu',
+      'Central Java',
+      'Central Kalimantan',
+      'Central Sulawesi',
+      'East Java',
+      'East Kalimantan',
+      'East Nusa Tenggara',
+      'Gorontalo',
+      'Jakarta',
+      'Jambi',
+      'Lampung',
+      'Maluku',
+      'North Kalimantan',
+      'North Maluku',
+      'North Sulawesi',
+      'North Sumatra',
+      'Papua',
+      'Riau',
+      'South Kalimantan',
+      'South Sulawesi',
+      'South Sumatra',
+      'Southeast Sulawesi',
+      'West Java',
+      'West Kalimantan',
+      'West Nusa Tenggara',
+      'West Papua',
+      'West Sulawesi',
+      'West Sumatra',
+      'Yogyakarta',
+    ],
+    'Iran': [
+      'Alborz',
+      'Ardabil',
+      'Bushehr',
+      'Chahar Mahaal and Bakhtiari',
+      'East Azerbaijan',
+      'Fars',
+      'Gilan',
+      'Golestan',
+      'Hamadan',
+      'Hormozgan',
+      'Ilam',
+      'Isfahan',
+      'Kerman',
+      'Kermanshah',
+      'Khuzestan',
+      'Kohgiluyeh and Boyer-Ahmad',
+      'Kurdistan',
+      'Lorestan',
+      'Markazi',
+      'Mazandaran',
+      'North Khorasan',
+      'Qazvin',
+      'Qom',
+      'Razavi Khorasan',
+      'Semnan',
+      'Sistan and Baluchestan',
+      'South Khorasan',
+      'Tehran',
+      'West Azerbaijan',
+      'Yazd',
+      'Zanjan',
+    ],
+    'Iraq': [
+      'Anbar',
+      'Babil',
+      'Baghdad',
+      'Basra',
+      'Dhi Qar',
+      'Diyala',
+      'Dohuk',
+      'Erbil',
+      'Karbala',
+      'Kirkuk',
+      'Maysan',
+      'Muthanna',
+      'Najaf',
+      'Nineveh',
+      'Saladin',
+      'Sulaymaniyah',
+      'Wasit',
+    ],
+    'Italy': [
+      'Abruzzo',
+      'Aosta Valley',
+      'Apulia',
+      'Basilicata',
+      'Calabria',
+      'Campania',
+      'Emilia-Romagna',
+      'Friuli-Venezia Giulia',
+      'Lazio',
+      'Liguria',
+      'Lombardy',
+      'Marche',
+      'Molise',
+      'Piedmont',
+      'Sardinia',
+      'Sicily',
+      'Trentino-South Tyrol',
+      'Tuscany',
+      'Umbria',
+      'Veneto',
+    ],
+    'Japan': [
+      'Aichi',
+      'Akita',
+      'Aomori',
+      'Chiba',
+      'Ehime',
+      'Fukui',
+      'Fukuoka',
+      'Fukushima',
+      'Gifu',
+      'Gunma',
+      'Hiroshima',
+      'Hokkaido',
+      'Hyogo',
+      'Ibaraki',
+      'Ishikawa',
+      'Iwate',
+      'Kagawa',
+      'Kagoshima',
+      'Kanagawa',
+      'Kochi',
+      'Kumamoto',
+      'Kyoto',
+      'Mie',
+      'Miyagi',
+      'Miyazaki',
+      'Nagano',
+      'Nagasaki',
+      'Nara',
+      'Niigata',
+      'Oita',
+      'Okayama',
+      'Okinawa',
+      'Osaka',
+      'Saga',
+      'Saitama',
+      'Shiga',
+      'Shimane',
+      'Shizuoka',
+      'Tochigi',
+      'Tokushima',
+      'Tokyo',
+      'Tottori',
+      'Toyama',
+      'Wakayama',
+      'Yamagata',
+      'Yamaguchi',
+      'Yamanashi',
+    ],
+    'Kenya': [
+      'Baringo',
+      'Bomet',
+      'Bungoma',
+      'Busia',
+      'Elgeyo-Marakwet',
+      'Embu',
+      'Garissa',
+      'Homa Bay',
+      'Isiolo',
+      'Kajiado',
+      'Kakamega',
+      'Kericho',
+      'Kiambu',
+      'Kilifi',
+      'Kirinyaga',
+      'Kisii',
+      'Kisumu',
+      'Kitui',
+      'Kwale',
+      'Laikipia',
+      'Lamu',
+      'Machakos',
+      'Makueni',
+      'Mandera',
+      'Marsabit',
+      'Meru',
+      'Migori',
+      'Mombasa',
+      'Murang\'a',
+      'Nairobi',
+      'Nakuru',
+      'Nandi',
+      'Narok',
+      'Nyamira',
+      'Nyandarua',
+      'Nyeri',
+      'Samburu',
+      'Siaya',
+      'Taita-Taveta',
+      'Tana River',
+      'Tharaka-Nithi',
+      'Trans Nzoia',
+      'Turkana',
+      'Uasin Gishu',
+      'Vihiga',
+      'Wajir',
+      'West Pokot',
+    ],
+    'Malaysia': [
+      'Johor',
+      'Kedah',
+      'Kelantan',
+      'Malacca',
+      'Negeri Sembilan',
+      'Pahang',
+      'Penang',
+      'Perak',
+      'Perlis',
+      'Sabah',
+      'Sarawak',
+      'Selangor',
+      'Terengganu',
+    ],
+    'Mexico': [
+      'Aguascalientes',
+      'Baja California',
+      'Baja California Sur',
+      'Campeche',
+      'Chiapas',
+      'Chihuahua',
+      'Coahuila',
+      'Colima',
+      'Durango',
+      'Guanajuato',
+      'Guerrero',
+      'Hidalgo',
+      'Jalisco',
+      'Mexico City',
+      'Michoacán',
+      'Morelos',
+      'Nayarit',
+      'Nuevo León',
+      'Oaxaca',
+      'Puebla',
+      'Querétaro',
+      'Quintana Roo',
+      'San Luis Potosí',
+      'Sinaloa',
+      'Sonora',
+      'Tabasco',
+      'Tamaulipas',
+      'Tlaxcala',
+      'Veracruz',
+      'Yucatán',
+      'Zacatecas',
+    ],
+    'Morocco': [
+      'Béni Mellal-Khénifra',
+      'Casablanca-Settat',
+      'Dakhla-Oued Ed-Dahab',
+      'Drâa-Tafilalet',
+      'Fès-Meknès',
+      'Guelmim-Oued Noun',
+      'Laâyoune-Sakia El Hamra',
+      'Marrakech-Safi',
+      'Oriental',
+      'Rabat-Salé-Kénitra',
+      'Souss-Massa',
+      'Tangier-Tétouan-Al Hoceïma',
+    ],
+    'Myanmar': [
+      'Ayeyarwady',
+      'Bago',
+      'Chin',
+      'Kachin',
+      'Kayah',
+      'Kayin',
+      'Magway',
+      'Mandalay',
+      'Mon',
+      'Naypyidaw',
+      'Rakhine',
+      'Sagaing',
+      'Shan',
+      'Tanintharyi',
+      'Yangon',
+    ],
+    'Nepal': [
+      'Bagmati',
+      'Gandaki',
+      'Karnali',
+      'Koshi',
+      'Lumbini',
+      'Madhesh',
+      'Sudurpashchim',
+    ],
+    'Netherlands': [
+      'Drenthe',
+      'Flevoland',
+      'Friesland',
+      'Gelderland',
+      'Groningen',
+      'Limburg',
+      'North Brabant',
+      'North Holland',
+      'Overijssel',
+      'South Holland',
+      'Utrecht',
+      'Zeeland',
+    ],
+    'New Zealand': [
+      'Auckland',
+      'Bay of Plenty',
+      'Canterbury',
+      'Hawke\'s Bay',
+      'Manawatu-Whanganui',
+      'Marlborough',
+      'Nelson',
+      'Northland',
+      'Otago',
+      'Southland',
+      'Taranaki',
+      'Tasman',
+      'Waikato',
+      'Wellington',
+      'West Coast',
+    ],
+    'Nigeria': [
+      'Abia',
+      'Adamawa',
+      'Akwa Ibom',
+      'Anambra',
+      'Bauchi',
+      'Bayelsa',
+      'Benue',
+      'Borno',
+      'Cross River',
+      'Delta',
+      'Ebonyi',
+      'Edo',
+      'Ekiti',
+      'Enugu',
+      'Gombe',
+      'Imo',
+      'Jigawa',
+      'Kaduna',
+      'Kano',
+      'Katsina',
+      'Kebbi',
+      'Kogi',
+      'Kwara',
+      'Lagos',
+      'Nasarawa',
+      'Niger',
+      'Ogun',
+      'Ondo',
+      'Osun',
+      'Oyo',
+      'Plateau',
+      'Rivers',
+      'Sokoto',
+      'Taraba',
+      'Yobe',
+      'Zamfara',
+    ],
+    'Pakistan': [
+      'Balochistan',
+      'Khyber Pakhtunkhwa',
+      'Punjab',
+      'Sindh',
+      'Gilgit-Baltistan',
+      'Azad Jammu and Kashmir',
+    ],
+    'Peru': [
+      'Amazonas',
+      'Áncash',
+      'Apurímac',
+      'Arequipa',
+      'Ayacucho',
+      'Cajamarca',
+      'Callao',
+      'Cusco',
+      'Huancavelica',
+      'Huanuco',
+      'Ica',
+      'Junín',
+      'La Libertad',
+      'Lambayeque',
+      'Lima',
+      'Loreto',
+      'Madre de Dios',
+      'Moquegua',
+      'Pasco',
+      'Piura',
+      'Puno',
+      'San Martín',
+      'Tacna',
+      'Tumbes',
+      'Ucayali',
+    ],
+    'Philippines': [
+      'Abra',
+      'Agusan del Norte',
+      'Agusan del Sur',
+      'Aklan',
+      'Albay',
+      'Antique',
+      'Apayao',
+      'Aurora',
+      'Basilan',
+      'Bataan',
+      'Batanes',
+      'Batangas',
+      'Benguet',
+      'Biliran',
+      'Bohol',
+      'Bukidnon',
+      'Bulacan',
+      'Cagayan',
+      'Camarines Norte',
+      'Camarines Sur',
+      'Camiguin',
+      'Capiz',
+      'Catanduanes',
+      'Cavite',
+      'Cebu',
+      'Cotabato',
+      'Davao de Oro',
+      'Davao del Norte',
+      'Davao del Sur',
+      'Davao Occidental',
+      'Davao Oriental',
+      'Dinagat Islands',
+      'Eastern Samar',
+      'Guimaras',
+      'Ifugao',
+      'Ilocos Norte',
+      'Ilocos Sur',
+      'Iloilo',
+      'Isabela',
+      'Kalinga',
+      'La Union',
+      'Laguna',
+      'Lanao del Norte',
+      'Lanao del Sur',
+      'Leyte',
+      'Maguindanao',
+      'Marinduque',
+      'Masbate',
+      'Misamis Occidental',
+      'Misamis Oriental',
+      'Mountain Province',
+      'Negros Occidental',
+      'Negros Oriental',
+      'Northern Samar',
+      'Nueva Ecija',
+      'Nueva Vizcaya',
+      'Occidental Mindoro',
+      'Oriental Mindoro',
+      'Palawan',
+      'Pampanga',
+      'Pangasinan',
+      'Quezon',
+      'Quirino',
+      'Rizal',
+      'Romblon',
+      'Samar',
+      'Sarangani',
+      'Siquijor',
+      'Sorsogon',
+      'South Cotabato',
+      'Southern Leyte',
+      'Sultan Kudarat',
+      'Sulu',
+      'Surigao del Norte',
+      'Surigao del Sur',
+      'Tarlac',
+      'Tawi-Tawi',
+      'Zambales',
+      'Zamboanga del Norte',
+      'Zamboanga del Sur',
+      'Zamboanga Sibugay',
+    ],
+    'Poland': [
+      'Greater Poland',
+      'Kuyavian-Pomeranian',
+      'Lesser Poland',
+      'Lodz',
+      'Lower Silesian',
+      'Lublin',
+      'Lubusz',
+      'Masovian',
+      'Opole',
+      'Podlaskie',
+      'Pomeranian',
+      'Silesian',
+      'Subcarpathian',
+      'Świętokrzyskie',
+      'Warmian-Masurian',
+      'West Pomeranian',
+    ],
+    'Romania': [
+      'Alba',
+      'Arad',
+      'Argeș',
+      'Bacău',
+      'Bihor',
+      'Bistrița-Năsăud',
+      'Botoșani',
+      'Brașov',
+      'Brăila',
+      'București',
+      'Buzău',
+      'Călărași',
+      'Caraș-Severin',
+      'Cluj',
+      'Constanța',
+      'Covasna',
+      'Dâmbovița',
+      'Dolj',
+      'Galați',
+      'Giurgiu',
+      'Gorj',
+      'Harghita',
+      'Hunedoara',
+      'Ialomița',
+      'Iași',
+      'Ilfov',
+      'Maramureș',
+      'Mehedinți',
+      'Mureș',
+      'Neamț',
+      'Olt',
+      'Prahova',
+      'Satu Mare',
+      'Sălaj',
+      'Sibiu',
+      'Suceava',
+      'Teleorman',
+      'Timiș',
+      'Tulcea',
+      'Vâlcea',
+      'Vaslui',
+      'Vrancea',
+    ],
+    'Russia': [
+      'Adygea',
+      'Altai Republic',
+      'Bashkortostan',
+      'Buryatia',
+      'Chechnya',
+      'Chuvashia',
+      'Dagestan',
+      'Ingushetia',
+      'Kabardino-Balkaria',
+      'Kalmykia',
+      'Karachay-Cherkessia',
+      'Karelia',
+      'Khakassia',
+      'Komi',
+      'Mari El',
+      'Mordovia',
+      'North Ossetia-Alania',
+      'Sakha',
+      'Tatarstan',
+      'Tuva',
+      'Udmurtia',
+    ],
+    'South Africa': [
+      'Eastern Cape',
+      'Free State',
+      'Gauteng',
+      'KwaZulu-Natal',
+      'Limpopo',
+      'Mpumalanga',
+      'North West',
+      'Northern Cape',
+      'Western Cape',
+    ],
+    'Spain': [
+      'Andalusia',
+      'Aragon',
+      'Asturias',
+      'Balearic Islands',
+      'Basque Country',
+      'Canary Islands',
+      'Cantabria',
+      'Castile and León',
+      'Castile-La Mancha',
+      'Catalonia',
+      'Community of Madrid',
+      'Extremadura',
+      'Galicia',
+      'La Rioja',
+      'Navarre',
+      'Region of Murcia',
+      'Valencian Community',
+    ],
+    'Sudan': [
+      'Blue Nile',
+      'Central Darfur',
+      'East Darfur',
+      'Gedaref',
+      'Kassala',
+      'Khartoum',
+      'North Darfur',
+      'North Kordofan',
+      'Northern',
+      'Red Sea',
+      'River Nile',
+      'Sennar',
+      'South Darfur',
+      'South Kordofan',
+      'West Darfur',
+      'West Kordofan',
+    ],
+    'Sweden': [
+      'Blekinge',
+      'Dalarna',
+      'Gävleborg',
+      'Gotland',
+      'Halland',
+      'Jämtland',
+      'Jönköping',
+      'Kalmar',
+      'Kronoberg',
+      'Norrbotten',
+      'Örebro',
+      'Östergötland',
+      'Skåne',
+      'Södermanland',
+      'Stockholm',
+      'Uppsala',
+      'Värmland',
+      'Västerbotten',
+      'Västernorrland',
+      'Västmanland',
+      'Västra Götaland',
+    ],
+    'Switzerland': [
+      'Aargau',
+      'Appenzell Ausserrhoden',
+      'Appenzell Innerrhoden',
+      'Basel-Landschaft',
+      'Basel-Stadt',
+      'Bern',
+      'Fribourg',
+      'Geneva',
+      'Glarus',
+      'Graubünden',
+      'Jura',
+      'Lucerne',
+      'Neuchâtel',
+      'Nidwalden',
+      'Obwalden',
+      'Schaffhausen',
+      'Schwyz',
+      'Solothurn',
+      'St. Gallen',
+      'Thurgau',
+      'Ticino',
+      'Uri',
+      'Vaud',
+      'Valais',
+      'Zug',
+      'Zurich',
+    ],
+    'Thailand': [
+      'Amnat Charoen',
+      'Ang Thong',
+      'Bueng Kan',
+      'Buri Ram',
+      'Chachoengsao',
+      'Chai Nat',
+      'Chaiyaphum',
+      'Chanthaburi',
+      'Chiang Mai',
+      'Chiang Rai',
+      'Chon Buri',
+      'Chumphon',
+      'Kalasin',
+      'Kamphaeng Phet',
+      'Kanchanaburi',
+      'Khon Kaen',
+      'Krabi',
+      'Lampang',
+      'Lamphun',
+      'Loei',
+      'Lop Buri',
+      'Mae Hong Son',
+      'Maha Sarakham',
+      'Mukdahan',
+      'Nakhon Pathom',
+      'Nakhon Phanom',
+      'Nakhon Ratchasima',
+      'Nakhon Sawan',
+      'Nakhon Si Thammarat',
+      'Nan',
+      'Narathiwat',
+      'Nong Bua Lamphu',
+      'Nong Khai',
+      'Nonthaburi',
+      'Pathum Thani',
+      'Pattani',
+      'Phang Nga',
+      'Phatthalung',
+      'Phayao',
+      'Phetchabun',
+      'Phetchaburi',
+      'Phichit',
+      'Phitsanulok',
+      'Phrae',
+      'Phuket',
+      'Prachin Buri',
+      'Prachuap Khiri Khan',
+      'Ranong',
+      'Ratchaburi',
+      'Rayong',
+      'Roi Et',
+      'Sa Kaeo',
+      'Sakon Nakhon',
+      'Samut Prakan',
+      'Samut Sakhon',
+      'Samut Songkhram',
+      'Saraburi',
+      'Satun',
+      'Sing Buri',
+      'Sisaket',
+      'Songkhla',
+      'Sukhothai',
+      'Suphan Buri',
+      'Surat Thani',
+      'Surin',
+      'Tak',
+      'Trang',
+      'Trat',
+      'Ubon Ratchathani',
+      'Udon Thani',
+      'Uthai Thani',
+      'Uttaradit',
+      'Yala',
+      'Yasothon',
+    ],
+    'Turkey': [
+      'Adana',
+      'Adıyaman',
+      'Afyonkarahisar',
+      'Ağrı',
+      'Aksaray',
+      'Amasya',
+      'Ankara',
+      'Antalya',
+      'Ardahan',
+      'Artvin',
+      'Aydın',
+      'Balıkesir',
+      'Bartın',
+      'Batman',
+      'Bayburt',
+      'Bilecik',
+      'Bingöl',
+      'Bitlis',
+      'Bolu',
+      'Burdur',
+      'Bursa',
+      'Çanakkale',
+      'Çankırı',
+      'Çorum',
+      'Denizli',
+      'Diyarbakır',
+      'Düzce',
+      'Edirne',
+      'Elazığ',
+      'Erzincan',
+      'Erzurum',
+      'Eskişehir',
+      'Gaziantep',
+      'Giresun',
+      'Gümüşhane',
+      'Hakkari',
+      'Hatay',
+      'Iğdır',
+      'Isparta',
+      'Istanbul',
+      'Izmir',
+      'Kahramanmaraş',
+      'Karabük',
+      'Karaman',
+      'Kars',
+      'Kastamonu',
+      'Kayseri',
+      'Kilis',
+      'Kırıkkale',
+      'Kırklareli',
+      'Kırşehir',
+      'Kocaeli',
+      'Konya',
+      'Kütahya',
+      'Malatya',
+      'Manisa',
+      'Mardin',
+      'Mersin',
+      'Muğla',
+      'Muş',
+      'Nevşehir',
+      'Niğde',
+      'Ordu',
+      'Osmaniye',
+      'Rize',
+      'Sakarya',
+      'Samsun',
+      'Şanlıurfa',
+      'Siirt',
+      'Sinop',
+      'Sivas',
+      'Şırnak',
+      'Tekirdağ',
+      'Tokat',
+      'Trabzon',
+      'Tunceli',
+      'Uşak',
+      'Van',
+      'Yalova',
+      'Yozgat',
+      'Zonguldak',
+    ],
+    'Ukraine': [
+      'Cherkasy',
+      'Chernihiv',
+      'Chernivtsi',
+      'Dnipropetrovsk',
+      'Donetsk',
+      'Ivano-Frankivsk',
+      'Kharkiv',
+      'Kherson',
+      'Khmelnytskyi',
+      'Kiev',
+      'Kirovohrad',
+      'Luhansk',
+      'Lviv',
+      'Mykolaiv',
+      'Odessa',
+      'Poltava',
+      'Rivne',
+      'Sumy',
+      'Ternopil',
+      'Vinnytsia',
+      'Volyn',
+      'Zakarpattia',
+      'Zaporizhzhia',
+      'Zhytomyr',
+    ],
+    'United Kingdom': ['England', 'Northern Ireland', 'Scotland', 'Wales'],
+    'United States': [
+      'Alabama',
+      'Alaska',
+      'Arizona',
+      'Arkansas',
+      'California',
+      'Colorado',
+      'Connecticut',
+      'Delaware',
+      'Florida',
+      'Georgia',
+      'Hawaii',
+      'Idaho',
+      'Illinois',
+      'Indiana',
+      'Iowa',
+      'Kansas',
+      'Kentucky',
+      'Louisiana',
+      'Maine',
+      'Maryland',
+      'Massachusetts',
+      'Michigan',
+      'Minnesota',
+      'Mississippi',
+      'Missouri',
+      'Montana',
+      'Nebraska',
+      'Nevada',
+      'New Hampshire',
+      'New Jersey',
+      'New Mexico',
+      'New York',
+      'North Carolina',
+      'North Dakota',
+      'Ohio',
+      'Oklahoma',
+      'Oregon',
+      'Pennsylvania',
+      'Rhode Island',
+      'South Carolina',
+      'South Dakota',
+      'Tennessee',
+      'Texas',
+      'Utah',
+      'Vermont',
+      'Virginia',
+      'Washington',
+      'West Virginia',
+      'Wisconsin',
+      'Wyoming',
+    ],
+    'Venezuela': [
+      'Amazonas',
+      'Anzoátegui',
+      'Apure',
+      'Aragua',
+      'Barinas',
+      'Bolívar',
+      'Carabobo',
+      'Cojedes',
+      'Delta Amacuro',
+      'Falcón',
+      'Guárico',
+      'Lara',
+      'Mérida',
+      'Miranda',
+      'Monagas',
+      'Nueva Esparta',
+      'Portuguesa',
+      'Sucre',
+      'Táchira',
+      'Trujillo',
+      'Yaracuy',
+      'Zulia',
+    ],
+    'Vietnam': [
+      'An Giang',
+      'Bà Rịa-Vũng Tàu',
+      'Bắc Giang',
+      'Bắc Kạn',
+      'Bạc Liêu',
+      'Bắc Ninh',
+      'Bến Tre',
+      'Bình Định',
+      'Bình Dương',
+      'Bình Phước',
+      'Bình Thuận',
+      'Cà Mau',
+      'Cao Bằng',
+      'Đắk Lắk',
+      'Đắk Nông',
+      'Điện Biên',
+      'Đồng Nai',
+      'Đồng Tháp',
+      'Gia Lai',
+      'Hà Giang',
+      'Hà Nam',
+      'Hà Tĩnh',
+      'Hải Dương',
+      'Hải Phòng',
+      'Hậu Giang',
+      'Hòa Bình',
+      'Hưng Yên',
+      'Khánh Hòa',
+      'Kiên Giang',
+      'Kon Tum',
+      'Lai Châu',
+      'Lâm Đồng',
+      'Lạng Sơn',
+      'Lào Cai',
+      'Long An',
+      'Nam Định',
+      'Nghệ An',
+      'Ninh Bình',
+      'Ninh Thuận',
+      'Phú Thọ',
+      'Phú Yên',
+      'Quảng Bình',
+      'Quảng Nam',
+      'Quảng Ngãi',
+      'Quảng Ninh',
+      'Quảng Trị',
+      'Sóc Trăng',
+      'Sơn La',
+      'Tây Ninh',
+      'Thái Bình',
+      'Thái Nguyên',
+      'Thanh Hóa',
+      'Thừa Thiên Huế',
+      'Tiền Giang',
+      'Trà Vinh',
+      'Tuyên Quang',
+      'Vĩnh Long',
+      'Vĩnh Phúc',
+      'Yên Bái',
+    ],
+    // Unitary states or countries with no formal provinces/states
+    'Andorra': [],
+    'Antigua and Barbuda': [],
+    'Bahamas': [],
+    'Bahrain': [],
+    'Barbados': [],
+    'Belize': [],
+    'Bhutan': [],
+    'Brunei': [],
+    'Comoros': [],
+    'Cyprus': [],
+    'Djibouti': [],
+    'Dominica': [],
+    'East Timor': [],
+    'El Salvador': [],
+    'Equatorial Guinea': [],
+    'Eritrea': [],
+    'Estonia': [],
+    'Eswatini': [],
+    'Fiji': [],
+    'Gabon': [],
+    'Gambia': [],
+    'Grenada': [],
+    'Guinea': [],
+    'Guinea-Bissau': [],
+    'Guyana': [],
+    'Haiti': [],
+    'Iceland': [],
+    'Ireland': [],
+    'Israel': [],
+    'Jamaica': [],
+    'Jordan': [],
+    'Kiribati': [],
+    'Korea, North': [],
+    'Korea, South': [],
+    'Kosovo': [],
+    'Kuwait': [],
+    'Kyrgyzstan': [],
+    'Laos': [],
+    'Latvia': [],
+    'Lebanon': [],
+    'Lesotho': [],
+    'Liberia': [],
+    'Liechtenstein': [],
+    'Lithuania': [],
+    'Luxembourg': [],
+    'Malawi': [],
+    'Maldives': [],
+    'Malta': [],
+    'Marshall Islands': [],
+    'Mauritania': [],
+    'Mauritius': [],
+    'Micronesia': [],
+    'Moldova': [],
+    'Monaco': [],
+    'Montenegro': [],
+    'Nauru': [],
+    'Nicaragua': [],
+    'Niger': [],
+    'North Macedonia': [],
+    'Norway': [],
+    'Oman': [],
+    'Palau': [],
+    'Panama': [],
+    'Qatar': [],
+    'Saint Kitts and Nevis': [],
+    'Saint Lucia': [],
+    'Saint Vincent and the Grenadines': [],
+    'Samoa': [],
+    'San Marino': [],
+    'Sao Tome and Principe': [],
+    'Saudi Arabia': [],
+    'Senegal': [],
+    'Seychelles': [],
+    'Sierra Leone': [],
+    'Singapore': [],
+    'Slovakia': [],
+    'Slovenia': [],
+    'Solomon Islands': [],
+    'Somalia': [],
+    'South Sudan': [],
+    'Suriname': [],
+    'Togo': [],
+    'Tonga': [],
+    'Trinidad and Tobago': [],
+    'Tunisia': [],
+    'Turkmenistan': [],
+    'Tuvalu': [],
+    'United Arab Emirates': [],
+    'Uruguay': [],
+    'Uzbekistan': [],
+    'Vanuatu': [],
+    'Vatican City': [],
+    'Yemen': [],
+    'Zambia': [],
+    'Zimbabwe': [],
+  };
 
-@override
+  @override
   void initState() {
     super.initState();
+    _firstNameController = TextEditingController();
+  _lastNameController = TextEditingController();
     NotificationService().init(); // Initialize NotificationService
   }
 
@@ -423,10 +1936,17 @@ final Map<String, List<String>> countryStates = {
           setState(() {
             _profileImageBytes = bytes;
           });
-          developer.log('Web image selected, bytes length: ${bytes.length}', name: 'RegisterPage');
+          developer.log(
+            'Web image selected, bytes length: ${bytes.length}',
+            name: 'RegisterPage',
+          );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Image compression not supported on web. Uploading original image.')),
+              const SnackBar(
+                content: Text(
+                  'Image compression not supported on web. Uploading original image.',
+                ),
+              ),
             );
           }
         } else {
@@ -442,9 +1962,15 @@ final Map<String, List<String>> countryStates = {
             setState(() {
               _profileImageFile = File(compressedImage.path);
             });
-            developer.log('Compressed file path: ${compressedImage.path}', name: 'RegisterPage');
+            developer.log(
+              'Compressed file path: ${compressedImage.path}',
+              name: 'RegisterPage',
+            );
           } else {
-            developer.log('Failed to compress image, using original', name: 'RegisterPage');
+            developer.log(
+              'Failed to compress image, using original',
+              name: 'RegisterPage',
+            );
             setState(() {
               _profileImageFile = File(image.path);
             });
@@ -468,7 +1994,9 @@ final Map<String, List<String>> countryStates = {
     final now = DateTime.now();
     for (int i = 0; i < 5; i++) {
       // Add a 10-second buffer to ensure the time is in the future
-      final scheduledTime = now.add(Duration(seconds: 10, minutes: 1 + (2 * i)));
+      final scheduledTime = now.add(
+        Duration(seconds: 10, minutes: 1 + (2 * i)),
+      );
       await NotificationService().scheduleNotification(
         id: i,
         title: 'Daily Health Tip 🌟',
@@ -478,89 +2006,103 @@ final Map<String, List<String>> countryStates = {
     }
   }
 
-  Future<void> _register() async {
-    if (_formKey.currentState!.validate() && _consentGiven) {
-      setState(() {
-        isLoading = true;
+Future<void> _register() async {
+  if (_formKey.currentState!.validate() && _consentGiven) {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Log initial state of profile image variables
+      developer.log('Initial _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
+
+      // Further compress the image if needed
+      if (_profileImageFile != null && _profileImageFile!.existsSync() && _profileImageFile!.lengthSync() > 512 * 1024) {
+        developer.log('Image is too large (${_profileImageFile!.lengthSync()} bytes), compressing further', name: 'RegisterPage');
+        final compressedImage = await FlutterImageCompress.compressWithFile(
+          _profileImageFile!.path,
+          quality: 50,
+          minWidth: 400,
+          minHeight: 400,
+        );
+        if (compressedImage != null) {
+          _profileImageBytes = compressedImage;
+          _profileImageFile = null; // Set to null after compression
+          developer.log('Further compressed image size: ${compressedImage.length} bytes', name: 'RegisterPage');
+        } else {
+          developer.log('Compression failed, keeping original _profileImageFile', name: 'RegisterPage');
+        }
+      } else {
+        developer.log('No compression needed or _profileImageFile is null', name: 'RegisterPage');
+      }
+
+      // Log state after compression
+      developer.log('After compression - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
+
+      var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
+
+      request.fields['firstName'] = _firstNameController.text;
+      request.fields['lastName'] = _lastNameController.text;
+      request.fields['gender'] = _genderController.text;
+      request.fields['email'] = _emailController.text;
+      request.fields['phoneNumber'] = _completePhoneNumber ?? _phoneNumberController.text;
+      request.fields['dateOfBirth'] = _dateOfBirthController.text;
+      request.fields['address'] = _fullAddressController.text;
+      request.fields['country'] = _selectedCountry ?? '';
+      request.fields['state'] = _selectedState ?? '';
+      request.fields['governmentId'] = _govMedicalIdController.text;
+      request.fields['password'] = _passwordController.text;
+
+      // Add profile image to the request
+      if (_profileImageFile != null && _profileImageFile!.existsSync()) {
+        developer.log('Adding image to request, file size: ${_profileImageFile!.lengthSync()} bytes', name: 'RegisterPage');
+        request.files.add(await http.MultipartFile.fromPath(
+          'profileImage',
+          _profileImageFile!.path,
+          contentType: http_parser.MediaType('image', 'jpeg'),
+        ));
+      } else if (_profileImageBytes != null) {
+        developer.log('Adding web image to request, bytes length: ${_profileImageBytes!.length}', name: 'RegisterPage');
+        request.files.add(http.MultipartFile.fromBytes(
+          'profileImage',
+          _profileImageBytes!,
+          contentType: http_parser.MediaType('image', 'jpeg'),
+          filename: 'profile.jpg',
+        ));
+      } else {
+        developer.log('No profile image to upload', name: 'RegisterPage');
+      }
+
+      developer.log('Sending request to: $_backendUrl', name: 'RegisterPage');
+      developer.log('Request fields: ${request.fields}', name: 'RegisterPage');
+      developer.log('Request files: ${request.files.map((f) => f.filename).join(', ')}', name: 'RegisterPage');
+
+      var response = await request.send().timeout(const Duration(seconds: 60), onTimeout: () {
+        developer.log('Request timed out after 60 seconds', name: 'RegisterPage');
+        return http.StreamedResponse(Stream.empty(), 408);
       });
 
-      try {
-        // Further compress the image if needed
-        if (_profileImageFile != null && _profileImageFile!.lengthSync() > 512 * 1024) {
-          developer.log('Image is too large (${_profileImageFile!.lengthSync()} bytes), compressing further', name: 'RegisterPage');
-          final compressedImage = await FlutterImageCompress.compressWithFile(
-            _profileImageFile!.path,
-            quality: 50,
-            minWidth: 400,
-            minHeight: 400,
-          );
-          if (compressedImage != null) {
-            _profileImageBytes = compressedImage;
-            _profileImageFile = null;
-            developer.log('Further compressed image size: ${compressedImage.length} bytes', name: 'RegisterPage');
-          }
-        }
+      developer.log('Request sent, awaiting response...', name: 'RegisterPage');
+      var responseData = await http.Response.fromStream(response);
+      developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
 
-        var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
-
-        request.fields['firstName'] = _firstNameController.text;
-        request.fields['lastName'] = _lastNameController.text;
-        request.fields['gender'] = _genderController.text;
-        request.fields['email'] = _emailController.text;
-        request.fields['phoneNumber'] = _completePhoneNumber ?? _phoneNumberController.text;
-        request.fields['dateOfBirth'] = _dateOfBirthController.text;
-        request.fields['address'] = _fullAddressController.text;
-        request.fields['country'] = _selectedCountry ?? '';
-        request.fields['state'] = _selectedState ?? '';
-        request.fields['governmentId'] = _govMedicalIdController.text;
-        request.fields['password'] = _passwordController.text;
-
-        if (_profileImageFile != null) {
-          developer.log('Adding image to request, file size: ${_profileImageFile!.lengthSync()} bytes', name: 'RegisterPage');
-          request.files.add(await http.MultipartFile.fromPath(
-            'profileImage',
-            _profileImageFile!.path,
-            contentType: http_parser.MediaType('image', 'jpeg'),
-          ));
-        } else if (_profileImageBytes != null) {
-          developer.log('Adding web image to request, bytes length: ${_profileImageBytes!.length}', name: 'RegisterPage');
-          request.files.add(http.MultipartFile.fromBytes(
-            'profileImage',
-            _profileImageBytes!,
-            contentType: http_parser.MediaType('image', 'jpeg'),
-            filename: 'profile.jpg',
-          ));
-        }
-
-        developer.log('Sending request to: $_backendUrl', name: 'RegisterPage');
-        developer.log('Request fields: ${request.fields}', name: 'RegisterPage');
-        developer.log('Request files: ${request.files.map((f) => f.filename).join(', ')}', name: 'RegisterPage');
-
-        var response = await request.send().timeout(const Duration(seconds: 60), onTimeout: () {
-          developer.log('Request timed out after 60 seconds', name: 'RegisterPage');
-          return http.StreamedResponse(Stream.empty(), 408);
-        });
-
-        developer.log('Request sent, awaiting response...', name: 'RegisterPage');
-        var responseData = await http.Response.fromStream(response);
-        developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
-
-        if (response.statusCode == 201) {
+if (response.statusCode == 201) {
   final jsonResponse = jsonDecode(responseData.body);
-  if (jsonResponse['success']) {
+  developer.log('Parsed JSON response: $jsonResponse', name: 'RegisterPage');
+  if (jsonResponse['success'] == true) {
     final user = jsonResponse['user'];
-    final userId = user['id']?.toString() ?? '';
+    final userId = user != null ? user['id']?.toString() ?? '' : ''; // Fallback to empty string if user is null
     final token = jsonResponse['token']?.toString() ?? '';
-    final profileImage = user['profileImage']?.toString();
-    final firstName = _firstNameController.text;
-    final lastName = _lastNameController.text;
-    final fullName = lastName.isEmpty ? firstName : '$firstName $lastName';
+    final profileImage = user != null ? user['profileImage']?.toString() : null; // Fallback to null if user is null
+    final firstName = _firstNameController.text; // Use the firstName directly
+    final lastName = _lastNameController.text;   // Use the lastName directly
     final email = _emailController.text;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', email);
     await prefs.setString('userId', userId);
-    await prefs.setString('fullName', fullName);
+    await prefs.setString('firstName', firstName); // Store firstName
+    await prefs.setString('lastName', lastName);   // Store lastName
     await prefs.setString('auth_token', token);
     await prefs.setString('user_id', userId);
     await prefs.setBool('isLoggedIn', true);
@@ -571,97 +2113,120 @@ final Map<String, List<String>> countryStates = {
     await prefs.setString('id', _govMedicalIdController.text);
     await prefs.setString('gender', _genderController.text);
 
+    // Log state before saving profile image
+    developer.log('Before saving profile image - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
+
+    // Store the profile image with the correct prefix
+    String? profileImageToPass; // Variable to hold the profile image to pass to SuccessPage
     if (_profileImageBytes != null) {
       final profileImageBase64 = base64Encode(_profileImageBytes!);
-      await prefs.setString('profileImage', profileImageBase64);
+      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64'; // Add prefix
+      await prefs.setString('profileImage', profileImageWithPrefix);
+      profileImageToPass = profileImageWithPrefix;
+      developer.log('Saved profileImage (from bytes): $profileImageWithPrefix', name: 'RegisterPage');
+    } else if (_profileImageFile != null && _profileImageFile!.existsSync()) {
+      // Convert _profileImageFile to base64 if it exists
+      final bytes = await _profileImageFile!.readAsBytes();
+      final profileImageBase64 = base64Encode(bytes);
+      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64'; // Add prefix
+      await prefs.setString('profileImage', profileImageWithPrefix);
+      profileImageToPass = profileImageWithPrefix;
+      developer.log('Saved profileImage (from file): $profileImageWithPrefix', name: 'RegisterPage');
     } else if (profileImage != null && profileImage.isNotEmpty) {
       await prefs.setString('profileImage', profileImage);
+      profileImageToPass = profileImage;
+      developer.log('Saved profileImage (from backend): $profileImage', name: 'RegisterPage');
     } else {
       await prefs.remove('profileImage');
+      profileImageToPass = null;
+      developer.log('No profile image to save, removed profileImage key', name: 'RegisterPage');
     }
 
     developer.log('Saved username: $email', name: 'RegisterPage');
-    developer.log('Saved userId: $userId', name: 'RegisterPage');
-    developer.log('Saved fullName: $fullName', name: 'RegisterPage');
+    developer.log('Saved userId: $userId', name: ' 🙂');
+    developer.log('Saved firstName: $firstName', name: 'RegisterPage');
+    developer.log('Saved lastName: $lastName', name: 'RegisterPage');
     developer.log('Saved auth_token: $token', name: 'RegisterPage');
     developer.log('Saved phone: ${_completePhoneNumber ?? _phoneNumberController.text}', name: 'RegisterPage');
     developer.log('Saved dob: ${_dateOfBirthController.text}', name: 'RegisterPage');
     developer.log('Saved address: ${_fullAddressController.text}', name: 'RegisterPage');
     developer.log('Saved id: ${_govMedicalIdController.text}', name: 'RegisterPage');
     developer.log('Saved gender: ${_genderController.text}', name: 'RegisterPage');
-            // Schedule health tips notifications (same as LoginPage)
-            try {
-              await _scheduleHealthTipsForTesting();
-            } catch (e) {
-              developer.log('Failed to schedule health tips: $e', name: 'RegisterPage');
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Registration successful, but failed to schedule notifications: $e'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            }
 
-            if (mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SuccessPage(
-                    fullName: fullName,
-                    profileImage: profileImage ?? (_profileImageBytes != null ? base64Encode(_profileImageBytes!) : null),
-                  ),
-                ),
-              );
-            }
-          } else {
-            throw Exception(jsonResponse['message'] ?? 'Registration failed');
-          }
-        } else if (response.statusCode == 400) {
-          final jsonResponse = jsonDecode(responseData.body);
-          throw Exception(jsonResponse['message'] ?? 'Bad request');
-        } else if (response.statusCode == 408) {
-          throw Exception('Request timed out. Please check your network or server status.');
-        } else {
-          throw Exception('Server error: ${response.statusCode}');
-        }
-      } catch (e) {
-        developer.log('Error: $e', name: 'RegisterPage');
-        if (mounted) {
-          String errorMessage;
-          if (e.toString().contains('Request timed out')) {
-            errorMessage = 'Request timed out. Please check your network or server status.';
-          } else if (e.toString().contains('Email already registered')) {
-            errorMessage = 'Email already registered. Please use a different email.';
-          } else {
-            errorMessage = e.toString().replaceFirst('Exception: ', '');
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-      }
-    } else {
+    // Schedule health tips notifications (same as LoginPage)
+    try {
+      await _scheduleHealthTipsForTesting();
+    } catch (e) {
+      developer.log('Failed to schedule health tips: $e', name: 'RegisterPage');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill all required fields and give consent'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text('Registration successful, but failed to schedule notifications: $e'),
+            backgroundColor: Colors.orange,
           ),
         );
       }
     }
+
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SuccessPage(
+            fullName: '$firstName $lastName', // Pass the combined fullName to SuccessPage
+            email: email, // Pass the email
+            profileImage: profileImageToPass, // Use the computed profile image
+          ),
+        ),
+      );
+    }
+  } else {
+    throw Exception(jsonResponse['message'] ?? 'Registration failed');
   }
+} else if (response.statusCode == 400) {
+        final jsonResponse = jsonDecode(responseData.body);
+        throw Exception(jsonResponse['message'] ?? 'Bad request');
+      } else if (response.statusCode == 408) {
+        throw Exception('Request timed out. Please check your network or server status.');
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error: $e', name: 'RegisterPage');
+      if (mounted) {
+        String errorMessage;
+        if (e.toString().contains('Request timed out')) {
+          errorMessage = 'Request timed out. Please check your network or server status.';
+        } else if (e.toString().contains('Email already registered')) {
+          errorMessage = 'Email already registered. Please use a different email.';
+        } else {
+          errorMessage = e.toString().replaceFirst('Exception: ', '');
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  } else {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields and give consent'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -676,9 +2241,7 @@ final Map<String, List<String>> countryStates = {
                     SizedBox(
                       height: 200,
                       width: double.infinity,
-                      child: CustomPaint(
-                        painter: TrianglePainter(),
-                      ),
+                      child: CustomPaint(painter: TrianglePainter()),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(20.0),
@@ -710,7 +2273,9 @@ final Map<String, List<String>> countryStates = {
                                     if (value == null || value.isEmpty) {
                                       return 'First name is required';
                                     }
-                                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                                    if (!RegExp(
+                                      r'^[a-zA-Z\s]+$',
+                                    ).hasMatch(value)) {
                                       return 'First name should contain only letters';
                                     }
                                     return null;
@@ -726,7 +2291,9 @@ final Map<String, List<String>> countryStates = {
                                     if (value == null || value.isEmpty) {
                                       return 'Last name is required';
                                     }
-                                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                                    if (!RegExp(
+                                      r'^[a-zA-Z\s]+$',
+                                    ).hasMatch(value)) {
                                       return 'Last name should contain only letters';
                                     }
                                     return null;
@@ -755,7 +2322,9 @@ final Map<String, List<String>> countryStates = {
                                     if (value == null || value.isEmpty) {
                                       return 'Email is required';
                                     }
-                                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                    if (!RegExp(
+                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                    ).hasMatch(value)) {
                                       return 'Please enter a valid email';
                                     }
                                     return null;
@@ -770,7 +2339,10 @@ final Map<String, List<String>> countryStates = {
                                     hintText: 'Phone Number',
                                     filled: true,
                                     fillColor: Colors.grey.shade300,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 15,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(25),
                                       borderSide: BorderSide.none,
@@ -779,7 +2351,8 @@ final Map<String, List<String>> countryStates = {
                                   initialCountryCode: 'US',
                                   onChanged: (phone) {
                                     setState(() {
-                                      _completePhoneNumber = phone.completeNumber;
+                                      _completePhoneNumber =
+                                          phone.completeNumber;
                                     });
                                   },
                                   validator: (value) {
@@ -812,9 +2385,13 @@ final Map<String, List<String>> countryStates = {
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          _buildLabel('Country', isRequired: true),
+                                          _buildLabel(
+                                            'Country',
+                                            isRequired: true,
+                                          ),
                                           _buildCountryAutocomplete(),
                                         ],
                                       ),
@@ -822,9 +2399,13 @@ final Map<String, List<String>> countryStates = {
                                     const SizedBox(width: 15),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          _buildLabel('State', isRequired: true),
+                                          _buildLabel(
+                                            'State',
+                                            isRequired: true,
+                                          ),
                                           _buildStateAutocomplete(),
                                         ],
                                       ),
@@ -833,7 +2414,10 @@ final Map<String, List<String>> countryStates = {
                                 ),
                                 const SizedBox(height: 15),
 
-                                _buildLabel('Government/Medical ID', isRequired: true),
+                                _buildLabel(
+                                  'Government/Medical ID',
+                                  isRequired: true,
+                                ),
                                 _buildTextField(
                                   '9999-8888-7777-6666',
                                   controller: _govMedicalIdController,
@@ -856,27 +2440,30 @@ final Map<String, List<String>> countryStates = {
                                           color: Colors.grey.shade300,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: _profileImageFile != null || _profileImageBytes != null
-                                            ? ClipOval(
-                                                child: _profileImageFile != null
-                                                    ? Image.file(
-                                                        _profileImageFile!,
-                                                        width: 100,
-                                                        height: 100,
-                                                        fit: BoxFit.cover,
-                                                      )
-                                                    : Image.memory(
-                                                        _profileImageBytes!,
-                                                        width: 100,
-                                                        height: 100,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                              )
-                                            : const Icon(
-                                                Icons.person_outline,
-                                                size: 50,
-                                                color: Colors.grey,
-                                              ),
+                                        child:
+                                            _profileImageFile != null ||
+                                                    _profileImageBytes != null
+                                                ? ClipOval(
+                                                  child:
+                                                      _profileImageFile != null
+                                                          ? Image.file(
+                                                            _profileImageFile!,
+                                                            width: 100,
+                                                            height: 100,
+                                                            fit: BoxFit.cover,
+                                                          )
+                                                          : Image.memory(
+                                                            _profileImageBytes!,
+                                                            width: 100,
+                                                            height: 100,
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                )
+                                                : const Icon(
+                                                  Icons.person_outline,
+                                                  size: 50,
+                                                  color: Colors.grey,
+                                                ),
                                       ),
                                       const SizedBox(height: 10),
                                       ElevatedButton(
@@ -884,12 +2471,16 @@ final Map<String, List<String>> countryStates = {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.grey.shade300,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                           ),
                                         ),
                                         child: const Text(
                                           'Upload Image',
-                                          style: TextStyle(color: Colors.black87),
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -897,7 +2488,10 @@ final Map<String, List<String>> countryStates = {
                                 ),
                                 const SizedBox(height: 20),
 
-                                _buildLabel('Create Password', isRequired: true),
+                                _buildLabel(
+                                  'Create Password',
+                                  isRequired: true,
+                                ),
                                 _buildTextField(
                                   'Password',
                                   controller: _passwordController,
@@ -909,7 +2503,9 @@ final Map<String, List<String>> countryStates = {
                                     if (value.length < 8) {
                                       return 'Password must be at least 8 characters long';
                                     }
-                                    if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$').hasMatch(value)) {
+                                    if (!RegExp(
+                                      r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$',
+                                    ).hasMatch(value)) {
                                       return 'Password must contain at least one letter and one number';
                                     }
                                     return null;
@@ -939,12 +2535,17 @@ final Map<String, List<String>> countryStates = {
                                     mainAxisSize: MainAxisSize.min,
                                     children: List.generate(3, (index) {
                                       return Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                        ),
                                         width: 6,
                                         height: 6,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: index == 0 ? Colors.blue : Colors.grey,
+                                          color:
+                                              index == 0
+                                                  ? Colors.blue
+                                                  : Colors.grey,
                                         ),
                                       );
                                     }),
@@ -962,22 +2563,23 @@ final Map<String, List<String>> countryStates = {
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                     ),
-                                    child: isLoading
-                                        ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
+                                    child:
+                                        isLoading
+                                            ? const SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                            : const Text(
+                                              'Done',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                              ),
                                             ),
-                                          )
-                                        : const Text(
-                                            'Done',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                            ),
-                                          ),
                                   ),
                                 ),
                                 const SizedBox(height: 100),
@@ -1002,9 +2604,7 @@ final Map<String, List<String>> countryStates = {
             Container(
               color: Colors.black54,
               child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.blue,
-                ),
+                child: CircularProgressIndicator(color: Colors.blue),
               ),
             ),
         ],
@@ -1026,13 +2626,7 @@ final Map<String, List<String>> countryStates = {
             ),
           ),
           if (isRequired)
-            const Text(
-              ' *',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 14,
-              ),
-            ),
+            const Text(' *', style: TextStyle(color: Colors.red, fontSize: 14)),
         ],
       ),
     );
@@ -1063,7 +2657,10 @@ final Map<String, List<String>> countryStates = {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.grey),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
           border: InputBorder.none,
         ),
         validator: validator,
@@ -1091,7 +2688,10 @@ final Map<String, List<String>> countryStates = {
         decoration: InputDecoration(
           hintText: 'yyyy-mm-dd',
           hintStyle: const TextStyle(color: Colors.grey),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
           border: InputBorder.none,
           suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
         ),
@@ -1125,7 +2725,9 @@ final Map<String, List<String>> countryStates = {
           return const Iterable<String>.empty();
         }
         return countries.where((country) {
-          return country.toLowerCase().contains(textEditingValue.text.toLowerCase());
+          return country.toLowerCase().contains(
+            textEditingValue.text.toLowerCase(),
+          );
         });
       },
       onSelected: (String selection) {
@@ -1134,8 +2736,12 @@ final Map<String, List<String>> countryStates = {
           _selectedState = null;
         });
       },
-      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
-          FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController fieldTextEditingController,
+        FocusNode fieldFocusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
         return Container(
           decoration: BoxDecoration(
             color: Colors.grey.shade300,
@@ -1155,7 +2761,10 @@ final Map<String, List<String>> countryStates = {
             decoration: InputDecoration(
               hintText: 'Search Country',
               hintStyle: const TextStyle(color: Colors.grey),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 15,
+              ),
               border: InputBorder.none,
             ),
             validator: (value) {
@@ -1177,7 +2786,9 @@ final Map<String, List<String>> countryStates = {
           return const Iterable<String>.empty();
         }
         return (countryStates[_selectedCountry] ?? []).where((state) {
-          return state.toLowerCase().contains(textEditingValue.text.toLowerCase());
+          return state.toLowerCase().contains(
+            textEditingValue.text.toLowerCase(),
+          );
         });
       },
       onSelected: (String selection) {
@@ -1185,8 +2796,12 @@ final Map<String, List<String>> countryStates = {
           _selectedState = selection;
         });
       },
-      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController,
-          FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController fieldTextEditingController,
+        FocusNode fieldFocusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
         return Container(
           decoration: BoxDecoration(
             color: Colors.grey.shade300,
@@ -1206,11 +2821,15 @@ final Map<String, List<String>> countryStates = {
             decoration: InputDecoration(
               hintText: 'Search State',
               hintStyle: const TextStyle(color: Colors.grey),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 15,
+              ),
               border: InputBorder.none,
             ),
             validator: (value) {
-              if (_selectedCountry != null && (value == null || value.isEmpty)) {
+              if (_selectedCountry != null &&
+                  (value == null || value.isEmpty)) {
                 return 'Please select a state';
               }
               return null;
@@ -1274,13 +2893,16 @@ final Map<String, List<String>> countryStates = {
           height: 24,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
-            developer.log('Error loading image: $imagePath, Error: $error', name: 'RegisterPage');
+            developer.log(
+              'Error loading image: $imagePath, Error: $error',
+              name: 'RegisterPage',
+            );
             return Icon(
               imagePath.contains('google')
                   ? Icons.g_mobiledata
                   : imagePath.contains('microsoft')
-                      ? Icons.window
-                      : Icons.apple,
+                  ? Icons.window
+                  : Icons.apple,
               size: 24,
               color: Colors.grey,
             );
@@ -1293,11 +2915,13 @@ final Map<String, List<String>> countryStates = {
 
 class SuccessPage extends StatefulWidget {
   final String fullName;
-  final String? profileImage; // Base64 string
+  final String email; // Add email parameter
+  final String? profileImage; // Base64 string or URL
 
   const SuccessPage({
     super.key,
     required this.fullName,
+    required this.email, // Require email
     this.profileImage,
   });
 
@@ -1311,13 +2935,14 @@ class SuccessPageState extends State<SuccessPage> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        // Navigate to HomePage with the same arguments as PasswordPage
+        // Navigate to HomePage with the correct username (email)
         Navigator.pushReplacementNamed(
           context,
           '/home',
           arguments: {
-            'username': widget.fullName, // Pass fullName as username (for display)
-            'profileImage': widget.profileImage, // Pass profileImage as a base64 string
+            'username': widget.email, // Pass email as username
+            'fullName': widget.fullName, // Pass fullName separately
+            'profileImage': widget.profileImage,
           },
         );
       }
@@ -1359,7 +2984,8 @@ class SuccessPageState extends State<SuccessPage> {
                     size: 60,
                     color: Colors.white,
                   ),
-                ), SizedBox(height: 20),
+                ),
+                const SizedBox(height: 20),
                 const Text(
                   'Account created successfully',
                   style: TextStyle(
@@ -1459,13 +3085,13 @@ class SuccessPageState extends State<SuccessPage> {
     );
   }
 }
-
 class TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = Colors.blue
+          ..style = PaintingStyle.fill;
 
     final path = Path();
     path.moveTo(0, 0);
@@ -1473,9 +3099,10 @@ class TrianglePainter extends CustomPainter {
     path.lineTo(0, size.height);
     path.close();
 
-    final secondaryPaint = Paint()
-      ..color = Colors.blue.withAlpha(51)
-      ..style = PaintingStyle.fill;
+    final secondaryPaint =
+        Paint()
+          ..color = Colors.blue.withAlpha(51)
+          ..style = PaintingStyle.fill;
 
     final curvePath1 = Path();
     curvePath1.moveTo(size.width * 0.5, size.height * 0.3);

@@ -40,8 +40,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _controller;
   late Animation<double> _animation;
   String? _storedProfileImage;
-  Uint8List? _decodedProfileImage; // Store the decoded image data
-  String? _firstName; // Store the first name for the greeting
+  String? _storedUsername;
+  String? _storedFirstName;
+  String? _storedLastName;
+  Uint8List? _decodedProfileImage;
+  bool _isProfileImageUrl = false;
+  String? _firstName;
 
   // Sample data for doctors
   final List<Map<String, dynamic>> doctors = [
@@ -78,34 +82,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       begin: 0,
       end: -10,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    // Add listener for search bar suggestions
     _searchController.addListener(_onSearchChanged);
 
-    // Log the received username and profileImage for debugging
     _logger.info('Received username: ${widget.username}');
     _logger.info('Received fullName: ${widget.fullName}');
     _logger.info('Received profileImage: ${widget.profileImage}');
 
-    // Set profile image from widget or load from shared preferences
     _storedProfileImage = widget.profileImage;
     _logger.info('Initial _storedProfileImage: $_storedProfileImage');
 
-    // Decode the profile image if it exists
     if (_storedProfileImage != null) {
-      try {
-        _decodedProfileImage = base64Decode(_storedProfileImage!);
-        _logger.info('Successfully decoded profile image');
-      } catch (e) {
-        _logger.severe('Error decoding profile image: $e');
-        _decodedProfileImage = null;
+      if (_storedProfileImage!.startsWith('http')) {
+        _isProfileImageUrl = true;
+        _logger.info('Profile image is a URL');
+      } else if (_storedProfileImage!.startsWith('data:image')) {
+        try {
+          _decodedProfileImage = base64Decode(_storedProfileImage!.split(',')[1]);
+          _logger.info('Successfully decoded profile image');
+        } catch (e) {
+          _logger.severe('Error decoding profile image: $e');
+          _decodedProfileImage = null;
+        }
+      } else {
+        _logger.warning('Profile image format not recognized');
       }
     }
 
-    // Load the first name and profile image
     _loadUserSession();
-
-    // Store user session data
     _saveUserSession();
   }
 
@@ -123,24 +126,41 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     });
   }
 
-  // Function to determine greeting based on time of day
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good Morning';
-    } else if (hour < 17) {
-      return 'Good Afternoon';
-    } else {
-      return 'Good Evening';
+  Future<void> _loadUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _storedUsername = widget.username;
+        _storedFirstName = prefs.getString('firstName') ?? widget.fullName.split(' ').first;
+        _storedLastName = prefs.getString('lastName') ?? (widget.fullName.split(' ').length > 1 ? widget.fullName.split(' ').last : '');
+        _firstName = _storedFirstName;
+        _storedProfileImage = widget.profileImage ?? prefs.getString('profileImage');
+      });
+
+      _logger.info('Loaded username: $_storedUsername');
+      _logger.info('Loaded firstName: $_storedFirstName');
+      _logger.info('Loaded lastName: $_storedLastName');
+      _logger.info('Loaded profileImage: $_storedProfileImage');
+
+      if (_storedProfileImage != null && !_isProfileImageUrl && _storedProfileImage!.startsWith('data:image')) {
+        try {
+          _decodedProfileImage = base64Decode(_storedProfileImage!.split(',')[1]);
+          _logger.info('Successfully decoded profile image in _loadUserSession');
+        } catch (e) {
+          _logger.severe('Error decoding profile image in _loadUserSession: $e');
+          _decodedProfileImage = null;
+        }
+      }
+    } catch (e) {
+      _logger.severe('Error loading user session: $e');
     }
   }
 
-  // Save user session to SharedPreferences
   Future<void> _saveUserSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', widget.username); // Store email as username
-      await prefs.setString('fullName', widget.fullName); // Store fullName
+      await prefs.setString('username', widget.username);
+      await prefs.setString('fullName', widget.fullName);
       if (widget.profileImage != null) {
         await prefs.setString('profileImage', widget.profileImage!);
         _logger.info('Saved profileImage to SharedPreferences: ${widget.profileImage}');
@@ -154,43 +174,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
   }
 
-  // Load user session from SharedPreferences
-  Future<void> _loadUserSession() async {
-    try {
-      // Since fullName is required, use it directly to set _firstName
-      setState(() {
-        _firstName = widget.fullName.split(' ').first; // Extract the first name
-      });
-      _logger.info('Set _firstName from widget.fullName: $_firstName');
-
-      // Load the profile image from SharedPreferences if not already set
-      final prefs = await SharedPreferences.getInstance();
-      final storedImage = prefs.getString('profileImage');
-      _logger.info('Loaded profileImage from SharedPreferences: $storedImage');
-      if (storedImage != null && storedImage != _storedProfileImage) {
-        setState(() {
-          _storedProfileImage = storedImage;
-          try {
-            _decodedProfileImage = base64Decode(_storedProfileImage!);
-            _logger.info('Successfully decoded profile image from SharedPreferences');
-          } catch (e) {
-            _logger.severe('Error decoding profile image from SharedPreferences: $e');
-            _decodedProfileImage = null;
-          }
-        });
-        _logger.info('Updated _storedProfileImage from SharedPreferences: $_storedProfileImage');
-      } else {
-        _logger.warning('No profileImage found in SharedPreferences');
-      }
-    } catch (e) {
-      _logger.severe('Error loading user session: $e');
-      setState(() {
-        _firstName = 'User'; // Fallback
-      });
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
     }
   }
-
-  // Fetch the user profile from the backend (optional, can be removed if not needed)
 
   void _onItemTapped(int index) {
     setState(() {
@@ -241,36 +234,27 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 16),
-                    _buildSearchBar(),
-                    if (_isSuggestionVisible) _buildSuggestions(),
-                    const SizedBox(height: 24),
-                    _buildFeatureTabs(),
-                    const SizedBox(height: 24),
-                    _buildDoctorsList(),
-                    const SizedBox(height: 24),
-                    _buildAdditionalContent(),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 16),
+              _buildSearchBar(),
+              if (_isSuggestionVisible) _buildSuggestions(),
+              const SizedBox(height: 16),
+              _buildFeatureTabs(),
+              const SizedBox(height: 16),
+              _buildDoctorsList(),
+              const SizedBox(height: 16),
+              _buildAdditionalContent(),
+            ],
           ),
-          Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNavBar()),
-        ],
+        ),
       ),
+      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -287,7 +271,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             Text(
-              _firstName ?? 'User', // Use firstName instead of widget.username
+              _firstName ?? 'User',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
@@ -459,7 +443,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               Navigator.pop(context);
               bool launched = false;
 
-              // Try to launch Google Lens app (Android-specific intent)
               if (Platform.isAndroid) {
                 const String googleLensPackage = 'com.google.ar.lens';
                 try {
@@ -471,19 +454,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   await intent.launch();
                   launched = true;
                 } catch (e) {
-                  print('Error launching Google Lens app: $e');
+                  _logger.severe('Error launching Google Lens app: $e');
                 }
               }
 
-              // Fallback to web if app launch fails or on iOS
               if (!launched) {
                 final Uri url = Uri.parse('https://lens.google.com/');
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Google Lens is not available')),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Google Lens is not available')),
+                    );
+                  }
                 }
               }
             },
@@ -1186,7 +1170,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 }
 
-// Custom painters
 class LineGraphPainter extends CustomPainter {
   final List<Offset> points;
   final Color lineColor;
@@ -1286,7 +1269,7 @@ class StepTrackerPainter extends CustomPainter {
     final radius = min(size.width, size.height) / 2 - strokeWidth / 2;
 
     final backgroundPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
+      ..color = Colors.grey.withValues(alpha: 0.2) // Updated from withOpacity
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
 
