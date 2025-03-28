@@ -68,3 +68,7 @@ flutter:
     - assets/.env
     - assets/medicine.png
     - assets/backshape.png
+    - assets/specialist.png
+    - assets/ai_doctor.png
+    - assets/ravindra.png
+    - assets/nitesh.png

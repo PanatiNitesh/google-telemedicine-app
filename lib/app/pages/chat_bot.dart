@@ -393,7 +393,7 @@ class ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMi
           'AI Health Assistant',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),

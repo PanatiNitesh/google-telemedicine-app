@@ -21,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:flutter_project/app/pages/background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_project/app/pages/about_us_page.dart'; // Add this import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +67,6 @@ void main() async {
   ));
 }
 
-// Rest of the main.dart code remains the same (omitted for brevity)
 class TelemedicineApp extends StatelessWidget {
   final String initialRoute;
   final Map<String, dynamic>? initialArguments;
@@ -174,6 +174,7 @@ class TelemedicineApp extends StatelessWidget {
             body: Center(child: Text('Error: Invalid booking arguments')),
           );
         },
+        '/about_us': (context) => const AboutUsPage(), // Add the About Us route
       },
       onGenerateRoute: (settings) {
         developer.log('Navigating to: ${settings.name}', name: 'TelemedicineApp');
@@ -219,6 +220,7 @@ class TelemedicineApp extends StatelessWidget {
   }
 }
 
+// Rest of the MainPage, CustomClip, SecondaryClip, and AnimatedGetStartedButton remain unchanged
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -476,20 +478,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text(
-                                  'Learn more feature coming soon!',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                backgroundColor: Colors.blue,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                            Navigator.pushNamed(context, '/about_us');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -501,10 +490,10 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                             ),
                           ),
                           child: Text(
-                            "Learn More",
+                            "AboutUs",
                             style: GoogleFonts.poppins(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),

@@ -89,16 +89,18 @@ class _PasswordPageState extends State<PasswordPage> {
       developer.log('Login successful, notification shown', name: 'PasswordPage');
 
       if (!mounted) return;
-      // Use named route to navigate to HomePage
-      Navigator.pushReplacementNamed(
-        context,
-        '/home',
-        arguments: {
-          'username': widget.username,
-          'fullName': widget.fullName,
-          'profileImage': profileImageToSave, // Pass the standardized profileImage
-        },
-      );
+// Use named route to navigate to HomePage, clearing all previous routes
+Navigator.pushNamedAndRemoveUntil(
+  context,
+  '/home',
+  (route) => false,
+  arguments: {
+    'username': widget.username,
+    'fullName': widget.fullName,
+    'profileImage': profileImageToSave, // Pass the standardized profileImage
+  },
+);
+
     } else {
       if (!mounted) return;
       setState(() {

@@ -117,7 +117,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
-            fontSize: 26,
+            fontSize: 20,
           ),
         ),
         elevation: 0,

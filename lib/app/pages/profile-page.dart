@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -12,6 +12,8 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:developer' as developer;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+// Assuming HomePage is imported from your project structure
+import 'package:flutter_project/app/pages/HomePage.dart'; // Update with your actual path
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -160,36 +162,36 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadLocalProfileData() async {
-  final prefs = await SharedPreferences.getInstance();
-  setState(() {
-    firstNameController.text = prefs.getString('firstName') ?? 'John';
-    lastNameController.text = prefs.getString('lastName') ?? 'Doe';
-    emailController.text = prefs.getString('username') ?? 'example@gmail.com'; // Use 'username' instead of 'email'
-    phoneController.text = prefs.getString('phone') ?? '';
-    dobController.text = prefs.getString('dob') ?? '1990-01-01';
-    addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
-    idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
-    gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
-    profileImagePath = prefs.getString('profileImage'); // Use 'profileImage' instead of 'profileImagePath'
-    isLoading = false;
-  });
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      firstNameController.text = prefs.getString('firstName') ?? 'John';
+      lastNameController.text = prefs.getString('lastName') ?? 'Doe';
+      emailController.text = prefs.getString('username') ?? 'example@gmail.com';
+      phoneController.text = prefs.getString('phone') ?? '';
+      dobController.text = prefs.getString('dob') ?? '1990-01-01';
+      addressController.text = prefs.getString('address') ?? '7th street - medicine road, doctor 82';
+      idController.text = prefs.getString('id') ?? '9999-8888-7777-6666';
+      gender = genderOptions.contains(prefs.getString('gender')) ? prefs.getString('gender') : null;
+      profileImagePath = prefs.getString('profileImage');
+      isLoading = false;
+    });
 
-  developer.log('Loaded local profile data:', name: 'ProfilePage');
-  developer.log('firstName: ${firstNameController.text}', name: 'ProfilePage');
-  developer.log('lastName: ${lastNameController.text}', name: 'ProfilePage');
-  developer.log('email: ${emailController.text}', name: 'ProfilePage');
-  developer.log('phone: ${phoneController.text}', name: 'ProfilePage');
-  developer.log('dob: ${dobController.text}', name: 'ProfilePage');
-  developer.log('address: ${addressController.text}', name: 'ProfilePage');
-  developer.log('id: ${idController.text}', name: 'ProfilePage');
-  developer.log('gender: $gender', name: 'ProfilePage');
-  developer.log('profileImagePath: $profileImagePath', name: 'ProfilePage');
+    developer.log('Loaded local profile data:', name: 'ProfilePage');
+    developer.log('firstName: ${firstNameController.text}', name: 'ProfilePage');
+    developer.log('lastName: ${lastNameController.text}', name: 'ProfilePage');
+    developer.log('email: ${emailController.text}', name: 'ProfilePage');
+    developer.log('phone: ${phoneController.text}', name: 'ProfilePage');
+    developer.log('dob: ${dobController.text}', name: 'ProfilePage');
+    developer.log('address: ${addressController.text}', name: 'ProfilePage');
+    developer.log('id: ${idController.text}', name: 'ProfilePage');
+    developer.log('gender: $gender', name: 'ProfilePage');
+    developer.log('profileImagePath: $profileImagePath', name: 'ProfilePage');
 
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Loaded profile from local storage')),
-  );
-}
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Loaded profile from local storage')),
+    );
+  }
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -274,78 +276,94 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget buildProfileImage() {
-  return Container(
-    width: screenWidth * 0.3,
-    height: screenWidth * 0.3,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      border: Border.all(
-        color: Colors.white,
-        width: 2.0,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withAlpha((0.1 * 255).round()),
-          blurRadius: 6.0,
-          spreadRadius: 2.0,
+    return Container(
+      width: screenWidth * 0.3,
+      height: screenWidth * 0.3,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white,
+          width: 2.0,
         ),
-      ],
-    ),
-    child: ClipOval(
-      child: profileImagePath != null
-          ? profileImagePath!.startsWith('data:image')
-              ? Image.memory(
-                  base64Decode(profileImagePath!.split(',')[1]),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    developer.log('Error loading profile image in buildProfileImage: $error', name: 'ProfilePage');
-                    return Container(
-                      color: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        size: screenWidth * 0.15,
-                        color: Colors.white,
-                      ),
-                    );
-                  },
-                )
-              : Image.network(
-                  profileImagePath!,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    developer.log('Error loading profile image from network: $error', name: 'ProfilePage');
-                    return Container(
-                      color: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        size: screenWidth * 0.15,
-                        color: Colors.white,
-                      ),
-                    );
-                  },
-                )
-          : Container(
-              color: Colors.grey[300],
-              child: Icon(
-                Icons.person,
-                size: screenWidth * 0.15,
-                color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.1 * 255).round()),
+            blurRadius: 6.0,
+            spreadRadius: 2.0,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: profileImagePath != null
+            ? profileImagePath!.startsWith('data:image')
+                ? Image.memory(
+                    base64Decode(profileImagePath!.split(',')[1]),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      developer.log('Error loading profile image in buildProfileImage: $error', name: 'ProfilePage');
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Icon(
+                          Icons.person,
+                          size: screenWidth * 0.15,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  )
+                : (!kIsWeb
+                    ? Image.file(
+                        File(profileImagePath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          developer.log('Error loading profile image from file: $error', name: 'ProfilePage');
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Icon(
+                              Icons.person,
+                              size: screenWidth * 0.15,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                      )
+                    : Image.network(
+                        profileImagePath!,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          developer.log('Error loading profile image from network: $error', name: 'ProfilePage');
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Icon(
+                              Icons.person,
+                              size: screenWidth * 0.15,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                      ))
+            : Container(
+                color: Colors.grey[300],
+                child: Icon(
+                  Icons.person,
+                  size: screenWidth * 0.15,
+                  color: Colors.white,
+                ),
               ),
-            ),
-  ),
-  );
-}
+      ),
+    );
+  }
 
   Future<void> _pickProfileImage() async {
     if (!isEditing) return;
@@ -356,27 +374,34 @@ class _ProfilePageState extends State<ProfilePage> {
         source: ImageSource.gallery,
         imageQuality: 80,
         maxWidth: 800,
+        maxHeight: 800,
       );
 
-      if (image != null) {
-        if (kIsWeb) {
-          final bytes = await image.readAsBytes();
-          setState(() {
-            profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-          });
-        } else {
-          setState(() {
-            profileImagePath = image.path;
-          });
-        }
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated')),
-        );
+      if (image == null) {
+        developer.log('No image selected', name: 'ProfilePage');
+        return;
       }
-    } catch (e) {
-      developer.log('Error picking image: $e', name: 'ProfilePage');
+
+      developer.log('Image picked: ${image.path}', name: 'ProfilePage');
+
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      setState(() {
+        profileImagePath = 'data:image/jpeg;base64,$base64Image';
+      });
+
+      // Save to SharedPreferences immediately after picking
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profileImage', profileImagePath!);
+      developer.log('Profile image saved to SharedPreferences: $profileImagePath', name: 'ProfilePage');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile picture selected successfully')),
+      );
+    } catch (e, stackTrace) {
+      developer.log('Error picking image: $e', name: 'ProfilePage', error: e, stackTrace: stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to select image: ${e.toString()}')),
@@ -401,28 +426,6 @@ class _ProfilePageState extends State<ProfilePage> {
       if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
         final base64Image = profileImagePath!.split(',')[1];
         profileData['profileImage'] = base64Image;
-      } else if (!kIsWeb && profileImagePath != null) {
-        var request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/profile'));
-        request.headers['Authorization'] = 'Bearer $token';
-
-        profileData.forEach((key, value) {
-          if (value != null) {
-            request.fields[key] = value.toString();
-          }
-        });
-
-        final file = await http.MultipartFile.fromPath('profileImage', profileImagePath!);
-        request.files.add(file);
-
-        final response = await request.send();
-        final responseBody = await response.stream.bytesToString();
-
-        if (response.statusCode != 200) {
-          throw Exception('Failed to save profile: $responseBody');
-        }
-        final data = jsonDecode(responseBody)['profile'];
-        await _savePrefs(prefs, data);
-        return;
       }
 
       final response = await http.put(
@@ -458,9 +461,16 @@ class _ProfilePageState extends State<ProfilePage> {
     await prefs.setString('address', data['address']);
     await prefs.setString('id', data['governmentId']);
     await prefs.setString('gender', data['gender']);
-    if (data['profileImage'] != null) {
-      await prefs.setString('profileImage', 'data:image/png;base64,${data['profileImage']}');
+    
+    if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
+      await prefs.setString('profileImage', profileImagePath!);
+      developer.log('Saved profileImage to SharedPreferences: $profileImagePath', name: 'ProfilePage');
+    } else if (data['profileImage'] != null) {
+      final base64Image = 'data:image/jpeg;base64,${data['profileImage']}';
+      await prefs.setString('profileImage', base64Image);
+      developer.log('Saved server profileImage to SharedPreferences: $base64Image', name: 'ProfilePage');
     }
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile saved successfully!')),
@@ -595,6 +605,20 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _navigateToHomePage() {
+    final fullName = '${firstNameController.text} ${lastNameController.text}'.trim();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomePage(
+          username: emailController.text.isNotEmpty ? emailController.text : username ?? 'Guest',
+          fullName: fullName.isNotEmpty ? fullName : 'Guest User',
+          profileImage: profileImagePath,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
@@ -609,7 +633,7 @@ class _ProfilePageState extends State<ProfilePage> {
         leading: Padding(
           padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: _navigateToHomePage, // Navigate to HomePage with data
             child: Image.asset(
               'assets/back.png',
               width: screenWidth * 0.05,
@@ -630,7 +654,7 @@ class _ProfilePageState extends State<ProfilePage> {
           'Profile Summary',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -678,39 +702,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             alignment: Alignment.center,
                             children: [
                               ClipOval(
-                                child: Container(
-                                  width: screenWidth * 0.3,
-                                  height: screenWidth * 0.3,
-                                  color: Colors.transparent,
-                                  child: profileImagePath != null && profileImagePath!.startsWith('data:image')
-                                      ? Image.memory(
-                                          base64Decode(profileImagePath!.split(',')[1]),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            developer.log('Error loading profile image: $error', name: 'ProfilePage');
-                                            return Container(
-                                              decoration: BoxDecoration(
-                                                color: Colors.orange[300],
-                                              ),
-                                              child: Icon(
-                                                Icons.person,
-                                                size: screenWidth * 0.15,
-                                                color: Colors.black,
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.orange[300],
-                                          ),
-                                          child: Icon(
-                                            Icons.person,
-                                            size: screenWidth * 0.15,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                ),
+                                child: buildProfileImage(),
                               ),
                               if (isEditing)
                                 Positioned(

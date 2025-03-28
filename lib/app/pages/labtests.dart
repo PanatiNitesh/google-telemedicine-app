@@ -211,7 +211,7 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
           'Laboratory Tests',
           style: TextStyle(
             fontSize: screenWidth * 0.06,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),

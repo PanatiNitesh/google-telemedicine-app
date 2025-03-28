@@ -15,7 +15,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Lab Test Results',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
       home: TestResults(),
     );
   }
@@ -28,8 +30,7 @@ class TestResults extends StatefulWidget {
   _TestResultsState createState() => _TestResultsState();
 }
 
-class _TestResultsState extends State<TestResults>
-    with SingleTickerProviderStateMixin {
+class _TestResultsState extends State<TestResults> with SingleTickerProviderStateMixin {
   int _selectedIndex = 1; // TestResults is at index 1
   List<Map<String, dynamic>> testResults = [
     {
@@ -60,7 +61,7 @@ class _TestResultsState extends State<TestResults>
 
   late AnimationController _controller;
   late Animation<double> _animation;
-
+  
   get username => null;
 
   @override
@@ -70,10 +71,9 @@ class _TestResultsState extends State<TestResults>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _animation = Tween<double>(
-      begin: 0,
-      end: -10,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _animation = Tween<double>(begin: 0, end: -10).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -103,9 +103,7 @@ class _TestResultsState extends State<TestResults>
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => HomePage(username: username, fullName: ''),
-          ),
+          MaterialPageRoute(builder: (_) => HomePage(username: username, fullName: '',)),
         );
         break;
       case 3:
@@ -133,18 +131,12 @@ class _TestResultsState extends State<TestResults>
         testResults[index]['action'] = 'VIEW';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${testResults[index]['type']} downloaded successfully!',
-          ),
-        ),
+        SnackBar(content: Text('${testResults[index]['type']} downloaded successfully!')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Failed to download ${testResults[index]['type']}. Please try again.',
-          ),
+          content: Text('Failed to download ${testResults[index]['type']}. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -154,9 +146,7 @@ class _TestResultsState extends State<TestResults>
   void _viewResult(int index) {
     // Simulate viewing the downloaded result
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing ${testResults[index]['type']} result...'),
-      ),
+      SnackBar(content: Text('Viewing ${testResults[index]['type']} result...')),
     );
   }
 
@@ -165,14 +155,7 @@ class _TestResultsState extends State<TestResults>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 10, offset: const Offset(0, -2))],
       ),
       margin: const EdgeInsets.all(12),
       child: ClipRRect(
@@ -198,11 +181,7 @@ class _TestResultsState extends State<TestResults>
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(
-    IconData icon,
-    int index,
-    String label,
-  ) {
+  BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
     return BottomNavigationBarItem(
       icon: AnimatedBuilder(
         animation: _animation,
@@ -211,15 +190,8 @@ class _TestResultsState extends State<TestResults>
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
             child: Container(
               padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color:
-                    _selectedIndex == index ? Colors.blue : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: _selectedIndex == index ? Colors.white : Colors.grey,
-              ),
+              decoration: BoxDecoration(color: _selectedIndex == index ? Colors.blue : Colors.transparent, shape: BoxShape.circle),
+              child: Icon(icon, color: _selectedIndex == index ? Colors.white : Colors.grey),
             ),
           );
         },
@@ -234,8 +206,7 @@ class _TestResultsState extends State<TestResults>
     final screenWidth = MediaQuery.of(context).size.width;
     final orientation = MediaQuery.of(context).orientation;
 
-    final navBarHeight =
-        screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
@@ -245,31 +216,35 @@ class _TestResultsState extends State<TestResults>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: EdgeInsets.only(
-            left: screenWidth * 0.04,
-          ), // Match LabTestsPage
+          padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomePage(
+                    username: username ?? 'Guest', // Fixed null error with fallback
+                    fullName: '',
+                  ),
+                ),
+              );
             },
-
             child: Image.asset(
               'assets/back.png',
-              width: screenWidth * 0.05, // Match LabTestsPage
-              height: screenWidth * 0.05, // Match LabTestsPage
-              errorBuilder:
-                  (context, error, stackTrace) => Icon(
-                    Icons.arrow_back,
-                    size: screenWidth * 0.05, // Match LabTestsPage
-                  ),
+              width: screenWidth * 0.05,
+              height: screenWidth * 0.05,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.arrow_back,
+                size: screenWidth * 0.05,
+              ),
             ),
           ),
         ),
         title: Text(
           'Laboratory Test Results',
           style: TextStyle(
-            fontSize: screenWidth * 0.06, // Match LabTestsPage
-            fontWeight: FontWeight.w500, // Match LabTestsPage
+            fontSize: screenWidth * 0.06,
+            fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
@@ -279,18 +254,16 @@ class _TestResultsState extends State<TestResults>
       body: Padding(
         padding: EdgeInsets.fromLTRB(
           screenWidth * 0.04,
-          0.0, // Match LabTestsPage (start below AppBar)
+          0.0,
           screenWidth * 0.04,
-          navBarHeight + (screenWidth * 0.03), // Match LabTestsPage
+          navBarHeight + (screenWidth * 0.03),
         ),
         child: ListView.builder(
           itemCount: testResults.length,
           itemBuilder: (context, index) {
             final result = testResults[index];
             return Container(
-              margin: EdgeInsets.only(
-                bottom: screenHeight * 0.02,
-              ), // Match LabTestsPage
+              margin: EdgeInsets.only(bottom: screenHeight * 0.02),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -303,12 +276,10 @@ class _TestResultsState extends State<TestResults>
                 ],
               ),
               child: ListTile(
-                contentPadding: EdgeInsets.all(
-                  screenWidth * 0.04,
-                ), // Match LabTestsPage
+                contentPadding: EdgeInsets.all(screenWidth * 0.04),
                 leading: Container(
-                  width: screenWidth * 0.12, // Match LabTestsPage
-                  height: screenWidth * 0.12, // Match LabTestsPage
+                  width: screenWidth * 0.12,
+                  height: screenWidth * 0.12,
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
@@ -322,7 +293,7 @@ class _TestResultsState extends State<TestResults>
                 title: Text(
                   result['type'],
                   style: TextStyle(
-                    fontSize: screenWidth * 0.045, // Match LabTestsPage
+                    fontSize: screenWidth * 0.045,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -333,9 +304,7 @@ class _TestResultsState extends State<TestResults>
                     children: [
                       Text(
                         result['description'],
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.035,
-                        ), // Match LabTestsPage
+                        style: TextStyle(fontSize: screenWidth * 0.035),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -352,15 +321,14 @@ class _TestResultsState extends State<TestResults>
                 ),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        result['downloaded'] ? Colors.grey : Colors.blue,
+                    backgroundColor: result['downloaded'] ? Colors.grey : Colors.blue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
                     padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04, // Match LabTestsPage
-                      vertical: screenHeight * 0.015, // Match LabTestsPage
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.015,
                     ),
                   ),
                   onPressed: () {
@@ -372,9 +340,7 @@ class _TestResultsState extends State<TestResults>
                   },
                   child: Text(
                     result['action'],
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.035,
-                    ), // Match LabTestsPage
+                    style: TextStyle(fontSize: screenWidth * 0.035),
                   ),
                 ),
               ),
@@ -394,7 +360,9 @@ class PlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+      ),
       body: Center(child: Text('This is the $title page')),
     );
   }

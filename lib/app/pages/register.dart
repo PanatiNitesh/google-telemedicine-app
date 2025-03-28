@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io' show File;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
@@ -2866,7 +2865,7 @@ if (response.statusCode == 201) {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildSocialButton('assets/google.png', () {}),
-              const SizedBox(width: 15),
+              const SizedBox(width: 13),
               _buildSocialButton('assets/microsoft.png', () {}),
               const SizedBox(width: 15),
               _buildSocialButton('assets/apple.png', () {}),

@@ -145,7 +145,7 @@ Future<void> navigateToHomePage(BuildContext context) async {
             Expanded(
               child: Text(
                 'Medicines List',
-                style: TextStyle(fontSize: screenWidth * 0.06, fontWeight: FontWeight.w500, color: Colors.black),
+                style: TextStyle(fontSize: screenWidth * 0.06, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
             DropdownButton<String>(

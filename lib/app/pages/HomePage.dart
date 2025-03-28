@@ -232,8 +232,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+Widget build(BuildContext context) {
+  return WillPopScope(
+    onWillPop: () async {
+      // Show a confirmation dialog when the back button is pressed
+      bool? exit = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Exit App'),
+          content: const Text('Are you sure you want to exit the app?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Stay in app
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true), // Exit app
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+      return exit ?? false; // If dialog is dismissed, don't exit
+    },
+    child: Scaffold(
       backgroundColor: Colors.grey[200],
       body: Stack(
         children: [
@@ -264,8 +286,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNavBar()),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeader() {
     _logger.info('Building header with _storedProfileImage: $_storedProfileImage');
