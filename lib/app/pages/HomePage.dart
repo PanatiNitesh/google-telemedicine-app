@@ -234,27 +234,36 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 16),
-              _buildSearchBar(),
-              if (_isSuggestionVisible) _buildSuggestions(),
-              const SizedBox(height: 16),
-              _buildFeatureTabs(),
-              const SizedBox(height: 16),
-              _buildDoctorsList(),
-              const SizedBox(height: 16),
-              _buildAdditionalContent(),
-            ],
+      backgroundColor: Colors.grey[200],
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 16),
+                    _buildSearchBar(),
+                    if (_isSuggestionVisible) _buildSuggestions(),
+                    const SizedBox(height: 24),
+                    _buildFeatureTabs(),
+                    const SizedBox(height: 24),
+                    _buildDoctorsList(),
+                    const SizedBox(height: 24),
+                    _buildAdditionalContent(),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNavBar()),
+        ],
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -718,43 +727,44 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
+ Widget _buildBottomNavBar() {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white, // Keep the original white color
+      borderRadius: BorderRadius.circular(30),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withAlpha(76),
+          spreadRadius: 1,
+          blurRadius: 10,
+          offset: const Offset(0, -2),
+        ),
+      ],
+    ),
+    margin: const EdgeInsets.all(12), // Keep the original margin
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BottomNavigationBar(
+        backgroundColor: Colors.transparent, // Make the BottomNavigationBar background transparent
+        elevation: 0, // Remove default elevation
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        items: [
+          _buildNavItem(Icons.person, 0, 'Profile'),
+          _buildNavItem(Icons.science_outlined, 1, 'Tests'),
+          _buildNavItem(Icons.home, 2, 'Home'),
+          _buildNavItem(Icons.search, 3, 'Search'),
+          _buildNavItem(Icons.person_outline, 4, 'Account'),
         ],
       ),
-      margin: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: [
-            _buildNavItem(Icons.person, 0, 'Profile'),
-            _buildNavItem(Icons.science_outlined, 1, 'Tests'),
-            _buildNavItem(Icons.home, 2, 'Home'),
-            _buildNavItem(Icons.search, 3, 'Search'),
-            _buildNavItem(Icons.person_outline, 4, 'Account'),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
 
   BottomNavigationBarItem _buildNavItem(
     IconData icon,
@@ -1031,7 +1041,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   itemBuilder: (context, index) {
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.blue[100],
+                        backgroundColor: Colors.blue[400],
                         child: const Icon(
                           Icons.notifications,
                           color: Colors.blue,

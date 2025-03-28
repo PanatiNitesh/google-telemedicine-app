@@ -15,9 +15,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Lab Test Results',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: TestResults(),
     );
   }
@@ -30,7 +28,8 @@ class TestResults extends StatefulWidget {
   _TestResultsState createState() => _TestResultsState();
 }
 
-class _TestResultsState extends State<TestResults> with SingleTickerProviderStateMixin {
+class _TestResultsState extends State<TestResults>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 1; // TestResults is at index 1
   List<Map<String, dynamic>> testResults = [
     {
@@ -61,7 +60,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
 
   late AnimationController _controller;
   late Animation<double> _animation;
-  
+
   get username => null;
 
   @override
@@ -71,9 +70,10 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0, end: -10).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: -10,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -103,7 +103,9 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage(username: username, fullName: '',)),
+          MaterialPageRoute(
+            builder: (_) => HomePage(username: username, fullName: ''),
+          ),
         );
         break;
       case 3:
@@ -131,12 +133,18 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
         testResults[index]['action'] = 'VIEW';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${testResults[index]['type']} downloaded successfully!')),
+        SnackBar(
+          content: Text(
+            '${testResults[index]['type']} downloaded successfully!',
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to download ${testResults[index]['type']}. Please try again.'),
+          content: Text(
+            'Failed to download ${testResults[index]['type']}. Please try again.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -146,66 +154,88 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
   void _viewResult(int index) {
     // Simulate viewing the downloaded result
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Viewing ${testResults[index]['type']} result...')),
+      SnackBar(
+        content: Text('Viewing ${testResults[index]['type']} result...'),
+      ),
     );
   }
 
- Widget _buildBottomNavBar() {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(30),
-      boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 10, offset: const Offset(0, -2))],
-    ),
-    margin: const EdgeInsets.all(12),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: [
-          _buildNavItem(Icons.person, 0, 'Profile'),
-          _buildNavItem(Icons.science_outlined, 1, 'Tests'),
-          _buildNavItem(Icons.home, 2, 'Home'),
-          _buildNavItem(Icons.search, 3, 'Search'),
-          _buildNavItem(Icons.person_outline, 4, 'Account'),
+  Widget _buildBottomNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
         ],
       ),
-    ),
-  );
-}
+      margin: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: [
+            _buildNavItem(Icons.person, 0, 'Profile'),
+            _buildNavItem(Icons.science_outlined, 1, 'Tests'),
+            _buildNavItem(Icons.home, 2, 'Home'),
+            _buildNavItem(Icons.search, 3, 'Search'),
+            _buildNavItem(Icons.person_outline, 4, 'Account'),
+          ],
+        ),
+      ),
+    );
+  }
 
-BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
-  return BottomNavigationBarItem(
-    icon: AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(color: _selectedIndex == index ? Colors.blue : Colors.transparent, shape: BoxShape.circle),
-            child: Icon(icon, color: _selectedIndex == index ? Colors.white : Colors.grey),
-          ),
-        );
-      },
-    ),
-    label: label,
-  );
-}
+  BottomNavigationBarItem _buildNavItem(
+    IconData icon,
+    int index,
+    String label,
+  ) {
+    return BottomNavigationBarItem(
+      icon: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color:
+                    _selectedIndex == index ? Colors.blue : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: _selectedIndex == index ? Colors.white : Colors.grey,
+              ),
+            ),
+          );
+        },
+      ),
+      label: label,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final orientation = MediaQuery.of(context).orientation;
 
-    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+    final navBarHeight =
+        screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
@@ -215,22 +245,23 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
-          padding: EdgeInsets.only(left: screenWidth * 0.04), // Match LabTestsPage
+          padding: EdgeInsets.only(
+            left: screenWidth * 0.04,
+          ), // Match LabTestsPage
           child: GestureDetector(
             onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage(username: username, fullName: '',)),
-              );
+              Navigator.pop(context);
             },
+
             child: Image.asset(
               'assets/back.png',
               width: screenWidth * 0.05, // Match LabTestsPage
               height: screenWidth * 0.05, // Match LabTestsPage
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.arrow_back,
-                size: screenWidth * 0.05, // Match LabTestsPage
-              ),
+              errorBuilder:
+                  (context, error, stackTrace) => Icon(
+                    Icons.arrow_back,
+                    size: screenWidth * 0.05, // Match LabTestsPage
+                  ),
             ),
           ),
         ),
@@ -257,7 +288,9 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
           itemBuilder: (context, index) {
             final result = testResults[index];
             return Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.02), // Match LabTestsPage
+              margin: EdgeInsets.only(
+                bottom: screenHeight * 0.02,
+              ), // Match LabTestsPage
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -270,7 +303,9 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
                 ],
               ),
               child: ListTile(
-                contentPadding: EdgeInsets.all(screenWidth * 0.04), // Match LabTestsPage
+                contentPadding: EdgeInsets.all(
+                  screenWidth * 0.04,
+                ), // Match LabTestsPage
                 leading: Container(
                   width: screenWidth * 0.12, // Match LabTestsPage
                   height: screenWidth * 0.12, // Match LabTestsPage
@@ -298,7 +333,9 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
                     children: [
                       Text(
                         result['description'],
-                        style: TextStyle(fontSize: screenWidth * 0.035), // Match LabTestsPage
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                        ), // Match LabTestsPage
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -315,7 +352,8 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
                 ),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: result['downloaded'] ? Colors.grey : Colors.blue,
+                    backgroundColor:
+                        result['downloaded'] ? Colors.grey : Colors.blue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
@@ -334,7 +372,9 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
                   },
                   child: Text(
                     result['action'],
-                    style: TextStyle(fontSize: screenWidth * 0.035), // Match LabTestsPage
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                    ), // Match LabTestsPage
                   ),
                 ),
               ),
@@ -354,9 +394,7 @@ class PlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: Center(child: Text('This is the $title page')),
     );
   }
