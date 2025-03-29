@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
-import 'package:flutter_project/app/pages/video_page.dart'; // Video call page import
+import 'package:flutter_project/app/pages/video_page.dart';
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
@@ -12,8 +12,7 @@ class AppointmentHistoryPage extends StatefulWidget {
   State<AppointmentHistoryPage> createState() => _AppointmentHistoryPageState();
 }
 
-class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> 
-    with SingleTickerProviderStateMixin {
+class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with SingleTickerProviderStateMixin {
   final _logger = Logger('AppointmentHistoryPage');
   final TextEditingController _searchController = TextEditingController();
   bool _isSortedAscending = true;
@@ -21,7 +20,6 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
   String _selectedCategory = 'All';
   late AnimationController _fabController;
 
-  // Sample appointment data
   final List<Appointment> _appointments = [
     Appointment(
       id: '1',
@@ -77,8 +75,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
       _filteredAppointments = _appointments.where((appointment) {
         final matchesSearch = appointment.title.toLowerCase().contains(query) ||
             appointment.location.toLowerCase().contains(query);
-        final matchesCategory = _selectedCategory == 'All' || 
-            appointment.category == _selectedCategory;
+        final matchesCategory = _selectedCategory == 'All' || appointment.category == _selectedCategory;
         return matchesSearch && matchesCategory;
       }).toList();
       _sortAppointments();
@@ -86,9 +83,8 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
   }
 
   void _sortAppointments() {
-    _filteredAppointments.sort((a, b) => _isSortedAscending
-        ? a.dateTime.compareTo(b.dateTime)
-        : b.dateTime.compareTo(a.dateTime));
+    _filteredAppointments.sort((a, b) =>
+        _isSortedAscending ? a.dateTime.compareTo(b.dateTime) : b.dateTime.compareTo(a.dateTime));
   }
 
   void _toggleSortOrder() {
@@ -118,7 +114,6 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
   }
 
   String _extractDoctorName(String title) {
-    // Extract doctor name from appointment title
     final regex = RegExp(r'(Dr\.|Dr\s|with\s)([\w\s]+)');
     final match = regex.firstMatch(title);
     return match?.group(2)?.trim() ?? 'Doctor';
@@ -126,122 +121,136 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final now = DateTime.now();
-    final pastAppointments = _filteredAppointments
-        .where((appointment) => appointment.dateTime.isBefore(now))
-        .toList();
-    final futureAppointments = _filteredAppointments
-        .where((appointment) => appointment.dateTime.isAfter(now))
-        .toList();
+    final pastAppointments =
+        _filteredAppointments.where((appointment) => appointment.dateTime.isBefore(now)).toList();
+    final futureAppointments =
+        _filteredAppointments.where((appointment) => appointment.dateTime.isAfter(now)).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'My Appointments',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: screenWidth * 0.05,
           ),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
+          icon: Icon(Icons.arrow_back, color: Colors.black, size: screenWidth * 0.08),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
             icon: Icon(
-              _isSortedAscending ? Icons.arrow_upward : Icons.arrow_downward, 
-              color: Colors.black),
+              _isSortedAscending ? Icons.arrow_upward : Icons.arrow_downward,
+              color: Colors.black,
+              size: screenWidth * 0.06,
+            ),
             onPressed: _toggleSortOrder,
             tooltip: 'Sort by Date',
           ),
           IconButton(
             icon: Icon(
-              _isTimelineView ? Icons.list : Icons.timeline, 
-              color: Colors.black),
+              _isTimelineView ? Icons.list : Icons.timeline,
+              color: Colors.black,
+              size: screenWidth * 0.06,
+            ),
             onPressed: _toggleView,
             tooltip: 'Toggle View',
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Search appointments...',
-                    border: InputBorder.none,
-                    icon: Icon(Icons.search, color: Colors.grey),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(screenWidth * 0.04),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search appointments...',
+                        border: InputBorder.none,
+                        icon: Icon(Icons.search, color: Colors.grey),
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(height: screenHeight * 0.02),
+                  DropdownButton<String>(
+                    value: _selectedCategory,
+                    items: ['All', 'Medical', 'Work'].map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(
+                          category,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: screenWidth * 0.04,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value!;
+                        _filterAppointments();
+                      });
+                    },
+                    underline: const SizedBox(),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    dropdownColor: Colors.white,
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  Text(
+                    'Upcoming Appointments',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.06,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  _isTimelineView
+                      ? _buildTimelineView(futureAppointments, true, screenWidth, screenHeight)
+                      : _buildAppointmentList(futureAppointments, true, screenWidth, screenHeight),
+                  SizedBox(height: screenHeight * 0.02),
+                  Text(
+                    'Past Appointments',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.06,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  _isTimelineView
+                      ? _buildTimelineView(pastAppointments, false, screenWidth, screenHeight)
+                      : _buildAppointmentList(pastAppointments, false, screenWidth, screenHeight),
+                ],
               ),
-              const SizedBox(height: 20),
-              // Category Filter
-              DropdownButton<String>(
-                value: _selectedCategory,
-                items: ['All', 'Medical', 'Work'].map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category, style: const TextStyle(color: Colors.black)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value!;
-                    _filterAppointments();
-                  });
-                },
-                underline: const SizedBox(),
-                style: const TextStyle(
-                  fontSize: 16, 
-                  fontWeight: FontWeight.bold, 
-                  color: Colors.black),
-                dropdownColor: Colors.white,
-              ),
-              const SizedBox(height: 20),
-              // Future Appointments
-              const Text(
-                'Upcoming Appointments',
-                style: TextStyle(
-                  fontSize: 24, 
-                  fontWeight: FontWeight.bold, 
-                  color: Colors.black),
-              ),
-              const SizedBox(height: 10),
-              _isTimelineView
-                  ? _buildTimelineView(futureAppointments, true)
-                  : _buildAppointmentList(futureAppointments, true),
-              const SizedBox(height: 20),
-              // Past Appointments
-              const Text(
-                'Past Appointments',
-                style: TextStyle(
-                  fontSize: 24, 
-                  fontWeight: FontWeight.bold, 
-                  color: Colors.black),
-              ),
-              const SizedBox(height: 10),
-              _isTimelineView
-                  ? _buildTimelineView(pastAppointments, false)
-                  : _buildAppointmentList(pastAppointments, false),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
       floatingActionButton: ScaleTransition(
         scale: Tween<double>(begin: 1.0, end: 1.2).animate(
@@ -263,17 +272,18 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
           },
           tooltip: 'Book New Appointment',
           backgroundColor: Colors.blue,
-          child: const Icon(Icons.add),
+          child: Icon(Icons.add, size: screenWidth * 0.06),
         ),
       ),
     );
   }
 
-  Widget _buildAppointmentList(List<Appointment> appointments, bool isFuture) {
+  Widget _buildAppointmentList(
+      List<Appointment> appointments, bool isFuture, double screenWidth, double screenHeight) {
     if (appointments.isEmpty) {
       return Text(
         'No ${isFuture ? 'upcoming' : 'past'} appointments',
-        style: const TextStyle(color: Colors.grey),
+        style: TextStyle(color: Colors.grey, fontSize: screenWidth * 0.04),
       );
     }
 
@@ -287,56 +297,84 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
           onTap: () => _showAppointmentDetails(appointment),
           child: Card(
             elevation: 2,
-            margin: const EdgeInsets.symmetric(vertical: 8),
+            margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
             color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15)),
-            child: ListTile(
-              leading: CircleAvatar(
-                radius: 8,
-                backgroundColor: isFuture ? Colors.green : Colors.grey,
-              ),
-              title: Text(
-                appointment.title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              subtitle: Column(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: EdgeInsets.all(screenWidth * 0.03),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    DateFormat('MMM dd, yyyy - HH:mm').format(appointment.dateTime),
-                    style: TextStyle(color: Colors.grey[600]),
+                  CircleAvatar(
+                    radius: screenWidth * 0.02,
+                    backgroundColor: isFuture ? Colors.green : Colors.grey,
                   ),
-                  Text(appointment.location),
-                ],
-              ),
-              trailing: isFuture
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
+                  SizedBox(width: screenWidth * 0.03),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (appointment.category == 'Medical')
-                          IconButton(
-                            icon: const Icon(Icons.video_call, color: Colors.green),
-                            onPressed: () => _startVideoCall(_extractDoctorName(appointment.title)),
-                          ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 15, vertical: 5),
-                          child: TextButton(
-                            onPressed: () => _cancelAppointment(appointment),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: Colors.white, fontSize: 14),
-                            ),
+                        Text(
+                          appointment.title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.045,
                           ),
                         ),
+                        SizedBox(height: screenHeight * 0.005),
+                        Text(
+                          DateFormat('MMM dd, yyyy - HH:mm').format(appointment.dateTime),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: screenWidth * 0.035,
+                          ),
+                        ),
+                        Text(
+                          appointment.location,
+                          style: TextStyle(fontSize: screenWidth * 0.035),
+                        ),
                       ],
-                    )
-                  : null,
+                    ),
+                  ),
+                  if (isFuture && appointment.category == 'Medical')
+                    SizedBox(
+                      width: screenWidth * 0.25,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.video_call,
+                              color: Colors.green,
+                              size: screenWidth * 0.06,
+                            ),
+                            onPressed: () => _startVideoCall(_extractDoctorName(appointment.title)),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          SizedBox(height: screenHeight * 0.005),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.02,
+                              vertical: screenHeight * 0.005,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.035,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -344,11 +382,12 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
     );
   }
 
-  Widget _buildTimelineView(List<Appointment> appointments, bool isFuture) {
+  Widget _buildTimelineView(
+      List<Appointment> appointments, bool isFuture, double screenWidth, double screenHeight) {
     if (appointments.isEmpty) {
       return Text(
         'No ${isFuture ? 'upcoming' : 'past'} appointments',
-        style: const TextStyle(color: Colors.grey),
+        style: TextStyle(color: Colors.grey, fontSize: screenWidth * 0.04),
       );
     }
 
@@ -363,49 +402,57 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
           isFirst: index == 0,
           isLast: index == appointments.length - 1,
           indicatorStyle: IndicatorStyle(
-            width: 20,
+            width: screenWidth * 0.05,
             color: isFuture ? Colors.green : Colors.grey,
-            padding: const EdgeInsets.only(right: 10),
+            padding: EdgeInsets.only(right: screenWidth * 0.03),
           ),
           endChild: GestureDetector(
             onTap: () => _showAppointmentDetails(appointment),
             child: Card(
               elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 8),
+              margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
               color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
+                padding: EdgeInsets.all(screenWidth * 0.03),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             appointment.title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 18),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: screenWidth * 0.045,
+                            ),
                           ),
+                          SizedBox(height: screenHeight * 0.005),
+                          Text(
+                            DateFormat('MMM dd, yyyy - HH:mm').format(appointment.dateTime),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: screenWidth * 0.035,
+                            ),
+                          ),
+                          Text(
+                            appointment.location,
+                            style: TextStyle(fontSize: screenWidth * 0.035),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isFuture && appointment.category == 'Medical')
+                      IconButton(
+                        icon: Icon(
+                          Icons.video_call,
+                          color: Colors.green,
+                          size: screenWidth * 0.06,
                         ),
-                        if (isFuture && appointment.category == 'Medical')
-                          IconButton(
-                            icon: const Icon(
-                              Icons.video_call, 
-                              color: Colors.green),
-                            onPressed: () => _startVideoCall(
-                              _extractDoctorName(appointment.title)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      DateFormat('MMM dd, yyyy - HH:mm').format(appointment.dateTime),
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    Text(appointment.location),
+                        onPressed: () => _startVideoCall(_extractDoctorName(appointment.title)),
+                      ),
                   ],
                 ),
               ),
@@ -417,25 +464,38 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
   }
 
   void _showAppointmentDetails(Appointment appointment) {
+    final screenWidth = MediaQuery.of(context).size.width;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: Text(
-          appointment.title, 
-          style: const TextStyle(fontWeight: FontWeight.bold)),
+          appointment.title,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: screenWidth * 0.05),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Date: ${DateFormat('MMM dd, yyyy - HH:mm').format(appointment.dateTime)}'),
-            const SizedBox(height: 8),
-            Text('Location: ${appointment.location}'),
-            const SizedBox(height: 8),
-            Text('Category: ${appointment.category}'),
-            const SizedBox(height: 8),
-            Text('Description: ${appointment.description}'),
+            Text(
+              'Date: ${DateFormat('MMM dd, yyyy - HH:mm').format(appointment.dateTime)}',
+              style: TextStyle(fontSize: screenWidth * 0.04),
+            ),
+            SizedBox(height: screenWidth * 0.02),
+            Text(
+              'Location: ${appointment.location}',
+              style: TextStyle(fontSize: screenWidth * 0.04),
+            ),
+            SizedBox(height: screenWidth * 0.02),
+            Text(
+              'Category: ${appointment.category}',
+              style: TextStyle(fontSize: screenWidth * 0.04),
+            ),
+            SizedBox(height: screenWidth * 0.02),
+            Text(
+              'Description: ${appointment.description}',
+              style: TextStyle(fontSize: screenWidth * 0.04),
+            ),
           ],
         ),
         actions: [
@@ -445,7 +505,10 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
                 Navigator.pop(context);
                 _startVideoCall(_extractDoctorName(appointment.title));
               },
-              child: const Text('Video Call', style: TextStyle(color: Colors.green)),
+              child: Text(
+                'Video Call',
+                style: TextStyle(color: Colors.green, fontSize: screenWidth * 0.04),
+              ),
             ),
           TextButton(
             onPressed: () {
@@ -456,11 +519,17 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage>
                 'Description: ${appointment.description}',
               );
             },
-            child: const Text('Share', style: TextStyle(color: Colors.blue)),
+            child: Text(
+              'Share',
+              style: TextStyle(color: Colors.blue, fontSize: screenWidth * 0.04),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: Colors.black)),
+            child: Text(
+              'Close',
+              style: TextStyle(color: Colors.black, fontSize: screenWidth * 0.04),
+            ),
           ),
         ],
       ),
@@ -516,6 +585,7 @@ class TimelineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           children: [
@@ -528,8 +598,13 @@ class TimelineTile extends StatelessWidget {
                 color: indicatorStyle.color,
               ),
             ),
-            if (!isLast) Expanded(
-              child: Container(width: 2, color: Colors.grey[300])),
+            if (!isLast)
+              Expanded(
+                child: Container(
+                  width: 2,
+                  color: Colors.grey[300],
+                ),
+              ),
           ],
         ),
         SizedBox(width: indicatorStyle.padding.right),
