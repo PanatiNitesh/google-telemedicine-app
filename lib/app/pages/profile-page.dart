@@ -12,9 +12,8 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:developer' as developer;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-// Assuming HomePage is imported from your project structure
-import 'package:flutter_project/app/pages/HomePage.dart'; // Update with your actual path
-
+import 'package:flutter_project/app/pages/HomePage.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -124,8 +123,7 @@ void main() async {
   ));
 }
 
-String baseUrl = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
-
+String? baseUrl = dotenv.env['BASE_URL'];
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -391,7 +389,6 @@ class _ProfilePageState extends State<ProfilePage> {
         profileImagePath = 'data:image/jpeg;base64,$base64Image';
       });
 
-      // Save to SharedPreferences immediately after picking
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('profileImage', profileImagePath!);
       developer.log('Profile image saved to SharedPreferences: $profileImagePath', name: 'ProfilePage');
@@ -633,7 +630,7 @@ class _ProfilePageState extends State<ProfilePage> {
         leading: Padding(
           padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
-            onTap: _navigateToHomePage, // Navigate to HomePage with data
+            onTap: _navigateToHomePage, 
             child: Image.asset(
               'assets/back.png',
               width: screenWidth * 0.05,

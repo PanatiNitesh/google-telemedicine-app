@@ -92,7 +92,6 @@ class _SearchPageState extends State<SearchPage> {
 
   void _openGoogleLens() async {
     if (Platform.isAndroid) {
-      // Try launching the Google Lens app with its package name
       try {
         const String googleLensPackage = 'com.google.ar.lens';
         print('Attempting to launch Google Lens app with package: $googleLensPackage');
@@ -107,8 +106,6 @@ class _SearchPageState extends State<SearchPage> {
       } catch (e) {
         print('Error launching Google Lens app with package com.google.ar.lens: $e');
       }
-
-      // Fallback: Try launching via the Google app
       try {
         const String googleAppPackage = 'com.google.android.googlequicksearchbox';
         print('Attempting to launch Google app with deep link: googleapp://lens');
@@ -123,8 +120,6 @@ class _SearchPageState extends State<SearchPage> {
       } catch (e) {
         print('Error launching Google app with Lens deep link: $e');
       }
-
-      // Fallback: Try a Google Lens-specific intent
       try {
         print('Attempting to launch Google Lens with specific intent');
         final intent = AndroidIntent(
@@ -137,8 +132,6 @@ class _SearchPageState extends State<SearchPage> {
       } catch (e) {
         print('Error launching Google Lens with specific intent: $e');
       }
-
-      // Fallback: Try a generic deep link
       try {
         final Uri deepLink = Uri.parse('googlelens://');
         print('Attempting to launch Google Lens with deep link: $deepLink');
@@ -152,8 +145,6 @@ class _SearchPageState extends State<SearchPage> {
       } catch (e) {
         print('Error launching Google Lens with deep link googlelens://: $e');
       }
-
-      // Final fallback: Open the web version
       print('Falling back to web version of Google Lens');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -169,7 +160,6 @@ class _SearchPageState extends State<SearchPage> {
         );
       }
     } else {
-      // For non-Android (e.g., iOS), directly open the web version
       print('Non-Android platform detected, opening web version of Google Lens');
       final Uri webUrl = Uri.parse('https://lens.google.com/');
       if (await canLaunchUrl(webUrl)) {
@@ -233,7 +223,7 @@ class _SearchPageState extends State<SearchPage> {
           paddingHorizontal,
           paddingVertical + 60,
         ),
-        child: SingleChildScrollView( // Make the body scrollable
+        child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -254,7 +244,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
                 SizedBox(height: paddingVertical * 0.5),
                 SizedBox(
-                  height: screenHeight * 0.5, // Limit height for search results
+                  height: screenHeight * 0.5, 
                   child: _buildSearchResults(
                     iconSize: iconSize,
                   ),

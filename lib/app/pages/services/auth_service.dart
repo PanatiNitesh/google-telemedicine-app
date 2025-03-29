@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:developer' as developer;
@@ -54,8 +55,7 @@ class User {
 }
 
 class AuthService {
-  static const String _baseUrl = 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
-
+  static final String? _baseUrl = dotenv.env['BASE_URL'];
   Future<UserResponse> checkUser(String username) async {
     final url = Uri.parse('$_baseUrl/login');
     final headers = {'Content-Type': 'application/json'};
@@ -67,11 +67,17 @@ class AuthService {
     try {
       final response = await http
           .post(url, headers: headers, body: body)
-          .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw TimeoutException('Request timed out after 30 seconds.');
-      });
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw TimeoutException('Request timed out after 30 seconds.');
+            },
+          );
 
-      developer.log('Response status: ${response.statusCode}', name: 'AuthService');
+      developer.log(
+        'Response status: ${response.statusCode}',
+        name: 'AuthService',
+      );
       developer.log('Response body: ${response.body}', name: 'AuthService');
 
       if (response.statusCode == 200) {
@@ -81,7 +87,9 @@ class AuthService {
         final jsonResponse = jsonDecode(response.body);
         return UserResponse(
           success: false,
-          message: jsonResponse['message'] ?? 'Failed to check user (Status: ${response.statusCode})',
+          message:
+              jsonResponse['message'] ??
+              'Failed to check user (Status: ${response.statusCode})',
         );
       }
     } on TimeoutException catch (e) {
@@ -101,17 +109,26 @@ class AuthService {
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'userId': userId, 'password': password});
 
-    developer.log('Sending verify password request to: $url', name: 'AuthService');
+    developer.log(
+      'Sending verify password request to: $url',
+      name: 'AuthService',
+    );
     developer.log('Request body: $body', name: 'AuthService');
 
     try {
       final response = await http
           .post(url, headers: headers, body: body)
-          .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw TimeoutException('Request timed out after 30 seconds.');
-      });
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw TimeoutException('Request timed out after 30 seconds.');
+            },
+          );
 
-      developer.log('Response status: ${response.statusCode}', name: 'AuthService');
+      developer.log(
+        'Response status: ${response.statusCode}',
+        name: 'AuthService',
+      );
       developer.log('Response body: ${response.body}', name: 'AuthService');
 
       if (response.statusCode == 200) {
@@ -121,7 +138,9 @@ class AuthService {
         final jsonResponse = jsonDecode(response.body);
         return UserResponse(
           success: false,
-          message: jsonResponse['message'] ?? 'Failed to verify password (Status: ${response.statusCode})',
+          message:
+              jsonResponse['message'] ??
+              'Failed to verify password (Status: ${response.statusCode})',
         );
       }
     } on TimeoutException catch (e) {

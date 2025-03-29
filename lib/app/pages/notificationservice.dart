@@ -4,7 +4,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'dart:developer' as developer;
-import 'package:flutter_project/app/pages/health_tips.dart'; // Import HealthTips
+import 'package:flutter_project/app/pages/health_tips.dart';
 import 'dart:io' show Platform;
 
 class NotificationService {

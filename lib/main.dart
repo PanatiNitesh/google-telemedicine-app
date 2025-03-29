@@ -21,18 +21,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:flutter_project/app/pages/background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_project/app/pages/about_us_page.dart'; // Add this import
+import 'package:flutter_project/app/pages/about_us_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseAppCheck.instance.activate();
 
-  // Load .env file
   try {
     await dotenv.load(fileName: "assets/.env");
     developer.log("Loaded .env successfully", name: 'Main');
@@ -40,15 +38,12 @@ void main() async {
     developer.log("Error loading .env: $e", name: 'Main');
   }
 
-  // Initialize the background service for notifications
   await initializeService();
 
-  // Request notification permission for Android 13+
   if (await Permission.notification.isDenied) {
     await Permission.notification.request();
   }
 
-  // Check login status
   final prefs = await SharedPreferences.getInstance();
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final String? username = prefs.getString('username');
@@ -174,7 +169,7 @@ class TelemedicineApp extends StatelessWidget {
             body: Center(child: Text('Error: Invalid booking arguments')),
           );
         },
-        '/about_us': (context) => const AboutUsPage(), // Add the About Us route
+        '/about_us': (context) => const AboutUsPage(), 
       },
       onGenerateRoute: (settings) {
         developer.log('Navigating to: ${settings.name}', name: 'TelemedicineApp');
@@ -220,7 +215,6 @@ class TelemedicineApp extends StatelessWidget {
   }
 }
 
-// Rest of the MainPage, CustomClip, SecondaryClip, and AnimatedGetStartedButton remain unchanged
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 

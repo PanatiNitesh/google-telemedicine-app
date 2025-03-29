@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart'; // Update with your actual path
-import 'package:flutter_project/app/pages/profile-page.dart'; // Update with your actual path
-import 'dart:math'; // For simulating download failure
+import 'package:flutter_project/app/pages/HomePage.dart'; 
+import 'package:flutter_project/app/pages/profile-page.dart'; 
+import 'dart:math'; 
 
 void main() {
   runApp(MyApp());
@@ -31,7 +31,7 @@ class TestResults extends StatefulWidget {
 }
 
 class _TestResultsState extends State<TestResults> with SingleTickerProviderStateMixin {
-  int _selectedIndex = 1; // TestResults is at index 1
+  int _selectedIndex = 1; 
   List<Map<String, dynamic>> testResults = [
     {
       'type': 'Ultra Sound',
@@ -83,7 +83,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
   }
 
   void _onItemTapped(int index) {
-    if (_selectedIndex == index) return; // Avoid unnecessary navigation
+    if (_selectedIndex == index) return; 
 
     setState(() {
       _selectedIndex = index;
@@ -98,8 +98,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
         );
         break;
       case 1:
-        // Already on TestResults page
-        break;
+              break;
       case 2:
         Navigator.pushReplacement(
           context,
@@ -122,8 +121,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
   }
 
   void _downloadResult(int index) {
-    // Simulate a download with a 20% chance of failure
-    bool success = Random().nextDouble() > 0.2; // 80% success rate
+    bool success = Random().nextDouble() > 0.2; 
 
     if (success) {
       setState(() {
@@ -144,7 +142,6 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
   }
 
   void _viewResult(int index) {
-    // Simulate viewing the downloaded result
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Viewing ${testResults[index]['type']} result...')),
     );
@@ -223,7 +220,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
                 context,
                 MaterialPageRoute(
                   builder: (context) => HomePage(
-                    username: username ?? 'Guest', // Fixed null error with fallback
+                    username: username ?? 'Guest', 
                     fullName: '',
                   ),
                 ),

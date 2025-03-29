@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show File;
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'dart:convert';
@@ -10,8 +11,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_project/app/pages/notificationservice.dart'; // Import NotificationService
-import 'health_tips.dart'; // Import HealthTips for scheduling notifications
+import 'package:flutter_project/app/pages/notificationservice.dart'; 
+import 'health_tips.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -40,8 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Uint8List? _profileImageBytes;
   String? _completePhoneNumber;
 
-  final String _backendUrl =
-      'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api/register';
+final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
 
   final ImagePicker _picker = ImagePicker();
 
@@ -1801,7 +1801,6 @@ class _RegisterPageState extends State<RegisterPage> {
       'Vĩnh Phúc',
       'Yên Bái',
     ],
-    // Unitary states or countries with no formal provinces/states
     'Andorra': [],
     'Antigua and Barbuda': [],
     'Bahamas': [],
@@ -1904,7 +1903,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.initState();
     _firstNameController = TextEditingController();
   _lastNameController = TextEditingController();
-    NotificationService().init(); // Initialize NotificationService
+    NotificationService().init();  
   }
 
   @override
@@ -1992,7 +1991,6 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _scheduleHealthTipsForTesting() async {
     final now = DateTime.now();
     for (int i = 0; i < 5; i++) {
-      // Add a 10-second buffer to ensure the time is in the future
       final scheduledTime = now.add(
         Duration(seconds: 10, minutes: 1 + (2 * i)),
       );
@@ -2012,10 +2010,8 @@ Future<void> _register() async {
     });
 
     try {
-      // Log initial state of profile image variables
       developer.log('Initial _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
 
-      // Further compress the image if needed
       if (_profileImageFile != null && _profileImageFile!.existsSync() && _profileImageFile!.lengthSync() > 512 * 1024) {
         developer.log('Image is too large (${_profileImageFile!.lengthSync()} bytes), compressing further', name: 'RegisterPage');
         final compressedImage = await FlutterImageCompress.compressWithFile(
@@ -2026,7 +2022,7 @@ Future<void> _register() async {
         );
         if (compressedImage != null) {
           _profileImageBytes = compressedImage;
-          _profileImageFile = null; // Set to null after compression
+          _profileImageFile = null; 
           developer.log('Further compressed image size: ${compressedImage.length} bytes', name: 'RegisterPage');
         } else {
           developer.log('Compression failed, keeping original _profileImageFile', name: 'RegisterPage');
@@ -2035,7 +2031,6 @@ Future<void> _register() async {
         developer.log('No compression needed or _profileImageFile is null', name: 'RegisterPage');
       }
 
-      // Log state after compression
       developer.log('After compression - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
 
       var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
@@ -2052,7 +2047,6 @@ Future<void> _register() async {
       request.fields['governmentId'] = _govMedicalIdController.text;
       request.fields['password'] = _passwordController.text;
 
-      // Add profile image to the request
       if (_profileImageFile != null && _profileImageFile!.existsSync()) {
         developer.log('Adding image to request, file size: ${_profileImageFile!.lengthSync()} bytes', name: 'RegisterPage');
         request.files.add(await http.MultipartFile.fromPath(
@@ -2090,44 +2084,39 @@ if (response.statusCode == 201) {
   developer.log('Parsed JSON response: $jsonResponse', name: 'RegisterPage');
   if (jsonResponse['success'] == true) {
     final user = jsonResponse['user'];
-    final userId = user != null ? user['id']?.toString() ?? '' : ''; // Fallback to empty string if user is null
+    final userId = user != null ? user['id']?.toString() ?? '' : ''; 
     final token = jsonResponse['token']?.toString() ?? '';
-    final profileImage = user != null ? user['profileImage']?.toString() : null; // Fallback to null if user is null
-    final firstName = _firstNameController.text; // Use the firstName directly
-    final lastName = _lastNameController.text;   // Use the lastName directly
+    final profileImage = user != null ? user['profileImage']?.toString() : null; 
+    final firstName = _firstNameController.text; 
+    final lastName = _lastNameController.text;   
     final email = _emailController.text;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', email);
     await prefs.setString('userId', userId);
-    await prefs.setString('firstName', firstName); // Store firstName
-    await prefs.setString('lastName', lastName);   // Store lastName
+    await prefs.setString('firstName', firstName); 
+    await prefs.setString('lastName', lastName); 
     await prefs.setString('auth_token', token);
     await prefs.setString('user_id', userId);
     await prefs.setBool('isLoggedIn', true);
-    // Store additional fields
+
     await prefs.setString('phone', _completePhoneNumber ?? _phoneNumberController.text);
     await prefs.setString('dob', _dateOfBirthController.text);
     await prefs.setString('address', _fullAddressController.text);
     await prefs.setString('id', _govMedicalIdController.text);
     await prefs.setString('gender', _genderController.text);
-
-    // Log state before saving profile image
     developer.log('Before saving profile image - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
-
-    // Store the profile image with the correct prefix
-    String? profileImageToPass; // Variable to hold the profile image to pass to SuccessPage
+    String? profileImageToPass; 
     if (_profileImageBytes != null) {
       final profileImageBase64 = base64Encode(_profileImageBytes!);
-      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64'; // Add prefix
+      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64'; 
       await prefs.setString('profileImage', profileImageWithPrefix);
       profileImageToPass = profileImageWithPrefix;
       developer.log('Saved profileImage (from bytes): $profileImageWithPrefix', name: 'RegisterPage');
     } else if (_profileImageFile != null && _profileImageFile!.existsSync()) {
-      // Convert _profileImageFile to base64 if it exists
       final bytes = await _profileImageFile!.readAsBytes();
       final profileImageBase64 = base64Encode(bytes);
-      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64'; // Add prefix
+      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64';
       await prefs.setString('profileImage', profileImageWithPrefix);
       profileImageToPass = profileImageWithPrefix;
       developer.log('Saved profileImage (from file): $profileImageWithPrefix', name: 'RegisterPage');
@@ -2151,8 +2140,6 @@ if (response.statusCode == 201) {
     developer.log('Saved address: ${_fullAddressController.text}', name: 'RegisterPage');
     developer.log('Saved id: ${_govMedicalIdController.text}', name: 'RegisterPage');
     developer.log('Saved gender: ${_genderController.text}', name: 'RegisterPage');
-
-    // Schedule health tips notifications (same as LoginPage)
     try {
       await _scheduleHealthTipsForTesting();
     } catch (e) {
@@ -2172,9 +2159,9 @@ if (response.statusCode == 201) {
         context,
         MaterialPageRoute(
           builder: (context) => SuccessPage(
-            fullName: '$firstName $lastName', // Pass the combined fullName to SuccessPage
-            email: email, // Pass the email
-            profileImage: profileImageToPass, // Use the computed profile image
+            fullName: '$firstName $lastName', 
+            email: email, 
+            profileImage: profileImageToPass, 
           ),
         ),
       );
@@ -2914,13 +2901,13 @@ if (response.statusCode == 201) {
 
 class SuccessPage extends StatefulWidget {
   final String fullName;
-  final String email; // Add email parameter
-  final String? profileImage; // Base64 string or URL
+  final String email;
+  final String? profileImage; 
 
   const SuccessPage({
     super.key,
     required this.fullName,
-    required this.email, // Require email
+    required this.email,
     this.profileImage,
   });
 
@@ -2934,13 +2921,12 @@ class SuccessPageState extends State<SuccessPage> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        // Navigate to HomePage with the correct username (email)
         Navigator.pushReplacementNamed(
           context,
           '/home',
           arguments: {
-            'username': widget.email, // Pass email as username
-            'fullName': widget.fullName, // Pass fullName separately
+            'username': widget.email,
+            'fullName': widget.fullName, 
             'profileImage': widget.profileImage,
           },
         );
