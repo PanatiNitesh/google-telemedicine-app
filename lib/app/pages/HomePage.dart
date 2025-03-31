@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/appointmentpage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
@@ -46,24 +47,59 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Uint8List? _decodedProfileImage;
   bool _isProfileImageUrl = false;
   String? _firstName;
+  bool _showAllDoctors = false; // New state variable
 
-  // Sample data for doctors
+  // Expanded doctor list
   final List<Map<String, dynamic>> doctors = [
     {
-      'name': 'Doctor-1',
-      'specialty': 'Rheumatologist',
-      'image': 'assets/doctor1.png',
-      'description': 'Experienced doctor specializing in joint and muscle conditions',
-    },
-    {
-      'name': 'Doctor-2',
-      'specialty': 'Dermatologist',
-      'image': 'assets/doctor2.png',
-      'description': 'Skin specialist with 10+ years experience',
-    },
+    'name': 'Dr. Sarah Chen',
+    'specialty': 'Rheumatologist',
+    'image': 'assets/doctor1.png',
+    'description': 'Experienced doctor specializing in joint and muscle conditions',
+  },
+  {
+    'name': 'Dr. Amanda Wilson',
+    'specialty': 'Dermatologist',
+    'image': 'assets/doctor2.png',
+    'description': 'Skin specialist with 10+ years experience',
+  },
+  {
+    'name': 'Dr. Michael Rodriguez',
+    'specialty': 'Cardiologist',
+    'image': 'assets/doctor1.png',
+    'description': 'Heart specialist with extensive experience',
+  },
+  {
+    'name': 'Dr. James Patel',
+    'specialty': 'Neurologist',
+    'image': 'assets/doctor2.png',
+    'description': 'Expert in brain and nervous system disorders',
+  },
+  {
+    'name': 'Dr. Emily Thompson',
+    'specialty': 'Pediatrician',
+    'image': 'assets/doctor1.png',
+    'description': 'Specialist in child healthcare',
+  },
+  {
+    'name': 'Dr. John Doe',
+    'specialty': 'Cardiologist',
+    'description': 'Expert in heart diseases with 10 years of experience.',
+    'image': 'assets/doctor1.png',
+  },
+  {
+    'name': 'Dr. Jane Smith',
+    'specialty': 'Dermatologist',
+    'description': 'Specialist in skin and hair treatments.',
+    'image': 'assets/doctor2.png',
+  },
+  {
+    'name': 'Dr. Robert Brown',
+    'specialty': 'Pediatrician',
+    'description': 'Caring for children health and well-being.',
+    'image': 'assets/doctor1.png',
+  },
   ];
-
-  // Sample suggestions for search bar
   final List<String> suggestions = [
     'Dolo - 650mg',
     'Doc2 - Dermatologist',
@@ -195,7 +231,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     switch (index) {
       case 0:
         themeColor = Colors.purple;
-        _logger.info('Navigating to /profile');
+        _logger.info('Navigating to /doctors_list');
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => ProfilePage()),
@@ -235,25 +271,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 Widget build(BuildContext context) {
   return WillPopScope(
     onWillPop: () async {
-      // Show a confirmation dialog when the back button is pressed
-      bool? exit = await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Exit App'),
-          content: const Text('Are you sure you want to exit the app?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false), // Stay in app
-              child: const Text('No'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true), // Exit app
-              child: const Text('Yes'),
-            ),
-          ],
-        ),
-      );
-      return exit ?? false; // If dialog is dismissed, don't exit
+      return false;
     },
     child: Scaffold(
       backgroundColor: Colors.grey[200],
@@ -602,7 +620,9 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildDoctorsList() {
+Widget _buildDoctorsList() {
+    final displayedDoctors = _showAllDoctors ? doctors : doctors.take(2).toList();
+
     return Column(
       children: [
         Row(
@@ -628,20 +648,33 @@ Widget build(BuildContext context) {
           ],
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 300,
-          child: ListView.builder(
-            itemCount: doctors.length,
-            itemBuilder: (context, index) {
-              final doctor = doctors[index];
-              return _buildDoctorCard(doctor);
-            },
-          ),
+        Column(
+          children: displayedDoctors.map((doctor) => _buildDoctorCard(doctor)).toList(),
         ),
+        const SizedBox(height: 10),
+        if (doctors.length > 2)
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _showAllDoctors = !_showAllDoctors;
+              });
+              _logger.info('Toggled doctor list visibility: $_showAllDoctors');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: Text(
+              _showAllDoctors ? 'Show Less' : 'More',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
       ],
     );
   }
-
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
     return GestureDetector(
       onTap: () {
@@ -778,7 +811,7 @@ Widget build(BuildContext context) {
         showSelectedLabels: false,
         showUnselectedLabels: false,
         items: [
-          _buildNavItem(Icons.person, 0, 'Profile'),
+          _buildNavItem(Icons.person_search, 0, 'Profile'),
           _buildNavItem(Icons.science_outlined, 1, 'Tests'),
           _buildNavItem(Icons.home, 2, 'Home'),
           _buildNavItem(Icons.search, 3, 'Search'),

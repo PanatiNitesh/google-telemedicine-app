@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/video_page.dart';
 import 'package:intl/intl.dart';
-import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
 
 class AppointmentHistoryPage extends StatefulWidget {
@@ -13,7 +12,6 @@ class AppointmentHistoryPage extends StatefulWidget {
 }
 
 class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with SingleTickerProviderStateMixin {
-  final _logger = Logger('AppointmentHistoryPage');
   final TextEditingController _searchController = TextEditingController();
   bool _isSortedAscending = true;
   bool _isTimelineView = false;
@@ -536,16 +534,6 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
     );
   }
 
-  void _cancelAppointment(Appointment appointment) {
-    setState(() {
-      _appointments.remove(appointment);
-      _filterAppointments();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Appointment cancelled')),
-    );
-    _logger.info('Cancelled appointment: ${appointment.title}');
-  }
 }
 
 class Appointment {

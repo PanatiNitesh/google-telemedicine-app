@@ -50,16 +50,31 @@ void main() async {
   final String? fullName = prefs.getString('fullName');
   final String? profileImage = prefs.getString('profileImage');
 
-  runApp(TelemedicineApp(
-    initialRoute: isLoggedIn ? '/home' : '/',
-    initialArguments: isLoggedIn
-        ? {
-            'username': username ?? 'User',
-            'fullName': fullName ?? 'User',
-            'profileImage': profileImage,
-          }
-        : null,
-  ));
+  // Add a flag to detect if this is a restart after exit
+  final bool isRestart = prefs.getBool('isRestart') ?? false;
+  if (isRestart && isLoggedIn) {
+    // Reset the restart flag and go to HomePage
+    await prefs.setBool('isRestart', false);
+    runApp(TelemedicineApp(
+      initialRoute: '/home',
+      initialArguments: {
+        'username': username ?? 'User',
+        'fullName': fullName ?? 'User',
+        'profileImage': profileImage,
+      },
+    ));
+  } else {
+    runApp(TelemedicineApp(
+      initialRoute: isLoggedIn ? '/home' : '/',
+      initialArguments: isLoggedIn
+          ? {
+              'username': username ?? 'User',
+              'fullName': fullName ?? 'User',
+              'profileImage': profileImage,
+            }
+          : null,
+    ));
+  }
 }
 
 class TelemedicineApp extends StatelessWidget {
@@ -169,7 +184,7 @@ class TelemedicineApp extends StatelessWidget {
             body: Center(child: Text('Error: Invalid booking arguments')),
           );
         },
-        '/about_us': (context) => const AboutUsPage(), 
+        '/about_us': (context) => const AboutUsPage(),
       },
       onGenerateRoute: (settings) {
         developer.log('Navigating to: ${settings.name}', name: 'TelemedicineApp');
@@ -214,7 +229,6 @@ class TelemedicineApp extends StatelessWidget {
     );
   }
 }
-
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 

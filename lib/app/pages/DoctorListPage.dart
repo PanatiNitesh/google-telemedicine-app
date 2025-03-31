@@ -20,23 +20,53 @@ class _DoctorsListPageState extends State<DoctorsListPage>
 
   final List<Map<String, dynamic>> doctors = [
     {
-      'name': 'Dr. John Doe',
-      'specialty': 'Cardiologist',
-      'description': 'Expert in heart diseases with 10 years of experience.',
-      'image': 'assets/doctor1.png',
-    },
-    {
-      'name': 'Dr. Jane Smith',
-      'specialty': 'Dermatologist',
-      'description': 'Specialist in skin and hair treatments.',
-      'image': 'assets/doctor2.png',
-    },
-    {
-      'name': 'Dr. Robert Brown',
-      'specialty': 'Pediatrician',
-      'description': 'Caring for children’s health and well-being.',
-      'image': 'assets/doctor1.png',
-    },
+    'name': 'Dr. Sarah Chen',
+    'specialty': 'Rheumatologist',
+    'image': 'assets/doctor1.png',
+    'description': 'Experienced doctor specializing in joint and muscle conditions',
+  },
+  {
+    'name': 'Dr. Michael Rodriguez',
+    'specialty': 'Dermatologist',
+    'image': 'assets/doctor2.png',
+    'description': 'Skin specialist with 10+ years experience',
+  },
+  {
+    'name': 'Dr. Amanda Wilson',
+    'specialty': 'Cardiologist',
+    'image': 'assets/doctor1.png',
+    'description': 'Heart specialist with extensive experience',
+  },
+  {
+    'name': 'Dr. James Patel',
+    'specialty': 'Neurologist',
+    'image': 'assets/doctor2.png',
+    'description': 'Expert in brain and nervous system disorders',
+  },
+  {
+    'name': 'Dr. Emily Thompson',
+    'specialty': 'Pediatrician',
+    'image': 'assets/doctor1.png',
+    'description': 'Specialist in child healthcare',
+  },
+  {
+    'name': 'Dr. John Doe',
+    'specialty': 'Cardiologist',
+    'description': 'Expert in heart diseases with 10 years of experience.',
+    'image': 'assets/doctor1.png',
+  },
+  {
+    'name': 'Dr. Jane Smith',
+    'specialty': 'Dermatologist',
+    'description': 'Specialist in skin and hair treatments.',
+    'image': 'assets/doctor2.png',
+  },
+  {
+    'name': 'Dr. Robert Brown',
+    'specialty': 'Pediatrician',
+    'description': 'Caring for children health and well-being.',
+    'image': 'assets/doctor1.png',
+  },
   ];
 
   @override
