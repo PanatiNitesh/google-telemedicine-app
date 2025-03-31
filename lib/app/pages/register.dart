@@ -2036,8 +2036,7 @@ Future<void> _register() async {
 
       developer.log('After compression - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
 
-      var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
-
+      var request = http.MultipartRequest('POST', Uri.parse('$_backendUrl/register'));
       request.fields['firstName'] = _firstNameController.text;
       request.fields['lastName'] = _lastNameController.text;
       request.fields['gender'] = _genderController.text;
