@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io' show File;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_project/app/pages/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'dart:convert';
@@ -25,7 +27,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   bool _consentGiven = false;
   bool isLoading = false;
-
+  final AuthService authService = AuthService();
+  
   var _firstNameController = TextEditingController();
   var _lastNameController = TextEditingController();
   final _genderController = TextEditingController();
@@ -2916,6 +2919,8 @@ class SuccessPage extends StatefulWidget {
 }
 
 class SuccessPageState extends State<SuccessPage> {
+  bool isLoading = false;
+  final AuthService authService = AuthService();
   @override
   void initState() {
     super.initState();
@@ -3001,7 +3006,7 @@ class SuccessPageState extends State<SuccessPage> {
     );
   }
 
-  Widget _buildSocialSignInSection() {
+Widget _buildSocialSignInSection() {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -3009,7 +3014,7 @@ class SuccessPageState extends State<SuccessPage> {
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(76),
+            color: Colors.grey.withValues(alpha: 0.3), // Updated from withOpacity
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -1),
@@ -3048,22 +3053,58 @@ class SuccessPageState extends State<SuccessPage> {
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Image.asset(
-          imagePath,
-          width: 24,
-          height: 24,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            developer.log('Error loading image: $imagePath, Error: $error', name: 'SuccessPage');
-            return Icon(
-              imagePath.contains('google')
-                  ? Icons.g_mobiledata
-                  : imagePath.contains('microsoft')
-                      ? Icons.window
-                      : Icons.apple,
-              size: 24,
-              color: Colors.grey,
-            );
+        child: IconButton(
+          icon: Image.asset(
+            imagePath,
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                imagePath.contains('google')
+                    ? Icons.g_mobiledata
+                    : imagePath.contains('microsoft')
+                        ? Icons.window
+                        : Icons.apple,
+                size: 24,
+                color: Colors.grey,
+              );
+            },
+          ),
+          onPressed: () async {
+            UserCredential? userCredential;
+            try {
+              setState(() => isLoading = true);
+
+              if (imagePath.contains('google')) {
+                userCredential = await authService.signInWithGoogle();
+              } else if (imagePath.contains('apple')) {
+                userCredential = await authService.signInWithApple();
+              }
+
+              if (mounted && userCredential?.user != null) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SuccessPage(
+                      fullName: userCredential!.user!.displayName ?? 'User',
+                      email: userCredential.user!.email ?? '',
+                      profileImage: userCredential.user!.photoURL,
+                    ),
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Sign in failed: ${e.toString()}')),
+                );
+              }
+            } finally {
+              if (mounted) {
+                setState(() => isLoading = false);
+              }
+            }
           },
         ),
       ),
@@ -3073,40 +3114,36 @@ class SuccessPageState extends State<SuccessPage> {
 class TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.blue
-          ..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.fill;
 
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(0, size.height);
-    path.close();
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(0, size.height)
+      ..close();
 
-    final secondaryPaint =
-        Paint()
-          ..color = Colors.blue.withAlpha(51)
-          ..style = PaintingStyle.fill;
+    final secondaryPaint = Paint()
+      ..color = Colors.blue.withAlpha(51)
+      ..style = PaintingStyle.fill;
 
-    final curvePath1 = Path();
-    curvePath1.moveTo(size.width * 0.5, size.height * 0.3);
-    curvePath1.quadraticBezierTo(
-      size.width * 0.7,
-      size.height * 0.1,
-      size.width,
-      size.height * 0.2,
-    );
-    curvePath1.lineTo(size.width, 0);
-    curvePath1.lineTo(size.width * 0.4, 0);
-    curvePath1.close();
+    final curvePath1 = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.3)
+      ..quadraticBezierTo(
+        size.width * 0.7,
+        size.height * 0.1,
+        size.width,
+        size.height * 0.2,
+      )
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width * 0.4, 0)
+      ..close();
 
     canvas.drawPath(path, paint);
     canvas.drawPath(curvePath1, secondaryPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

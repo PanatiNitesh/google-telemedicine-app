@@ -257,23 +257,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-Future<void> _loadProfileData() async {
-  if (token == null) {
-    developer.log('No token available, loading local data', name: 'ProfilePage');
-    await _loadLocalProfileData();
-    return;
-  }
-
-  try {
-    developer.log('Loading profile from server...', name: 'ProfilePage');
-    
-    final response = await http.get(
-      Uri.parse('$baseUrl/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    ).timeout(Duration(seconds: 10));
+  Future<void> _loadProfileData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body)['profile'];
@@ -298,36 +290,34 @@ Future<void> _loadProfileData() async {
           }
         });
       } else {
-      developer.log('Server error: ${response.statusCode}', name: 'ProfilePage');
+        developer.log(
+          'Failed to load profile: ${response.body}',
+          name: 'ProfilePage',
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to load profile data from server'),
+          ),
+        );
+        await _loadLocalProfileData();
+      }
+    } catch (e) {
+      developer.log('Error loading profile: $e', name: 'ProfilePage');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Server error: ${response.statusCode}')),
+        SnackBar(content: Text('Error loading profile: ${e.toString()}')),
       );
       await _loadLocalProfileData();
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
-  } on SocketException {
-    developer.log('Network error', name: 'ProfilePage');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('No internet connection')),
-    );
-    await _loadLocalProfileData();
-  } on TimeoutException {
-    developer.log('Request timeout', name: 'ProfilePage');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Server timeout')),
-    );
-    await _loadLocalProfileData();
-  } catch (e) {
-    developer.log('Unexpected error: $e', name: 'ProfilePage');
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to load data: ${e.toString()}')),
-    );
-    await _loadLocalProfileData();
   }
-}
+
   Widget buildProfileImage() {
     return GestureDetector(
       onTap: isEditing ? _pickProfileImage : null,
@@ -419,41 +409,29 @@ Future<void> _loadProfileData() async {
     );
   }
 
-  Future<void> _pickProfileImage() async {
-    if (!isEditing) return;
+ Future<void> _pickProfileImage() async {
+  final picker = ImagePicker();
+  final XFile? image = await picker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 50,  
+    maxWidth: 800,     
+    maxHeight: 800,
+  );
 
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-        maxWidth: 800,
-        maxHeight: 800,
-      );
+  if (image == null) return;
 
-      if (image == null) return;
-
-      final bytes = await image.readAsBytes();
-      final base64Image = base64Encode(bytes);
-
-      setState(() {
-        profileImagePath = 'data:image/jpeg;base64,$base64Image';
-      });
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('profileImage', profileImagePath!);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile picture updated')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update image: ${e.toString()}')),
-      );
-    }
+  final bytes = await image.readAsBytes();
+  if (bytes.length > 2 * 1024 * 1024) { // 2MB limit
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Image must be <2MB')),
+    );
+    return;
   }
+
+  setState(() {
+    profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+  });
+}
 
   Future<void> _saveProfileData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1172,7 +1150,7 @@ double get iconSize => screenWidth * 0.10;
                     ListTile(
                       leading: Icon(Icons.emergency, color: Colors.red),
                       title: Text('Emergency Contact 2'),
-                      subtitle: Text('Jane Smith - nill'),
+                      subtitle: Text('Jane Smith - +1 987 654 321'),
                       trailing: isEditing ? Icon(Icons.edit) : null,
                     ),
                   ],

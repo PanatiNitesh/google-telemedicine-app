@@ -13,21 +13,21 @@
     <!-- Storage permissions (scoped for API 32 and below) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <!-- Only include MANAGE_EXTERNAL_STORAGE if absolutely necessary -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 
-    <!-- Optional: Bluetooth permissions (if using speech_to_text with Bluetooth) -->
+    <!-- Optional: Bluetooth permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
 
-    <!-- Optional: QUERY_ALL_PACKAGES (only if needed and justified for Google Play) -->
+    <!-- Optional: QUERY_ALL_PACKAGES -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
 
     <application
-        android:label="TelemedicineApp"
+        android:label="com.example.flutter_project"
         android:icon="@drawable/app_logo">
+        
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
@@ -45,15 +45,38 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
+            <!-- Azure Authentication Intent Filter -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="msauth"
+                    android:host="com.example.flutter_project"
+                    android:path="/redirect"/>
+            </intent-filter>
         </activity>
 
-        <!-- Background Service for flutter_background_service -->
+        <!-- Background Service -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="dataSync"
             tools:replace="android:exported"/>
+
+        <!-- Azure BrowserTabActivity for Authentication -->
+        <activity android:name="com.microsoft.identity.client.BrowserTabActivity"
+            android:exported="true">
+            <intent-filter android:label="MSAL Auth Redirect">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="msauth"
+                    android:host="com.yourapp.package"
+                    android:path="/redirect"/>
+            </intent-filter>
+        </activity>
 
         <meta-data
             android:name="flutterEmbedding"

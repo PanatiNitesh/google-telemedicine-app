@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,13 +57,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     'description': 'Experienced doctor specializing in joint and muscle conditions',
   },
   {
-    'name': 'Dr. Amanda Wilson',
+    'name': 'Dr. Amanda',
     'specialty': 'Dermatologist',
     'image': 'assets/doctor2.png',
     'description': 'Skin specialist with 10+ years experience',
   },
   {
-    'name': 'Dr. Michael Rodriguez',
+    'name': 'Dr. Michael',
     'specialty': 'Cardiologist',
     'image': 'assets/doctor1.png',
     'description': 'Heart specialist with extensive experience',
@@ -76,7 +75,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     'description': 'Expert in brain and nervous system disorders',
   },
   {
-    'name': 'Dr. Emily Thompson',
+    'name': 'Dr. Emily',
     'specialty': 'Pediatrician',
     'image': 'assets/doctor1.png',
     'description': 'Specialist in child healthcare',
@@ -94,7 +93,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     'image': 'assets/doctor2.png',
   },
   {
-    'name': 'Dr. Robert Brown',
+    'name': 'Dr. Robert',
     'specialty': 'Pediatrician',
     'description': 'Caring for children health and well-being.',
     'image': 'assets/doctor1.png',
