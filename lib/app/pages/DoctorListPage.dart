@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart'; // Adjust import paths as needed
+import 'package:flutter_project/app/pages/HomePage.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:logging/logging.dart';
@@ -20,53 +20,59 @@ class _DoctorsListPageState extends State<DoctorsListPage>
 
   final List<Map<String, dynamic>> doctors = [
     {
-    'name': 'Dr. Sarah Chen',
-    'specialty': 'Rheumatologist',
-    'image': 'assets/doctor1.png',
-    'description': 'Experienced doctor specializing in joint and muscle conditions',
-  },
-  {
-    'name': 'Dr. Michael Rodriguez',
-    'specialty': 'Dermatologist',
-    'image': 'assets/doctor2.png',
-    'description': 'Skin specialist with 10+ years experience',
-  },
-  {
-    'name': 'Dr. Amanda Wilson',
-    'specialty': 'Cardiologist',
-    'image': 'assets/doctor1.png',
-    'description': 'Heart specialist with extensive experience',
-  },
-  {
-    'name': 'Dr. James Patel',
-    'specialty': 'Neurologist',
-    'image': 'assets/doctor2.png',
-    'description': 'Expert in brain and nervous system disorders',
-  },
-  {
-    'name': 'Dr. Emily Thompson',
-    'specialty': 'Pediatrician',
-    'image': 'assets/doctor1.png',
-    'description': 'Specialist in child healthcare',
-  },
-  {
-    'name': 'Dr. John Doe',
-    'specialty': 'Cardiologist',
-    'description': 'Expert in heart diseases with 10 years of experience.',
-    'image': 'assets/doctor1.png',
-  },
-  {
-    'name': 'Dr. Jane Smith',
-    'specialty': 'Dermatologist',
-    'description': 'Specialist in skin and hair treatments.',
-    'image': 'assets/doctor2.png',
-  },
-  {
-    'name': 'Dr. Robert Brown',
-    'specialty': 'Pediatrician',
-    'description': 'Caring for children health and well-being.',
-    'image': 'assets/doctor1.png',
-  },
+      'name': 'Dr. Sarah Chen',
+      'specialty': 'Rheumatologist',
+      'image': 'assets/doctor1.png',
+      'description': 'Experienced doctor specializing in joint and muscle conditions',
+    },
+    {
+      'name': 'Dr. Michael Rodriguez',
+      'specialty': 'Dermatologist',
+      'image': 'assets/doctor2.png',
+      'description': 'Skin specialist with 10+ years experience',
+    },
+    {
+      'name': 'Dr. Amanda Wilson',
+      'specialty': 'Cardiologist',
+      'image': 'assets/doctor1.png',
+      'description': 'Heart specialist with extensive experience',
+    },
+    {
+      'name': 'Dr. James Patel',
+      'specialty': 'Neurologist',
+      'image': 'assets/doctor2.png',
+      'description': 'Expert in brain and nervous system disorders',
+    },
+    {
+      'name': 'Dr. Emily Thompson',
+      'specialty': 'Pediatrician',
+      'image': 'assets/doctor1.png',
+      'description': 'Specialist in child healthcare',
+    },
+    {
+      'name': 'Dr. John Doe',
+      'specialty': 'Cardiologist',
+      'description': 'Expert in heart diseases with 10 years of experience.',
+      'image': 'assets/doctor1.png',
+    },
+    {
+      'name': 'Dr. Jane Smith',
+      'specialty': 'Dermatologist',
+      'description': 'Specialist in skin and hair treatments.',
+      'image': 'assets/doctor2.png',
+    },
+    {
+      'name': 'Dr. Robert Brown',
+      'specialty': 'Pediatrician',
+      'description': 'Caring for children health and well-being.',
+      'image': 'assets/doctor1.png',
+    },
+    {
+      'name': 'Dr. Lee',
+      'specialty': 'General Practitioner',
+      'description': 'General health checkups and consultations',
+      'image': 'assets/doctor1.png',
+    },
   ];
 
   @override
@@ -110,11 +116,11 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) => const HomePage(username: '', fullName: '',)));
+                builder: (context) => const HomePage(
+                    username: '', fullName: '')));
         break;
       case 3:
         themeColor = Colors.amber;
-        // Add search page navigation if available
         break;
       case 4:
         themeColor = Colors.red;
@@ -127,8 +133,20 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     _logger.info('Changed theme color to: $themeColor');
   }
 
+  void _bookAppointment(String doctorName) {
+    final appointment = Appointment(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: 'Consultation with $doctorName',
+      dateTime: DateTime.now().add(const Duration(days: 3)),
+      location: 'Clinic',
+      description: 'General checkup',
+      category: 'Medical',
+    );
+    
+    Navigator.pop(context, appointment);
+  }
+
   Widget _buildDoctorCard(Map<String, dynamic> doctor, double screenWidth, double screenHeight) {
-    // Define text styles
     final textStyleName = TextStyle(
       fontSize: screenWidth * 0.045,
       fontWeight: FontWeight.bold,
@@ -139,24 +157,23 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     );
     final textStyleDescription = TextStyle(fontSize: screenWidth * 0.03);
 
-    // Set a fixed aspect ratio for the image (e.g., 1:1 or 4:3)
-    const double aspectRatio = 1.0; // Square image
-    final imageHeight = screenHeight * 0.15; // Fixed height for consistency
+    const double aspectRatio = 1.0;
+    final imageHeight = screenHeight * 0.15;
     final imageWidth = imageHeight * aspectRatio;
 
     return GestureDetector(
-    onTap: () {
-      Navigator.pushNamed(
-        context,
-        '/doctor-profile',
-        arguments: {
-          'doctorName': doctor['name'],
-          'specialty': doctor['specialty'],
-          'imagePath': doctor['image'],
-        },
-      );
-    },
-    child: Container(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/doctor-profile',
+          arguments: {
+            'doctorName': doctor['name'],
+            'specialty': doctor['specialty'],
+            'imagePath': doctor['image'],
+          },
+        );
+      },
+      child: Container(
         margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -227,10 +244,13 @@ class _DoctorsListPageState extends State<DoctorsListPage>
             ),
             Padding(
               padding: EdgeInsets.all(screenWidth * 0.03),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                size: screenWidth * 0.045,
-                color: Colors.grey[600],
+              child: ElevatedButton(
+                onPressed: () => _bookAppointment(doctor['name']),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(screenWidth * 0.1, screenHeight * 0.04),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                ),
+                child: const Text('Book'),
               ),
             ),
           ],
@@ -252,9 +272,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         leading: Padding(
           padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
-            onTap: () {
-              Navigator.pop(context);
-            },
+            onTap: () => Navigator.pop(context),
             child: Image.asset(
               'assets/back.png',
               width: screenWidth * 0.05,
@@ -350,4 +368,22 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       label: label,
     );
   }
+}
+
+class Appointment {
+  final String id;
+  final String title;
+  final DateTime dateTime;
+  final String location;
+  final String description;
+  final String category;
+
+  const Appointment({
+    required this.id,
+    required this.title,
+    required this.dateTime,
+    required this.location,
+    required this.description,
+    required this.category,
+  });
 }

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/DoctorListPage.dart';
-import 'package:flutter_project/app/pages/video_page.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'video_page.dart';
 
 class AppointmentHistoryPage extends StatefulWidget {
   const AppointmentHistoryPage({super.key});
@@ -106,6 +105,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
         builder: (context) => VideoConsultPage(
           doctorName: doctorName,
           callId: callId,
+          userRole: 'patient', // Patient initiates the call
         ),
       ),
     );
@@ -257,10 +257,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
         child: FloatingActionButton(
           onPressed: () async {
             _fabController.forward().then((_) => _fabController.reverse());
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const DoctorsListPage()),
-            );
+            final result = await Navigator.pushNamed(context, '/doctorsList');
             if (result != null && result is Appointment) {
               setState(() {
                 _appointments.add(result);
@@ -533,7 +530,6 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
       ),
     );
   }
-
 }
 
 class Appointment {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/HomePage.dart' as home_page;
+import 'package:flutter_project/app/pages/appointmentpage.dart';
 import 'package:flutter_project/app/pages/doctorbooking.dart';
 import 'package:flutter_project/app/pages/doctorprofilepage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
@@ -22,6 +23,11 @@ import 'dart:developer' as developer;
 import 'package:flutter_project/app/pages/background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_project/app/pages/about_us_page.dart';
+
+Future<void> initializeService() async {
+  await Future.delayed(const Duration(seconds: 1)); // Dummy delay
+  developer.log("Service initialized", name: 'Main');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,10 +56,8 @@ void main() async {
   final String? fullName = prefs.getString('fullName');
   final String? profileImage = prefs.getString('profileImage');
 
-  // Add a flag to detect if this is a restart after exit
   final bool isRestart = prefs.getBool('isRestart') ?? false;
   if (isRestart && isLoggedIn) {
-    // Reset the restart flag and go to HomePage
     await prefs.setBool('isRestart', false);
     runApp(TelemedicineApp(
       initialRoute: '/home',
@@ -132,13 +136,10 @@ class TelemedicineApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/home': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? (initialArguments ?? defaultArguments);
-          final username = args['username'] as String? ?? 'User';
-          final fullName = args['fullName'] as String? ?? 'User';
-          final profileImage = args['profileImage'] as String?;
           return home_page.HomePage(
-            username: username,
-            fullName: fullName,
-            profileImage: profileImage,
+            username: args['username'] as String? ?? 'User',
+            fullName: args['fullName'] as String? ?? 'User',
+            profileImage: args['profileImage'] as String?,
           );
         },
         '/profile': (context) => const ProfilePage(),
@@ -164,9 +165,7 @@ class TelemedicineApp extends StatelessWidget {
               imagePath: args['imagePath'] as String,
             );
           }
-          return const Scaffold(
-            body: Center(child: Text('Error: Invalid doctor profile arguments')),
-          );
+          return const Scaffold(body: Center(child: Text('Error: Invalid doctor profile arguments')));
         },
         '/book-appointment': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
@@ -180,11 +179,10 @@ class TelemedicineApp extends StatelessWidget {
               imagePath: args['imagePath'] as String,
             );
           }
-          return const Scaffold(
-            body: Center(child: Text('Error: Invalid booking arguments')),
-          );
+          return const Scaffold(body: Center(child: Text('Error: Invalid booking arguments')));
         },
         '/about_us': (context) => const AboutUsPage(),
+        '/appointment_history': (context) => const AppointmentHistoryPage(), // Added from first snippet
       },
       onGenerateRoute: (settings) {
         developer.log('Navigating to: ${settings.name}', name: 'TelemedicineApp');
@@ -202,18 +200,12 @@ class TelemedicineApp extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Page Not Found',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Route not found: ${settings.name}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.black54,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -229,6 +221,7 @@ class TelemedicineApp extends StatelessWidget {
     );
   }
 }
+
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 

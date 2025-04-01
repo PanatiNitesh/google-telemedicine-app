@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -9,11 +9,13 @@ import 'package:permission_handler/permission_handler.dart';
 class VideoConsultPage extends StatefulWidget {
   final String doctorName;
   final String callId;
+  final String userRole; // 'patient' or 'doctor'
 
   const VideoConsultPage({
     super.key,
     required this.doctorName,
     required this.callId,
+    required this.userRole,
   });
 
   @override
@@ -27,9 +29,9 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
   MediaStream? _localStream;
 
   late CollectionReference _callsRef;
+  StreamSubscription<DocumentSnapshot>? _callSub;
   StreamSubscription<QuerySnapshot>? _messagesSub;
   String? _userId;
-  bool _isCaller = false;
 
   bool _isMuted = false;
   bool _isVideoOff = false;
@@ -47,7 +49,7 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
   void initState() {
     super.initState();
     _initRenderers();
-    _initFirebase();
+    _initCall();
   }
 
   @override
@@ -63,94 +65,119 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
     await _remoteRenderer.initialize();
   }
 
-  Future<void> _initFirebase() async {
+  Future<void> _initCall() async {
     try {
-      await Firebase.initializeApp();
-      _callsRef = FirebaseFirestore.instance.collection('calls');
       _userId = const Uuid().v4();
-      await _startCall();
+      _callsRef = FirebaseFirestore.instance.collection('calls');
+      await _setupWebRTC();
+      await _setupSignaling();
     } catch (e) {
       _showError('Failed to initialize call: $e');
     }
   }
 
-  Future<void> _startCall() async {
-    try {
-      if (!await _requestPermissions()) {
-        _showError('Camera and microphone permissions are required.');
-        return;
-      }
+  Future<void> _setupWebRTC() async {
+    if (!await _requestPermissions()) {
+      _showError('Camera and microphone permissions are required.');
+      return;
+    }
 
-      _localStream = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
-        'video': {'facingMode': 'user'},
+    _localStream = await navigator.mediaDevices.getUserMedia({
+      'audio': true,
+      'video': {'facingMode': 'user'},
+    });
+    _localRenderer.srcObject = _localStream;
+
+    _peerConnection = await createPeerConnection(_rtcConfig);
+    _localStream!.getTracks().forEach((track) {
+      _peerConnection!.addTrack(track, _localStream!);
+    });
+
+    _peerConnection!.onIceCandidate = (candidate) {
+      _sendMessage({
+        'type': 'candidate',
+        'candidate': {
+          'candidate': candidate.candidate,
+          'sdpMid': candidate.sdpMid,
+          'sdpMLineIndex': candidate.sdpMLineIndex,
+        },
+        'sender': _userId,
+        'role': widget.userRole,
       });
-      _localRenderer.srcObject = _localStream;
+    };
 
-      _peerConnection = await createPeerConnection(_rtcConfig);
-      _localStream!.getTracks().forEach((track) {
-        _peerConnection!.addTrack(track, _localStream!);
-      });
-
-      _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
-        _sendFirestoreMessage({
-          'type': 'candidate',
-          'candidate': {
-            'candidate': candidate.candidate,
-            'sdpMid': candidate.sdpMid,
-            'sdpMLineIndex': candidate.sdpMLineIndex,
-          },
-          'sender': _userId,
-        });
-      };
-
-      _peerConnection!.onAddStream = (MediaStream stream) {
-        _remoteRenderer.srcObject = stream;
+    _peerConnection!.onTrack = (event) {
+      if (event.streams.isNotEmpty) {
+        _remoteRenderer.srcObject = event.streams[0];
         if (mounted) {
           setState(() {
             _isConnected = true;
             _startCallTimer();
           });
+          developer.log('Remote stream received', name: 'VideoConsult');
         }
-      };
-
-      final callDoc = await _callsRef.doc(widget.callId).get();
-      _isCaller = !callDoc.exists;
-
-      if (_isCaller) {
-        final offer = await _peerConnection!.createOffer();
-        await _peerConnection!.setLocalDescription(offer);
-        _sendFirestoreMessage({
-          'type': 'offer',
-          'sdp': offer.sdp,
-          'sender': _userId,
-        });
       }
+    };
+  }
 
-      _messagesSub = _callsRef
-          .doc(widget.callId)
-          .collection('messages')
-          .orderBy('timestamp')
-          .snapshots()
-          .listen((snapshot) {
-            for (var change in snapshot.docChanges) {
-              if (change.type == DocumentChangeType.added) {
-                final data = change.doc.data() as Map<String, dynamic>;
-                if (data['sender'] != _userId) {
-                  _handleSignalingMessage(data);
-                }
-              }
-            }
-          });
-    } catch (e) {
-      _showError('Failed to start call: $e');
+  Future<void> _setupSignaling() async {
+    final callDocRef = _callsRef.doc(widget.callId);
+
+    // Initialize call document if it doesn't exist
+    final callDoc = await callDocRef.get();
+    if (!callDoc.exists) {
+      await callDocRef.set({
+        'participants': {widget.userRole: _userId},
+        'status': 'active',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      developer.log('Call document created for ${widget.userRole}', name: 'VideoConsult');
+    } else {
+      // Join existing call
+      await callDocRef.update({
+        'participants.${widget.userRole}': _userId,
+      });
+      developer.log('${widget.userRole} joined existing call', name: 'VideoConsult');
+    }
+
+    // Listen for call status
+    _callSub = callDocRef.snapshots().listen((snapshot) {
+      final data = snapshot.data() as Map<String, dynamic>?;
+      if (!snapshot.exists || data?['status'] == 'ended') {
+        _endCall();
+        if (mounted) Navigator.pop(context);
+      }
+    });
+
+    // Handle signaling messages
+    _messagesSub = callDocRef.collection('messages').orderBy('timestamp').snapshots().listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data() as Map<String, dynamic>;
+          if (data['sender'] != _userId) {
+            _handleSignalingMessage(data);
+          }
+        }
+      }
+    });
+
+    // If patient, create offer; if doctor, wait for offer
+    if (widget.userRole == 'patient') {
+      final offer = await _peerConnection!.createOffer();
+      await _peerConnection!.setLocalDescription(offer);
+      _sendMessage({
+        'type': 'offer',
+        'sdp': offer.sdp,
+        'sender': _userId,
+        'role': widget.userRole,
+      });
+      developer.log('Offer sent by patient', name: 'VideoConsult');
     }
   }
 
   Future<bool> _requestPermissions() async {
     final status = await [Permission.camera, Permission.microphone].request();
-    return status[Permission.camera]!.isGranted &&
-        status[Permission.microphone]!.isGranted;
+    return status[Permission.camera]!.isGranted && status[Permission.microphone]!.isGranted;
   }
 
   void _handleSignalingMessage(Map<String, dynamic> data) async {
@@ -159,34 +186,40 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
 
       switch (data['type']) {
         case 'offer':
-          await _peerConnection!.setRemoteDescription(
-            RTCSessionDescription(data['sdp'], 'offer'),
-          );
-          final answer = await _peerConnection!.createAnswer();
-          await _peerConnection!.setLocalDescription(answer);
-          _sendFirestoreMessage({
-            'type': 'answer',
-            'sdp': answer.sdp,
-            'sender': _userId,
-          });
+          if (widget.userRole == 'doctor') {
+            await _peerConnection!.setRemoteDescription(
+              RTCSessionDescription(data['sdp'], 'offer'),
+            );
+            final answer = await _peerConnection!.createAnswer();
+            await _peerConnection!.setLocalDescription(answer);
+            _sendMessage({
+              'type': 'answer',
+              'sdp': answer.sdp,
+              'sender': _userId,
+              'role': widget.userRole,
+            });
+            developer.log('Answer sent by doctor', name: 'VideoConsult');
+          }
           break;
 
         case 'answer':
-          await _peerConnection!.setRemoteDescription(
-            RTCSessionDescription(data['sdp'], 'answer'),
-          );
+          if (widget.userRole == 'patient') {
+            await _peerConnection!.setRemoteDescription(
+              RTCSessionDescription(data['sdp'], 'answer'),
+            );
+            developer.log('Answer received by patient', name: 'VideoConsult');
+          }
           break;
 
         case 'candidate':
-          if (await _peerConnection!.getRemoteDescription() != null) {
-            await _peerConnection!.addCandidate(
-              RTCIceCandidate(
-                data['candidate']['candidate'],
-                data['candidate']['sdpMid'],
-                data['candidate']['sdpMLineIndex'],
-              ),
-            );
-          }
+          await _peerConnection!.addCandidate(
+            RTCIceCandidate(
+              data['candidate']['candidate'],
+              data['candidate']['sdpMid'],
+              data['candidate']['sdpMLineIndex'],
+            ),
+          );
+          developer.log('ICE candidate added', name: 'VideoConsult');
           break;
       }
     } catch (e) {
@@ -194,7 +227,7 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
     }
   }
 
-  void _sendFirestoreMessage(Map<String, dynamic> message) {
+  void _sendMessage(Map<String, dynamic> message) {
     _callsRef.doc(widget.callId).collection('messages').add({
       ...message,
       'timestamp': FieldValue.serverTimestamp(),
@@ -215,27 +248,29 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
 
   void _toggleMute() {
     setState(() => _isMuted = !_isMuted);
-    _localStream?.getAudioTracks().forEach(
-      (track) => track.enabled = !_isMuted,
-    );
+    _localStream?.getAudioTracks().forEach((track) => track.enabled = !_isMuted);
   }
 
   void _toggleVideo() {
     setState(() => _isVideoOff = !_isVideoOff);
-    _localStream?.getVideoTracks().forEach(
-      (track) => track.enabled = !_isVideoOff,
-    );
+    _localStream?.getVideoTracks().forEach((track) => track.enabled = !_isVideoOff);
   }
 
   Future<void> _endCall() async {
     try {
       _callTimer?.cancel();
+      _callSub?.cancel();
       _messagesSub?.cancel();
       _localRenderer.srcObject = null;
       _remoteRenderer.srcObject = null;
       await _localStream?.dispose();
       await _peerConnection?.close();
-      await _callsRef.doc(widget.callId).update({'endedBy': _userId});
+      await _callsRef.doc(widget.callId).update({
+        'status': 'ended',
+        'endedBy': _userId,
+        'endedAt': FieldValue.serverTimestamp(),
+      });
+      developer.log('Call ended by ${widget.userRole}', name: 'VideoConsult');
     } catch (e) {
       _showError('Failed to end call: $e');
     }
@@ -243,72 +278,54 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
 
   void _showError(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
+    developer.log(message, name: 'VideoConsult');
   }
 
   void _showMoreOptions() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.circular(12),
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.closed_caption, color: Colors.white),
+              title: const Text('Caption', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _showError('Caption feature not implemented yet.');
+              },
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.closed_caption,
-                    color: Colors.white,
-                  ),
-                  title: const Text(
-                    'Caption',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showError('Caption feature not implemented yet.');
-                    // Add caption logic here
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.translate, color: Colors.white),
-                  title: const Text(
-                    'Audio Translator',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showError('Audio Translator feature not implemented yet.');
-                    // Add audio translator logic here
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.mic, color: Colors.white),
-                  title: const Text(
-                    'Audio Record',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showError('Audio Record feature not implemented yet.');
-                    // Add audio record logic here
-                  },
-                ),
-              ],
+            ListTile(
+              leading: const Icon(Icons.translate, color: Colors.white),
+              title: const Text('Audio Translator', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _showError('Audio Translator feature not implemented yet.');
+              },
             ),
-          ),
+            ListTile(
+              leading: const Icon(Icons.mic, color: Colors.white),
+              title: const Text('Audio Record', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _showError('Audio Record feature not implemented yet.');
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  // Replace the build method in VideoConsultPage with this
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -318,17 +335,13 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Remote video (full screen)
           _isConnected
               ? RTCVideoView(
-                _remoteRenderer,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                mirror: false,
-              )
-              : const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-          // Local video (small square)
+                  _remoteRenderer,
+                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  mirror: false,
+                )
+              : const Center(child: CircularProgressIndicator(color: Colors.white)),
           Positioned(
             top: screenHeight * 0.05,
             right: screenWidth * 0.05,
@@ -349,7 +362,6 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
               ),
             ),
           ),
-          // Call duration
           if (_isConnected)
             Positioned(
               top: screenHeight * 0.02,
@@ -357,25 +369,18 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
               right: 0,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     _formattedDuration,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: screenWidth * 0.04,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.04),
                   ),
                 ),
               ),
             ),
-          // Control buttons
           Positioned(
             bottom: screenHeight * 0.05,
             left: 0,
@@ -383,7 +388,6 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Mute button
                 FloatingActionButton(
                   heroTag: "mute",
                   backgroundColor: _isMuted ? Colors.red : Colors.grey[800],
@@ -394,7 +398,6 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
                     size: screenWidth * 0.06,
                   ),
                 ),
-                // End call button
                 FloatingActionButton(
                   heroTag: "end",
                   backgroundColor: Colors.red,
@@ -408,7 +411,6 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
                     size: screenWidth * 0.06,
                   ),
                 ),
-                // Video button
                 FloatingActionButton(
                   heroTag: "video",
                   backgroundColor: _isVideoOff ? Colors.red : Colors.grey[800],
@@ -419,7 +421,6 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
                     size: screenWidth * 0.06,
                   ),
                 ),
-                // More options button
                 FloatingActionButton(
                   heroTag: "more",
                   backgroundColor: Colors.grey[800],

@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_project/app/pages/DoctorListPage.dart';
+import 'package:flutter_project/app/pages/DoctorListPage.dart' as doctor_list;
 import 'package:flutter_project/app/pages/appointmentpage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
@@ -1124,7 +1124,7 @@ Widget _buildDoctorsList() {
         _logger.info('Navigating to /doctors_list');
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => DoctorsListPage()),
+          MaterialPageRoute(builder: (context) => doctor_list.DoctorsListPage()),
         );
         break;
       case 1:
