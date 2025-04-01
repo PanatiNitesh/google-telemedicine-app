@@ -20,7 +20,6 @@ import 'package:flutter_project/app/pages/medicine_page.dart';
 import 'package:flutter_project/app/pages/labtests.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
-import 'package:flutter_project/app/pages/background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_project/app/pages/about_us_page.dart';
 

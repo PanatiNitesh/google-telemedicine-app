@@ -1,27 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart'; 
-import 'package:flutter_project/app/pages/profile-page.dart'; 
-import 'dart:math'; 
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lab Test Results',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: TestResults(),
-    );
-  }
-}
+import 'package:flutter_project/app/pages/DoctorListPage.dart';
+import 'package:flutter_project/app/pages/HomePage.dart';
+import 'package:flutter_project/app/pages/profile-page.dart';
+import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TestResults extends StatefulWidget {
   const TestResults({super.key});
@@ -30,8 +12,13 @@ class TestResults extends StatefulWidget {
   _TestResultsState createState() => _TestResultsState();
 }
 
-class _TestResultsState extends State<TestResults> with SingleTickerProviderStateMixin {
-  int _selectedIndex = 1; 
+class _TestResultsState extends State<TestResults>
+    with SingleTickerProviderStateMixin {
+  int _selectedIndex = 1;
+  String? _storedUsername;
+  String? _storedFullName;
+  String? _storedProfileImage;
+  
   List<Map<String, dynamic>> testResults = [
     {
       'type': 'Ultra Sound',
@@ -61,19 +48,32 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
 
   late AnimationController _controller;
   late Animation<double> _animation;
-  
-  get username => null;
 
   @override
   void initState() {
     super.initState();
+    _loadUserSession();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0, end: -10).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: -10,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  Future<void> _loadUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _storedUsername = prefs.getString('username') ?? 'Guest';
+        _storedFullName = prefs.getString('fullName') ?? ''; // Changed from 'fullname' to match HomePage
+        _storedProfileImage = prefs.getString('profileImage');
+      });
+    } catch (e) {
+      print('Error loading user session: $e');
+    }
   }
 
   @override
@@ -83,7 +83,7 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
   }
 
   void _onItemTapped(int index) {
-    if (_selectedIndex == index) return; 
+    if (_selectedIndex == index) return;
 
     setState(() {
       _selectedIndex = index;
@@ -94,34 +94,46 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => ProfilePage()),
+          MaterialPageRoute(builder: (context) => const DoctorsListPage()),
         );
         break;
       case 1:
-              break;
+        break;
       case 2:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage(username: username, fullName: '',)),
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              username: _storedUsername ?? 'Guest',
+              fullName: _storedFullName ?? '',
+              profileImage: _storedProfileImage,
+            ),
+          ),
         );
         break;
       case 3:
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => PlaceholderPage(title: "Search")),
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              username: _storedUsername ?? 'Guest',
+              fullName: _storedFullName ?? '',
+              profileImage: _storedProfileImage,
+            ),
+          ),
         );
         break;
       case 4:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => ProfilePage()),
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
         );
         break;
     }
   }
 
   void _downloadResult(int index) {
-    bool success = Random().nextDouble() > 0.2; 
+    bool success = Random().nextDouble() > 0.2;
 
     if (success) {
       setState(() {
@@ -129,12 +141,18 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
         testResults[index]['action'] = 'VIEW';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${testResults[index]['type']} downloaded successfully!')),
+        SnackBar(
+          content: Text(
+            '${testResults[index]['type']} downloaded successfully!',
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to download ${testResults[index]['type']}. Please try again.'),
+          content: Text(
+            'Failed to download ${testResults[index]['type']}. Please try again.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -143,7 +161,9 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
 
   void _viewResult(int index) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Viewing ${testResults[index]['type']} result...')),
+      SnackBar(
+        content: Text('Viewing ${testResults[index]['type']} result...'),
+      ),
     );
   }
 
@@ -152,7 +172,14 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 10, offset: const Offset(0, -2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       margin: const EdgeInsets.all(12),
       child: ClipRRect(
@@ -178,7 +205,11 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
+  BottomNavigationBarItem _buildNavItem(
+    IconData icon,
+    int index,
+    String label,
+  ) {
     return BottomNavigationBarItem(
       icon: AnimatedBuilder(
         animation: _animation,
@@ -187,8 +218,15 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
             offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
             child: Container(
               padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: _selectedIndex == index ? Colors.blue : Colors.transparent, shape: BoxShape.circle),
-              child: Icon(icon, color: _selectedIndex == index ? Colors.white : Colors.grey),
+              decoration: BoxDecoration(
+                color:
+                    _selectedIndex == index ? Colors.blue : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: _selectedIndex == index ? Colors.white : Colors.grey,
+              ),
             ),
           );
         },
@@ -203,7 +241,8 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
     final screenWidth = MediaQuery.of(context).size.width;
     final orientation = MediaQuery.of(context).orientation;
 
-    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+    final navBarHeight =
+        screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
@@ -220,8 +259,9 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
                 context,
                 MaterialPageRoute(
                   builder: (context) => HomePage(
-                    username: username ?? 'Guest', 
-                    fullName: '',
+                    username: _storedUsername ?? 'Guest',
+                    fullName: _storedFullName ?? '',
+                    profileImage: _storedProfileImage,
                   ),
                 ),
               );
@@ -230,10 +270,9 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
               'assets/back.png',
               width: screenWidth * 0.05,
               height: screenWidth * 0.05,
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.arrow_back,
-                size: screenWidth * 0.05,
-              ),
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      Icon(Icons.arrow_back, size: screenWidth * 0.05),
             ),
           ),
         ),
@@ -318,7 +357,8 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
                 ),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: result['downloaded'] ? Colors.grey : Colors.blue,
+                    backgroundColor:
+                        result['downloaded'] ? Colors.grey : Colors.blue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
@@ -346,21 +386,6 @@ class _TestResultsState extends State<TestResults> with SingleTickerProviderStat
         ),
       ),
       bottomNavigationBar: _buildBottomNavBar(),
-    );
-  }
-}
-
-class PlaceholderPage extends StatelessWidget {
-  final String title;
-  const PlaceholderPage({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: Center(child: Text('This is the $title page')),
     );
   }
 }

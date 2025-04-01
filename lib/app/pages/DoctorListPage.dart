@@ -3,6 +3,7 @@ import 'package:flutter_project/app/pages/HomePage.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/TestResults.dart';
 import 'package:logging/logging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DoctorsListPage extends StatefulWidget {
   const DoctorsListPage({super.key});
@@ -17,22 +18,26 @@ class _DoctorsListPageState extends State<DoctorsListPage>
   int _selectedIndex = 0;
   late AnimationController _controller;
   late Animation<double> _animation;
+  String? _storedUsername;
+  String? _storedFullName;
+  String? _storedProfileImage;
 
   final List<Map<String, dynamic>> doctors = [
     {
       'name': 'Dr. Sarah Chen',
       'specialty': 'Rheumatologist',
       'image': 'assets/doctor1.png',
-      'description': 'Experienced doctor specializing in joint and muscle conditions',
+      'description':
+          'Experienced doctor specializing in joint and muscle conditions',
     },
     {
-      'name': 'Dr. Michael Rodriguez',
+      'name': 'Dr. Amanda Wilson',
       'specialty': 'Dermatologist',
       'image': 'assets/doctor2.png',
       'description': 'Skin specialist with 10+ years experience',
     },
     {
-      'name': 'Dr. Amanda Wilson',
+      'name': 'Dr. Michael Rodriguez',
       'specialty': 'Cardiologist',
       'image': 'assets/doctor1.png',
       'description': 'Heart specialist with extensive experience',
@@ -67,17 +72,12 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       'description': 'Caring for children health and well-being.',
       'image': 'assets/doctor1.png',
     },
-    {
-      'name': 'Dr. Lee',
-      'specialty': 'General Practitioner',
-      'description': 'General health checkups and consultations',
-      'image': 'assets/doctor1.png',
-    },
   ];
 
   @override
   void initState() {
     super.initState();
+    _loadUserSession();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -85,6 +85,22 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     _animation = Tween<double>(begin: 0, end: -10).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+  }
+
+  Future<void> _loadUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _storedUsername = prefs.getString('username') ?? 'Guest';
+        _storedFullName = prefs.getString('fullName') ?? '';
+        _storedProfileImage = prefs.getString('profileImage');
+      });
+      _logger.info('Loaded username: $_storedUsername');
+      _logger.info('Loaded fullName: $_storedFullName');
+      _logger.info('Loaded profileImage: $_storedProfileImage');
+    } catch (e) {
+      _logger.severe('Error loading user session: $e');
+    }
   }
 
   @override
@@ -99,51 +115,41 @@ class _DoctorsListPageState extends State<DoctorsListPage>
     });
     _controller.forward().then((_) => _controller.reverse());
 
-    final Color themeColor;
     switch (index) {
       case 0:
-        themeColor = Colors.purple;
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => ProfilePage()));
+        /////
         break;
       case 1:
-        themeColor = Colors.teal;
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => TestResults()));
         break;
       case 2:
-        themeColor = Colors.blue;
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) => const HomePage(
-                    username: '', fullName: '')));
+                builder: (context) => HomePage(
+                      username: _storedUsername ?? 'Guest',
+                      fullName: _storedFullName ?? '',
+                      profileImage: _storedProfileImage,
+                    )));
         break;
       case 3:
-        themeColor = Colors.amber;
+        // Since this is the search case that wasn't showing fullName,
+        // we'll use push instead of pushReplacement and pass the data
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => HomePage(
+                      username: _storedUsername ?? 'Guest',
+                      fullName: _storedFullName ?? '',
+                      profileImage: _storedProfileImage,
+                    )));
         break;
       case 4:
-        themeColor = Colors.red;
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => ProfilePage()));
         break;
-      default:
-        themeColor = Colors.blue;
     }
-    _logger.info('Changed theme color to: $themeColor');
-  }
-
-  void _bookAppointment(String doctorName) {
-    final appointment = Appointment(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: 'Consultation with $doctorName',
-      dateTime: DateTime.now().add(const Duration(days: 3)),
-      location: 'Clinic',
-      description: 'General checkup',
-      category: 'Medical',
-    );
-    
-    Navigator.pop(context, appointment);
   }
 
   Widget _buildDoctorCard(Map<String, dynamic> doctor, double screenWidth, double screenHeight) {
@@ -180,9 +186,10 @@ class _DoctorsListPageState extends State<DoctorsListPage>
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: screenWidth * 0.012,
-              spreadRadius: screenWidth * 0.005,
+              color: Colors.grey.withAlpha(76),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -245,12 +252,30 @@ class _DoctorsListPageState extends State<DoctorsListPage>
             Padding(
               padding: EdgeInsets.all(screenWidth * 0.03),
               child: ElevatedButton(
-                onPressed: () => _bookAppointment(doctor['name']),
+                onPressed: () {
+                  _logger.info('Navigating to /book-appointment for ${doctor['name']}');
+                  Navigator.pushNamed(
+                    context,
+                    '/book-appointment',
+                    arguments: {
+                      'doctorName': doctor['name'],
+                      'specialty': doctor['specialty'],
+                      'imagePath': doctor['image'],
+                    },
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(screenWidth * 0.1, screenHeight * 0.04),
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
-                child: const Text('Book'),
+                child: const Text(
+                  'Book',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -263,8 +288,12 @@ class _DoctorsListPageState extends State<DoctorsListPage>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final orientation = MediaQuery.of(context).orientation;
+    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
+      extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -272,7 +301,18 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         leading: Padding(
           padding: EdgeInsets.only(left: screenWidth * 0.04),
           child: GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomePage(
+                    username: _storedUsername ?? 'Guest',
+                    fullName: _storedFullName ?? '',
+                    profileImage: _storedProfileImage,
+                  ),
+                ),
+              );
+            },
             child: Image.asset(
               'assets/back.png',
               width: screenWidth * 0.05,
@@ -294,7 +334,12 @@ class _DoctorsListPageState extends State<DoctorsListPage>
         ),
       ),
       body: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.04),
+        padding: EdgeInsets.fromLTRB(
+          screenWidth * 0.04,
+          screenWidth * 0.04,
+          screenWidth * 0.04,
+          navBarHeight + (screenWidth * 0.03),
+        ),
         child: ListView.builder(
           itemCount: doctors.length,
           itemBuilder: (context, index) {
@@ -333,7 +378,7 @@ class _DoctorsListPageState extends State<DoctorsListPage>
           showSelectedLabels: false,
           showUnselectedLabels: false,
           items: [
-            _buildNavItem(Icons.person, 0, 'Profile'),
+            _buildNavItem(Icons.person_search, 0, 'Profile'),
             _buildNavItem(Icons.science_outlined, 1, 'Tests'),
             _buildNavItem(Icons.home, 2, 'Home'),
             _buildNavItem(Icons.search, 3, 'Search'),
@@ -368,22 +413,4 @@ class _DoctorsListPageState extends State<DoctorsListPage>
       label: label,
     );
   }
-}
-
-class Appointment {
-  final String id;
-  final String title;
-  final DateTime dateTime;
-  final String location;
-  final String description;
-  final String category;
-
-  const Appointment({
-    required this.id,
-    required this.title,
-    required this.dateTime,
-    required this.location,
-    required this.description,
-    required this.category,
-  });
 }

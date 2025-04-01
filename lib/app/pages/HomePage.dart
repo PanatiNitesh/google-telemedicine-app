@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_project/app/pages/DoctorListPage.dart' as doctor_list;
+import 'package:flutter_project/app/pages/DoctorListPage.dart';
 import 'package:flutter_project/app/pages/appointmentpage.dart';
 import 'package:flutter_project/app/pages/medicines_list_page.dart';
 import 'package:flutter_project/app/pages/profile-page.dart';
@@ -31,7 +32,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   final _logger = Logger('HomePage');
   int _selectedIndex = 2; // Home index
   final TextEditingController _searchController = TextEditingController();
@@ -51,53 +53,54 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   // Expanded doctor list
   final List<Map<String, dynamic>> doctors = [
     {
-    'name': 'Dr. Sarah Chen',
-    'specialty': 'Rheumatologist',
-    'image': 'assets/doctor1.png',
-    'description': 'Experienced doctor specializing in joint and muscle conditions',
-  },
-  {
-    'name': 'Dr. Amanda',
-    'specialty': 'Dermatologist',
-    'image': 'assets/doctor2.png',
-    'description': 'Skin specialist with 10+ years experience',
-  },
-  {
-    'name': 'Dr. Michael',
-    'specialty': 'Cardiologist',
-    'image': 'assets/doctor1.png',
-    'description': 'Heart specialist with extensive experience',
-  },
-  {
-    'name': 'Dr. James Patel',
-    'specialty': 'Neurologist',
-    'image': 'assets/doctor2.png',
-    'description': 'Expert in brain and nervous system disorders',
-  },
-  {
-    'name': 'Dr. Emily',
-    'specialty': 'Pediatrician',
-    'image': 'assets/doctor1.png',
-    'description': 'Specialist in child healthcare',
-  },
-  {
-    'name': 'Dr. John Doe',
-    'specialty': 'Cardiologist',
-    'description': 'Expert in heart diseases with 10 years of experience.',
-    'image': 'assets/doctor1.png',
-  },
-  {
-    'name': 'Dr. Jane Smith',
-    'specialty': 'Dermatologist',
-    'description': 'Specialist in skin and hair treatments.',
-    'image': 'assets/doctor2.png',
-  },
-  {
-    'name': 'Dr. Robert',
-    'specialty': 'Pediatrician',
-    'description': 'Caring for children health and well-being.',
-    'image': 'assets/doctor1.png',
-  },
+      'name': 'Dr. Sarah Chen',
+      'specialty': 'Rheumatologist',
+      'image': 'assets/doctor1.png',
+      'description':
+          'Experienced doctor specializing in joint and muscle conditions',
+    },
+    {
+      'name': 'Dr. Amanda Wilson',
+      'specialty': 'Dermatologist',
+      'image': 'assets/doctor2.png',
+      'description': 'Skin specialist with 10+ years experience',
+    },
+    {
+      'name': 'Dr. Michael Rodriguez',
+      'specialty': 'Cardiologist',
+      'image': 'assets/doctor1.png',
+      'description': 'Heart specialist with extensive experience',
+    },
+    {
+      'name': 'Dr. James Patel',
+      'specialty': 'Neurologist',
+      'image': 'assets/doctor2.png',
+      'description': 'Expert in brain and nervous system disorders',
+    },
+    {
+      'name': 'Dr. Emily Thompson',
+      'specialty': 'Pediatrician',
+      'image': 'assets/doctor1.png',
+      'description': 'Specialist in child healthcare',
+    },
+    {
+      'name': 'Dr. John Doe',
+      'specialty': 'Cardiologist',
+      'description': 'Expert in heart diseases with 10 years of experience.',
+      'image': 'assets/doctor1.png',
+    },
+    {
+      'name': 'Dr. Jane Smith',
+      'specialty': 'Dermatologist',
+      'description': 'Specialist in skin and hair treatments.',
+      'image': 'assets/doctor2.png',
+    },
+    {
+      'name': 'Dr. Robert Brown',
+      'specialty': 'Pediatrician',
+      'description': 'Caring for children health and well-being.',
+      'image': 'assets/doctor1.png',
+    },
   ];
   final List<String> suggestions = [
     'Dolo - 650mg',
@@ -132,7 +135,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         _logger.info('Profile image is a URL');
       } else if (_storedProfileImage!.startsWith('data:image')) {
         try {
-          _decodedProfileImage = base64Decode(_storedProfileImage!.split(',')[1]);
+          _decodedProfileImage = base64Decode(
+            _storedProfileImage!.split(',')[1],
+          );
           _logger.info('Successfully decoded profile image');
         } catch (e) {
           _logger.severe('Error decoding profile image: $e');
@@ -166,10 +171,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final prefs = await SharedPreferences.getInstance();
       setState(() {
         _storedUsername = widget.username;
-        _storedFirstName = prefs.getString('firstName') ?? widget.fullName.split(' ').first;
-        _storedLastName = prefs.getString('lastName') ?? (widget.fullName.split(' ').length > 1 ? widget.fullName.split(' ').last : '');
+        _storedFirstName =
+            prefs.getString('firstName') ?? widget.fullName.split(' ').first;
+        _storedLastName =
+            prefs.getString('lastName') ??
+            (widget.fullName.split(' ').length > 1
+                ? widget.fullName.split(' ').last
+                : '');
         _firstName = _storedFirstName;
-        _storedProfileImage = widget.profileImage ?? prefs.getString('profileImage');
+        _storedProfileImage =
+            widget.profileImage ?? prefs.getString('profileImage');
       });
 
       _logger.info('Loaded username: $_storedUsername');
@@ -177,12 +188,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       _logger.info('Loaded lastName: $_storedLastName');
       _logger.info('Loaded profileImage: $_storedProfileImage');
 
-      if (_storedProfileImage != null && !_isProfileImageUrl && _storedProfileImage!.startsWith('data:image')) {
+      if (_storedProfileImage != null &&
+          !_isProfileImageUrl &&
+          _storedProfileImage!.startsWith('data:image')) {
         try {
-          _decodedProfileImage = base64Decode(_storedProfileImage!.split(',')[1]);
-          _logger.info('Successfully decoded profile image in _loadUserSession');
+          _decodedProfileImage = base64Decode(
+            _storedProfileImage!.split(',')[1],
+          );
+          _logger.info(
+            'Successfully decoded profile image in _loadUserSession',
+          );
         } catch (e) {
-          _logger.severe('Error decoding profile image in _loadUserSession: $e');
+          _logger.severe(
+            'Error decoding profile image in _loadUserSession: $e',
+          );
           _decodedProfileImage = null;
         }
       }
@@ -198,7 +217,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       await prefs.setString('fullName', widget.fullName);
       if (widget.profileImage != null) {
         await prefs.setString('profileImage', widget.profileImage!);
-        _logger.info('Saved profileImage to SharedPreferences: ${widget.profileImage}');
+        _logger.info(
+          'Saved profileImage to SharedPreferences: ${widget.profileImage}',
+        );
       } else {
         _logger.warning('No profileImage to save in SharedPreferences');
       }
@@ -233,7 +254,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         _logger.info('Navigating to /doctors_list');
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ProfilePage()),
+          MaterialPageRoute(builder: (context) => DoctorsListPage()),
         );
         break;
       case 1:
@@ -266,11 +287,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _logger.info('Changed theme color to: $themeColor');
   }
 
-  @override
+@override
 Widget build(BuildContext context) {
   return WillPopScope(
     onWillPop: () async {
-      return false;
+      // Show a confirmation dialog when the back button is pressed
+      bool? exit = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Exit App'),
+          content: const Text('Are you sure you want to exit the app?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Stay in app
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Confirm exit
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+
+      // If the user confirmed to exit, close the app
+      if (exit == true) {
+        SystemNavigator.pop(); // This will close the app on Android
+      }
+
+      return false; // Prevent default back navigation
     },
     child: Scaffold(
       backgroundColor: Colors.grey[200],
@@ -308,7 +355,9 @@ Widget build(BuildContext context) {
 }
 
   Widget _buildHeader() {
-    _logger.info('Building header with _storedProfileImage: $_storedProfileImage');
+    _logger.info(
+      'Building header with _storedProfileImage: $_storedProfileImage',
+    );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -342,28 +391,31 @@ Widget build(BuildContext context) {
               child: CircleAvatar(
                 backgroundColor: Colors.grey[300],
                 radius: 30,
-                child: _decodedProfileImage != null
-                    ? ClipOval(
-                        child: Image.memory(
-                          _decodedProfileImage!,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            _logger.severe('Error loading profile image: $error, StackTrace: $stackTrace');
-                            return const Icon(
-                              Icons.person_outline,
-                              color: Colors.black54,
-                              size: 30,
-                            );
-                          },
+                child:
+                    _decodedProfileImage != null
+                        ? ClipOval(
+                          child: Image.memory(
+                            _decodedProfileImage!,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              _logger.severe(
+                                'Error loading profile image: $error, StackTrace: $stackTrace',
+                              );
+                              return const Icon(
+                                Icons.person_outline,
+                                color: Colors.black54,
+                                size: 30,
+                              );
+                            },
+                          ),
+                        )
+                        : const Icon(
+                          Icons.person_outline,
+                          color: Colors.black54,
+                          size: 30,
                         ),
-                      )
-                    : const Icon(
-                        Icons.person_outline,
-                        color: Colors.black54,
-                        size: 30,
-                      ),
               ),
             ),
           ],
@@ -477,57 +529,66 @@ Widget build(BuildContext context) {
     });
     FocusScope.of(context).unfocus();
     _logger.info('Navigating to /search with query: $query');
-    Navigator.of(context, rootNavigator: true).pushNamed('/search', arguments: {'query': query});
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamed('/search', arguments: {'query': query});
   }
 
   void _openGoogleLens() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Google Lens'),
-        content: const Text('Open Google Lens for visual search'),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              bool launched = false;
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Google Lens'),
+            content: const Text('Open Google Lens for visual search'),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  bool launched = false;
 
-              if (Platform.isAndroid) {
-                const String googleLensPackage = 'com.google.ar.lens';
-                try {
-                  final intent = AndroidIntent(
-                    action: 'android.intent.action.VIEW',
-                    package: googleLensPackage,
-                    data: 'https://lens.google.com/',
-                  );
-                  await intent.launch();
-                  launched = true;
-                } catch (e) {
-                  _logger.severe('Error launching Google Lens app: $e');
-                }
-              }
-
-              if (!launched) {
-                final Uri url = Uri.parse('https://lens.google.com/');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                } else {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Google Lens is not available')),
-                    );
+                  if (Platform.isAndroid) {
+                    const String googleLensPackage = 'com.google.ar.lens';
+                    try {
+                      final intent = AndroidIntent(
+                        action: 'android.intent.action.VIEW',
+                        package: googleLensPackage,
+                        data: 'https://lens.google.com/',
+                      );
+                      await intent.launch();
+                      launched = true;
+                    } catch (e) {
+                      _logger.severe('Error launching Google Lens app: $e');
+                    }
                   }
-                }
-              }
-            },
-            child: const Text('Google Lens'),
+
+                  if (!launched) {
+                    final Uri url = Uri.parse('https://lens.google.com/');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Google Lens is not available'),
+                          ),
+                        );
+                      }
+                    }
+                  }
+                },
+                child: const Text('Google Lens'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -578,14 +639,15 @@ Widget build(BuildContext context) {
       childAspectRatio: 1.0,
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      children: features.map((feature) {
-        return _buildFeatureItem(
-          icon: feature['icon'],
-          color: feature['color'],
-          title: feature['title'],
-          onTap: feature['onTap'],
-        );
-      }).toList(),
+      children:
+          features.map((feature) {
+            return _buildFeatureItem(
+              icon: feature['icon'],
+              color: feature['color'],
+              title: feature['title'],
+              onTap: feature['onTap'],
+            );
+          }).toList(),
     );
   }
 
@@ -619,8 +681,9 @@ Widget build(BuildContext context) {
     );
   }
 
-Widget _buildDoctorsList() {
-    final displayedDoctors = _showAllDoctors ? doctors : doctors.take(2).toList();
+  Widget _buildDoctorsList() {
+    final displayedDoctors =
+        _showAllDoctors ? doctors : doctors.take(2).toList();
 
     return Column(
       children: [
@@ -648,7 +711,10 @@ Widget _buildDoctorsList() {
         ),
         const SizedBox(height: 10),
         Column(
-          children: displayedDoctors.map((doctor) => _buildDoctorCard(doctor)).toList(),
+          children:
+              displayedDoctors
+                  .map((doctor) => _buildDoctorCard(doctor))
+                  .toList(),
         ),
         const SizedBox(height: 10),
         if (doctors.length > 2)
@@ -674,6 +740,7 @@ Widget _buildDoctorsList() {
       ],
     );
   }
+
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
     return GestureDetector(
       onTap: () {
@@ -752,7 +819,9 @@ Widget _buildDoctorsList() {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               child: ElevatedButton(
                 onPressed: () {
-                  _logger.info('Navigating to /book-appointment for ${doctor['name']}');
+                  _logger.info(
+                    'Navigating to /book-appointment for ${doctor['name']}',
+                  );
                   Navigator.pushNamed(
                     context,
                     '/book-appointment',
@@ -773,7 +842,10 @@ Widget _buildDoctorsList() {
                     vertical: 8,
                   ),
                 ),
-                child: const Text('Book', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Book',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -782,44 +854,46 @@ Widget _buildDoctorsList() {
     );
   }
 
- Widget _buildBottomNavBar() {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white, // Keep the original white color
-      borderRadius: BorderRadius.circular(30),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withAlpha(76),
-          spreadRadius: 1,
-          blurRadius: 10,
-          offset: const Offset(0, -2),
-        ),
-      ],
-    ),
-    margin: const EdgeInsets.all(12), // Keep the original margin
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.transparent, // Make the BottomNavigationBar background transparent
-        elevation: 0, // Remove default elevation
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: [
-          _buildNavItem(Icons.person_search, 0, 'Profile'),
-          _buildNavItem(Icons.science_outlined, 1, 'Tests'),
-          _buildNavItem(Icons.home, 2, 'Home'),
-          _buildNavItem(Icons.search, 3, 'Search'),
-          _buildNavItem(Icons.person_outline, 4, 'Account'),
+  Widget _buildBottomNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white, // Keep the original white color
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
         ],
       ),
-    ),
-  );
-}
+      margin: const EdgeInsets.all(12), // Keep the original margin
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BottomNavigationBar(
+          backgroundColor:
+              Colors
+                  .transparent, // Make the BottomNavigationBar background transparent
+          elevation: 0, // Remove default elevation
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: [
+            _buildNavItem(Icons.person_search, 0, 'Profile'),
+            _buildNavItem(Icons.science_outlined, 1, 'Tests'),
+            _buildNavItem(Icons.home, 2, 'Home'),
+            _buildNavItem(Icons.search, 3, 'Search'),
+            _buildNavItem(Icons.person_outline, 4, 'Account'),
+          ],
+        ),
+      ),
+    );
+  }
 
   BottomNavigationBarItem _buildNavItem(
     IconData icon,
@@ -835,7 +909,8 @@ Widget _buildDoctorsList() {
             child: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: _selectedIndex == index ? Colors.blue : Colors.transparent,
+                color:
+                    _selectedIndex == index ? Colors.blue : Colors.transparent,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1055,66 +1130,68 @@ Widget _buildDoctorsList() {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10),
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.3,
+            maxChildSize: 0.9,
+            builder:
+                (_, controller) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Notifications',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ListView.builder(
-                  controller: controller,
-                  itemCount: 5,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue[400],
-                        child: const Icon(
-                          Icons.notifications,
-                          color: Colors.blue,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
-                      title: Text('Notification ${index + 1}'),
-                      subtitle: const Text(
-                        'This is a notification message',
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Notifications',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      trailing: Text('${index + 1}h ago'),
-                    );
-                  },
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: controller,
+                          itemCount: 5,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.blue[400],
+                                child: const Icon(
+                                  Icons.notifications,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              title: Text('Notification ${index + 1}'),
+                              subtitle: const Text(
+                                'This is a notification message',
+                              ),
+                              trailing: Text('${index + 1}h ago'),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
           ),
-        ),
-      ),
     );
   }
 
@@ -1124,7 +1201,7 @@ Widget _buildDoctorsList() {
         _logger.info('Navigating to /doctors_list');
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => doctor_list.DoctorsListPage()),
+          MaterialPageRoute(builder: (context) => DoctorsListPage()),
         );
         break;
       case 1:
@@ -1182,55 +1259,60 @@ Widget _buildDoctorsList() {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Filter Doctors',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            const Text('Specialty'),
-            Wrap(
-              spacing: 8,
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                'All',
-                'Rheumatologist',
-                'Dermatologist',
-                'Cardiologist',
-                'Neurologist',
-              ].map((specialty) {
-                return ChoiceChip(
-                  label: Text(specialty),
-                  selected: specialty == 'All',
-                  onSelected: (selected) {
-                    Navigator.pop(context);
-                    _logger.info('Filter selected: $specialty');
-                  },
-                );
-              }).toList(),
+                const Text(
+                  'Filter Doctors',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text('Specialty'),
+                Wrap(
+                  spacing: 8,
+                  children:
+                      [
+                        'All',
+                        'Rheumatologist',
+                        'Dermatologist',
+                        'Cardiologist',
+                        'Neurologist',
+                      ].map((specialty) {
+                        return ChoiceChip(
+                          label: Text(specialty),
+                          selected: specialty == 'All',
+                          onSelected: (selected) {
+                            Navigator.pop(context);
+                            _logger.info('Filter selected: $specialty');
+                          },
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 16),
+                const Text('Availability'),
+                Wrap(
+                  spacing: 8,
+                  children:
+                      ['Any time', 'Today', 'Tomorrow', 'This week'].map((
+                        time,
+                      ) {
+                        return ChoiceChip(
+                          label: Text(time),
+                          selected: time == 'Any time',
+                          onSelected: (selected) {
+                            Navigator.pop(context);
+                            _logger.info('Time filter selected: $time');
+                          },
+                        );
+                      }).toList(),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text('Availability'),
-            Wrap(
-              spacing: 8,
-              children: ['Any time', 'Today', 'Tomorrow', 'This week'].map((time) {
-                return ChoiceChip(
-                  label: Text(time),
-                  selected: time == 'Any time',
-                  onSelected: (selected) {
-                    Navigator.pop(context);
-                    _logger.info('Time filter selected: $time');
-                  },
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
@@ -1243,20 +1325,22 @@ class LineGraphPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = lineColor
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.stroke;
 
     final path = Path();
 
     if (points.isNotEmpty) {
-      final scaledPoints = points.map((point) {
-        return Offset(
-          point.dx / 100 * size.width,
-          size.height - (point.dy / 30 * size.height),
-        );
-      }).toList();
+      final scaledPoints =
+          points.map((point) {
+            return Offset(
+              point.dx / 100 * size.width,
+              size.height - (point.dy / 30 * size.height),
+            );
+          }).toList();
 
       path.moveTo(scaledPoints[0].dx, scaledPoints[0].dy);
 
@@ -1266,10 +1350,11 @@ class LineGraphPainter extends CustomPainter {
 
       canvas.drawPath(path, paint);
 
-      final pointPaint = Paint()
-        ..color = Colors.blue
-        ..strokeWidth = 2.0
-        ..style = PaintingStyle.fill;
+      final pointPaint =
+          Paint()
+            ..color = Colors.blue
+            ..strokeWidth = 2.0
+            ..style = PaintingStyle.fill;
 
       for (var point in scaledPoints) {
         canvas.drawCircle(point, 3.0, pointPaint);
@@ -1284,10 +1369,11 @@ class LineGraphPainter extends CustomPainter {
 class BarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 8.0
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = Colors.blue
+          ..strokeWidth = 8.0
+          ..style = PaintingStyle.stroke;
 
     final barWidth = size.width / 8;
     final maxHeight = size.height - 10;
@@ -1303,10 +1389,11 @@ class BarChartPainter extends CustomPainter {
       );
     }
 
-    final arrowPaint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
+    final arrowPaint =
+        Paint()
+          ..color = Colors.black
+          ..strokeWidth = 1.0
+          ..style = PaintingStyle.stroke;
 
     final path = Path();
     path.moveTo(0, maxHeight - 5);
@@ -1333,18 +1420,22 @@ class StepTrackerPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = min(size.width, size.height) / 2 - strokeWidth / 2;
 
-    final backgroundPaint = Paint()
-      ..color = Colors.grey.withValues(alpha: 0.2) // Updated from withOpacity
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
+    final backgroundPaint =
+        Paint()
+          ..color = Colors.grey.withValues(
+            alpha: 0.2,
+          ) // Updated from withOpacity
+          ..strokeWidth = strokeWidth
+          ..style = PaintingStyle.stroke;
 
     canvas.drawCircle(center, radius, backgroundPaint);
 
-    final progressPaint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    final progressPaint =
+        Paint()
+          ..color = Colors.blue
+          ..strokeWidth = strokeWidth
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -1354,10 +1445,11 @@ class StepTrackerPainter extends CustomPainter {
       progressPaint,
     );
 
-    final iconPaint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+    final iconPaint =
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
 
     final iconPath = Path();
     final iconCenter = center;

@@ -29,26 +29,27 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isLoading = false;
   final AuthService authService = AuthService();
   
-  var _firstNameController = TextEditingController();
-  var _lastNameController = TextEditingController();
-  final _genderController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneNumberController = TextEditingController();
-  final _dateOfBirthController = TextEditingController();
-  final _fullAddressController = TextEditingController();
-  final _govMedicalIdController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  String? _selectedGender; // Gender dropdown selection
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _dateOfBirthController = TextEditingController();
+  final TextEditingController _fullAddressController = TextEditingController();
+  final TextEditingController _govMedicalIdController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   String? _selectedCountry;
   String? _selectedState;
   File? _profileImageFile;
   Uint8List? _profileImageBytes;
   String? _completePhoneNumber;
 
-final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
+  final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-challenge-dqfbfad9dmd2cua0.canadacentral-01.azurewebsites.net/api';
 
   final ImagePicker _picker = ImagePicker();
 
-  final List<String> countries = [
+  
+ final List<String> countries = [
     'Afghanistan',
     'Albania',
     'Algeria',
@@ -1901,11 +1902,11 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
     'Zimbabwe': [],
   };
 
+  final List<String> genderOptions = ['Male', 'Female', 'Other'];
+
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController();
-  _lastNameController = TextEditingController();
     NotificationService().init();  
   }
 
@@ -1913,7 +1914,6 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _genderController.dispose();
     _emailController.dispose();
     _phoneNumberController.dispose();
     _dateOfBirthController.dispose();
@@ -1937,17 +1937,10 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
           setState(() {
             _profileImageBytes = bytes;
           });
-          developer.log(
-            'Web image selected, bytes length: ${bytes.length}',
-            name: 'RegisterPage',
-          );
+          developer.log('Web image selected, bytes length: ${bytes.length}', name: 'RegisterPage');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Image compression not supported on web. Uploading original image.',
-                ),
-              ),
+              const SnackBar(content: Text('Image compression not supported on web. Uploading original image.')),
             );
           }
         } else {
@@ -1963,15 +1956,9 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
             setState(() {
               _profileImageFile = File(compressedImage.path);
             });
-            developer.log(
-              'Compressed file path: ${compressedImage.path}',
-              name: 'RegisterPage',
-            );
+            developer.log('Compressed file path: ${compressedImage.path}', name: 'RegisterPage');
           } else {
-            developer.log(
-              'Failed to compress image, using original',
-              name: 'RegisterPage',
-            );
+            developer.log('Failed to compress image, using original', name: 'RegisterPage');
             setState(() {
               _profileImageFile = File(image.path);
             });
@@ -1981,10 +1968,7 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
         developer.log('Error processing image: $e', name: 'RegisterPage');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Failed to process image. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: const Text('Failed to process image. Please try again.'), backgroundColor: Colors.red),
           );
         }
       }
@@ -1994,9 +1978,7 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
   Future<void> _scheduleHealthTipsForTesting() async {
     final now = DateTime.now();
     for (int i = 0; i < 5; i++) {
-      final scheduledTime = now.add(
-        Duration(seconds: 10, minutes: 1 + (2 * i)),
-      );
+      final scheduledTime = now.add(Duration(seconds: 10, minutes: 1 + (2 * i)));
       await NotificationService().scheduleNotification(
         id: i,
         title: 'Daily Health Tip 🌟',
@@ -2006,215 +1988,176 @@ final String _backendUrl = dotenv.env['BASE_URL'] ?? 'https://backend-solution-c
     }
   }
 
-Future<void> _register() async {
-  if (_formKey.currentState!.validate() && _consentGiven) {
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      developer.log('Initial _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
-
-      if (_profileImageFile != null && _profileImageFile!.existsSync() && _profileImageFile!.lengthSync() > 512 * 1024) {
-        developer.log('Image is too large (${_profileImageFile!.lengthSync()} bytes), compressing further', name: 'RegisterPage');
-        final compressedImage = await FlutterImageCompress.compressWithFile(
-          _profileImageFile!.path,
-          quality: 50,
-          minWidth: 400,
-          minHeight: 400,
+  Future<void> _register() async {
+    if (_formKey.currentState!.validate() && _consentGiven) {
+      if (_selectedGender == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a gender'), backgroundColor: Colors.red),
         );
-        if (compressedImage != null) {
-          _profileImageBytes = compressedImage;
-          _profileImageFile = null; 
-          developer.log('Further compressed image size: ${compressedImage.length} bytes', name: 'RegisterPage');
-        } else {
-          developer.log('Compression failed, keeping original _profileImageFile', name: 'RegisterPage');
-        }
-      } else {
-        developer.log('No compression needed or _profileImageFile is null', name: 'RegisterPage');
+        return;
       }
-
-      developer.log('After compression - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
-
-      var request = http.MultipartRequest('POST', Uri.parse('$_backendUrl/register'));
-      request.fields['firstName'] = _firstNameController.text;
-      request.fields['lastName'] = _lastNameController.text;
-      request.fields['gender'] = _genderController.text;
-      request.fields['email'] = _emailController.text;
-      request.fields['phoneNumber'] = _completePhoneNumber ?? _phoneNumberController.text;
-      request.fields['dateOfBirth'] = _dateOfBirthController.text;
-      request.fields['address'] = _fullAddressController.text;
-      request.fields['country'] = _selectedCountry ?? '';
-      request.fields['state'] = _selectedState ?? '';
-      request.fields['governmentId'] = _govMedicalIdController.text;
-      request.fields['password'] = _passwordController.text;
-
-      if (_profileImageFile != null && _profileImageFile!.existsSync()) {
-        developer.log('Adding image to request, file size: ${_profileImageFile!.lengthSync()} bytes', name: 'RegisterPage');
-        request.files.add(await http.MultipartFile.fromPath(
-          'profileImage',
-          _profileImageFile!.path,
-          contentType: http_parser.MediaType('image', 'jpeg'),
-        ));
-      } else if (_profileImageBytes != null) {
-        developer.log('Adding web image to request, bytes length: ${_profileImageBytes!.length}', name: 'RegisterPage');
-        request.files.add(http.MultipartFile.fromBytes(
-          'profileImage',
-          _profileImageBytes!,
-          contentType: http_parser.MediaType('image', 'jpeg'),
-          filename: 'profile.jpg',
-        ));
-      } else {
-        developer.log('No profile image to upload', name: 'RegisterPage');
-      }
-
-      developer.log('Sending request to: $_backendUrl', name: 'RegisterPage');
-      developer.log('Request fields: ${request.fields}', name: 'RegisterPage');
-      developer.log('Request files: ${request.files.map((f) => f.filename).join(', ')}', name: 'RegisterPage');
-
-      var response = await request.send().timeout(const Duration(seconds: 60), onTimeout: () {
-        developer.log('Request timed out after 60 seconds', name: 'RegisterPage');
-        return http.StreamedResponse(Stream.empty(), 408);
+      setState(() {
+        isLoading = true;
       });
 
-      developer.log('Request sent, awaiting response...', name: 'RegisterPage');
-      var responseData = await http.Response.fromStream(response);
-      developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
-
-if (response.statusCode == 201) {
-  final jsonResponse = jsonDecode(responseData.body);
-  developer.log('Parsed JSON response: $jsonResponse', name: 'RegisterPage');
-  if (jsonResponse['success'] == true) {
-    final user = jsonResponse['user'];
-    final userId = user != null ? user['id']?.toString() ?? '' : ''; 
-    final token = jsonResponse['token']?.toString() ?? '';
-    final profileImage = user != null ? user['profileImage']?.toString() : null; 
-    final firstName = _firstNameController.text; 
-    final lastName = _lastNameController.text;   
-    final email = _emailController.text;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('username', email);
-    await prefs.setString('userId', userId);
-    await prefs.setString('firstName', firstName); 
-    await prefs.setString('lastName', lastName); 
-    await prefs.setString('auth_token', token);
-    await prefs.setString('user_id', userId);
-    await prefs.setBool('isLoggedIn', true);
-
-    await prefs.setString('phone', _completePhoneNumber ?? _phoneNumberController.text);
-    await prefs.setString('dob', _dateOfBirthController.text);
-    await prefs.setString('address', _fullAddressController.text);
-    await prefs.setString('id', _govMedicalIdController.text);
-    await prefs.setString('gender', _genderController.text);
-    developer.log('Before saving profile image - _profileImageFile: ${_profileImageFile?.path}, _profileImageBytes: ${_profileImageBytes?.length}', name: 'RegisterPage');
-    String? profileImageToPass; 
-    if (_profileImageBytes != null) {
-      final profileImageBase64 = base64Encode(_profileImageBytes!);
-      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64'; 
-      await prefs.setString('profileImage', profileImageWithPrefix);
-      profileImageToPass = profileImageWithPrefix;
-      developer.log('Saved profileImage (from bytes): $profileImageWithPrefix', name: 'RegisterPage');
-    } else if (_profileImageFile != null && _profileImageFile!.existsSync()) {
-      final bytes = await _profileImageFile!.readAsBytes();
-      final profileImageBase64 = base64Encode(bytes);
-      final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64';
-      await prefs.setString('profileImage', profileImageWithPrefix);
-      profileImageToPass = profileImageWithPrefix;
-      developer.log('Saved profileImage (from file): $profileImageWithPrefix', name: 'RegisterPage');
-    } else if (profileImage != null && profileImage.isNotEmpty) {
-      await prefs.setString('profileImage', profileImage);
-      profileImageToPass = profileImage;
-      developer.log('Saved profileImage (from backend): $profileImage', name: 'RegisterPage');
-    } else {
-      await prefs.remove('profileImage');
-      profileImageToPass = null;
-      developer.log('No profile image to save, removed profileImage key', name: 'RegisterPage');
-    }
-
-    developer.log('Saved username: $email', name: 'RegisterPage');
-    developer.log('Saved userId: $userId', name: ' 🙂');
-    developer.log('Saved firstName: $firstName', name: 'RegisterPage');
-    developer.log('Saved lastName: $lastName', name: 'RegisterPage');
-    developer.log('Saved auth_token: $token', name: 'RegisterPage');
-    developer.log('Saved phone: ${_completePhoneNumber ?? _phoneNumberController.text}', name: 'RegisterPage');
-    developer.log('Saved dob: ${_dateOfBirthController.text}', name: 'RegisterPage');
-    developer.log('Saved address: ${_fullAddressController.text}', name: 'RegisterPage');
-    developer.log('Saved id: ${_govMedicalIdController.text}', name: 'RegisterPage');
-    developer.log('Saved gender: ${_genderController.text}', name: 'RegisterPage');
-    try {
-      await _scheduleHealthTipsForTesting();
-    } catch (e) {
-      developer.log('Failed to schedule health tips: $e', name: 'RegisterPage');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration successful, but failed to schedule notifications: $e'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
-
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SuccessPage(
-            fullName: '$firstName $lastName', 
-            email: email, 
-            profileImage: profileImageToPass, 
-          ),
-        ),
-      );
-    }
-  } else {
-    throw Exception(jsonResponse['message'] ?? 'Registration failed');
-  }
-} else if (response.statusCode == 400) {
-        final jsonResponse = jsonDecode(responseData.body);
-        throw Exception(jsonResponse['message'] ?? 'Bad request');
-      } else if (response.statusCode == 408) {
-        throw Exception('Request timed out. Please check your network or server status.');
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      developer.log('Error: $e', name: 'RegisterPage');
-      if (mounted) {
-        String errorMessage;
-        if (e.toString().contains('Request timed out')) {
-          errorMessage = 'Request timed out. Please check your network or server status.';
-        } else if (e.toString().contains('Email already registered')) {
-          errorMessage = 'Email already registered. Please use a different email.';
-        } else {
-          errorMessage = e.toString().replaceFirst('Exception: ', '');
+      try {
+        if (_profileImageFile != null && _profileImageFile!.existsSync() && _profileImageFile!.lengthSync() > 512 * 1024) {
+          developer.log('Image is too large (${_profileImageFile!.lengthSync()} bytes), compressing further', name: 'RegisterPage');
+          final compressedImage = await FlutterImageCompress.compressWithFile(
+            _profileImageFile!.path,
+            quality: 50,
+            minWidth: 400,
+            minHeight: 400,
+          );
+          if (compressedImage != null) {
+            _profileImageBytes = compressedImage;
+            _profileImageFile = null;
+          }
         }
+
+        var request = http.MultipartRequest('POST', Uri.parse('$_backendUrl/register'));
+        request.fields['firstName'] = _firstNameController.text;
+        request.fields['lastName'] = _lastNameController.text;
+        request.fields['gender'] = _selectedGender!;
+        request.fields['email'] = _emailController.text;
+        request.fields['phoneNumber'] = _completePhoneNumber ?? _phoneNumberController.text;
+        request.fields['dateOfBirth'] = _dateOfBirthController.text;
+        request.fields['address'] = _fullAddressController.text;
+        request.fields['country'] = _selectedCountry ?? '';
+        request.fields['state'] = _selectedState ?? '';
+        request.fields['governmentId'] = _govMedicalIdController.text;
+        request.fields['password'] = _passwordController.text;
+
+        if (_profileImageFile != null && _profileImageFile!.existsSync()) {
+          request.files.add(await http.MultipartFile.fromPath(
+            'profileImage',
+            _profileImageFile!.path,
+            contentType: http_parser.MediaType('image', 'jpeg'),
+          ));
+        } else if (_profileImageBytes != null) {
+          request.files.add(http.MultipartFile.fromBytes(
+            'profileImage',
+            _profileImageBytes!,
+            contentType: http_parser.MediaType('image', 'jpeg'),
+            filename: 'profile.jpg',
+          ));
+        }
+
+        var response = await request.send().timeout(const Duration(seconds: 60), onTimeout: () {
+          developer.log('Request timed out after 60 seconds', name: 'RegisterPage');
+          return http.StreamedResponse(Stream.empty(), 408);
+        });
+
+        var responseData = await http.Response.fromStream(response);
+        developer.log('Response status: ${response.statusCode}, Body: ${responseData.body}', name: 'RegisterPage');
+
+        if (response.statusCode == 201) {
+          final jsonResponse = jsonDecode(responseData.body);
+          if (jsonResponse['success'] == true) {
+            final user = jsonResponse['user'];
+            final userId = user != null ? user['id']?.toString() ?? '' : '';
+            final token = jsonResponse['token']?.toString() ?? '';
+            final profileImage = user != null ? user['profileImage']?.toString() : null;
+            final firstName = _firstNameController.text;
+            final lastName = _lastNameController.text;
+            final email = _emailController.text;
+
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('username', email);
+            await prefs.setString('userId', userId);
+            await prefs.setString('firstName', firstName);
+            await prefs.setString('lastName', lastName);
+            await prefs.setString('auth_token', token);
+            await prefs.setString('user_id', userId);
+            await prefs.setBool('isLoggedIn', true);
+            await prefs.setString('phone', _completePhoneNumber ?? _phoneNumberController.text);
+            await prefs.setString('dob', _dateOfBirthController.text);
+            await prefs.setString('address', _fullAddressController.text);
+            await prefs.setString('id', _govMedicalIdController.text);
+            await prefs.setString('gender', _selectedGender!);
+
+            String? profileImageToPass;
+            if (_profileImageBytes != null) {
+              final profileImageBase64 = base64Encode(_profileImageBytes!);
+              final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64';
+              await prefs.setString('profileImage', profileImageWithPrefix);
+              profileImageToPass = profileImageWithPrefix;
+            } else if (_profileImageFile != null && _profileImageFile!.existsSync()) {
+              final bytes = await _profileImageFile!.readAsBytes();
+              final profileImageBase64 = base64Encode(bytes);
+              final profileImageWithPrefix = 'data:image/jpeg;base64,$profileImageBase64';
+              await prefs.setString('profileImage', profileImageWithPrefix);
+              profileImageToPass = profileImageWithPrefix;
+            } else if (profileImage != null && profileImage.isNotEmpty) {
+              await prefs.setString('profileImage', profileImage);
+              profileImageToPass = profileImage;
+            } else {
+              await prefs.remove('profileImage');
+              profileImageToPass = null;
+            }
+
+            try {
+              await _scheduleHealthTipsForTesting();
+            } catch (e) {
+              developer.log('Failed to schedule health tips: $e', name: 'RegisterPage');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Registration successful, but failed to schedule notifications: $e'), backgroundColor: Colors.orange),
+                );
+              }
+            }
+
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SuccessPage(
+                    fullName: '$firstName $lastName',
+                    email: email,
+                    profileImage: profileImageToPass,
+                    gender: _selectedGender,
+                  ),
+                ),
+              );
+            }
+          } else {
+            throw Exception(jsonResponse['message'] ?? 'Registration failed');
+          }
+        } else if (response.statusCode == 400) {
+          final jsonResponse = jsonDecode(responseData.body);
+          throw Exception(jsonResponse['message'] ?? 'Bad request');
+        } else if (response.statusCode == 408) {
+          throw Exception('Request timed out. Please check your network or server status.');
+        } else {
+          throw Exception('Server error: ${response.statusCode}');
+        }
+      } catch (e) {
+        developer.log('Error: $e', name: 'RegisterPage');
+        if (mounted) {
+          String errorMessage = e.toString().contains('Request timed out')
+              ? 'Request timed out. Please check your network or server status.'
+              : e.toString().contains('Email already registered')
+                  ? 'Email already registered. Please use a different email.'
+                  : e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    } else {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Please fill all required fields and give consent'), backgroundColor: Colors.red),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  } else {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields and give consent'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -2240,11 +2183,7 @@ if (response.statusCode == 201) {
                           const Center(
                             child: Text(
                               'Register',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
+                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -2254,70 +2193,31 @@ if (response.statusCode == 201) {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildLabel('First Name', isRequired: true),
-                                _buildTextField(
-                                  'First Name',
-                                  controller: _firstNameController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'First name is required';
-                                    }
-                                    if (!RegExp(
-                                      r'^[a-zA-Z\s]+$',
-                                    ).hasMatch(value)) {
-                                      return 'First name should contain only letters';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildTextField('First Name', controller: _firstNameController, validator: (value) {
+                                  if (value == null || value.isEmpty) return 'First name is required';
+                                  if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) return 'First name should contain only letters';
+                                  return null;
+                                }),
                                 const SizedBox(height: 15),
 
                                 _buildLabel('Last Name', isRequired: true),
-                                _buildTextField(
-                                  'Last Name',
-                                  controller: _lastNameController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Last name is required';
-                                    }
-                                    if (!RegExp(
-                                      r'^[a-zA-Z\s]+$',
-                                    ).hasMatch(value)) {
-                                      return 'Last name should contain only letters';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildTextField('Last Name', controller: _lastNameController, validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Last name is required';
+                                  if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) return 'Last name should contain only letters';
+                                  return null;
+                                }),
                                 const SizedBox(height: 15),
 
                                 _buildLabel('Gender', isRequired: true),
-                                _buildTextField(
-                                  'Gender (e.g., Male/Female/Other)',
-                                  controller: _genderController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Gender is required';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildGenderDropdown(),
                                 const SizedBox(height: 15),
 
                                 _buildLabel('Email', isRequired: true),
-                                _buildTextField(
-                                  'example@gmail.com',
-                                  controller: _emailController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Email is required';
-                                    }
-                                    if (!RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                    ).hasMatch(value)) {
-                                      return 'Please enter a valid email';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildTextField('example@gmail.com', controller: _emailController, validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Email is required';
+                                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) return 'Please enter a valid email';
+                                  return null;
+                                }),
                                 const SizedBox(height: 15),
 
                                 _buildLabel('Phone Number', isRequired: true),
@@ -2327,26 +2227,17 @@ if (response.statusCode == 201) {
                                     hintText: 'Phone Number',
                                     filled: true,
                                     fillColor: Colors.grey.shade300,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 15,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                      borderSide: BorderSide.none,
-                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
                                   ),
                                   initialCountryCode: 'US',
                                   onChanged: (phone) {
                                     setState(() {
-                                      _completePhoneNumber =
-                                          phone.completeNumber;
+                                      _completePhoneNumber = phone.completeNumber;
                                     });
                                   },
                                   validator: (value) {
-                                    if (value == null || value.number.isEmpty) {
-                                      return 'Phone number is required';
-                                    }
+                                    if (value == null || value.number.isEmpty) return 'Phone number is required';
                                     return null;
                                   },
                                 ),
@@ -2357,29 +2248,19 @@ if (response.statusCode == 201) {
                                 const SizedBox(height: 15),
 
                                 _buildLabel('Full Address', isRequired: true),
-                                _buildTextField(
-                                  '7th street - medicine road, doctor 82',
-                                  controller: _fullAddressController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Address is required';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildTextField('7th street - medicine road, doctor 82', controller: _fullAddressController, validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Address is required';
+                                  return null;
+                                }),
                                 const SizedBox(height: 15),
 
                                 Row(
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          _buildLabel(
-                                            'Country',
-                                            isRequired: true,
-                                          ),
+                                          _buildLabel('Country', isRequired: true),
                                           _buildCountryAutocomplete(),
                                         ],
                                       ),
@@ -2387,13 +2268,9 @@ if (response.statusCode == 201) {
                                     const SizedBox(width: 15),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          _buildLabel(
-                                            'State',
-                                            isRequired: true,
-                                          ),
+                                          _buildLabel('State', isRequired: true),
                                           _buildStateAutocomplete(),
                                         ],
                                       ),
@@ -2402,20 +2279,11 @@ if (response.statusCode == 201) {
                                 ),
                                 const SizedBox(height: 15),
 
-                                _buildLabel(
-                                  'Government/Medical ID',
-                                  isRequired: true,
-                                ),
-                                _buildTextField(
-                                  '9999-8888-7777-6666',
-                                  controller: _govMedicalIdController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Government/Medical ID is required';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildLabel('Government/Medical ID', isRequired: true),
+                                _buildTextField('9999-8888-7777-6666', controller: _govMedicalIdController, validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Government/Medical ID is required';
+                                  return null;
+                                }),
                                 const SizedBox(height: 20),
 
                                 Center(
@@ -2424,119 +2292,58 @@ if (response.statusCode == 201) {
                                       Container(
                                         width: 100,
                                         height: 100,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.shade300,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child:
-                                            _profileImageFile != null ||
-                                                    _profileImageBytes != null
-                                                ? ClipOval(
-                                                  child:
-                                                      _profileImageFile != null
-                                                          ? Image.file(
-                                                            _profileImageFile!,
-                                                            width: 100,
-                                                            height: 100,
-                                                            fit: BoxFit.cover,
-                                                          )
-                                                          : Image.memory(
-                                                            _profileImageBytes!,
-                                                            width: 100,
-                                                            height: 100,
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                )
-                                                : const Icon(
-                                                  Icons.person_outline,
-                                                  size: 50,
-                                                  color: Colors.grey,
-                                                ),
+                                        decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle),
+                                        child: _profileImageFile != null || _profileImageBytes != null
+                                            ? ClipOval(
+                                                child: _profileImageFile != null
+                                                    ? Image.file(_profileImageFile!, width: 100, height: 100, fit: BoxFit.cover)
+                                                    : Image.memory(_profileImageBytes!, width: 100, height: 100, fit: BoxFit.cover),
+                                              )
+                                            : const Icon(Icons.person_outline, size: 50, color: Colors.grey),
                                       ),
                                       const SizedBox(height: 10),
                                       ElevatedButton(
                                         onPressed: _pickImage,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.grey.shade300,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                         ),
-                                        child: const Text(
-                                          'Upload Image',
-                                          style: TextStyle(
-                                            color: Colors.black87,
-                                          ),
-                                        ),
+                                        child: const Text('Upload Image', style: TextStyle(color: Colors.black87)),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 20),
 
-                                _buildLabel(
-                                  'Create Password',
-                                  isRequired: true,
-                                ),
-                                _buildTextField(
-                                  'Password',
-                                  controller: _passwordController,
-                                  isPassword: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Password is required';
-                                    }
-                                    if (value.length < 8) {
-                                      return 'Password must be at least 8 characters long';
-                                    }
-                                    if (!RegExp(
-                                      r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$',
-                                    ).hasMatch(value)) {
-                                      return 'Password must contain at least one letter and one number';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildLabel('Create Password', isRequired: true),
+                                _buildTextField('Password', controller: _passwordController, isPassword: true, validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Password is required';
+                                  if (value.length < 8) return 'Password must be at least 8 characters long';
+                                  if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$').hasMatch(value)) return 'Password must contain at least one letter and one number';
+                                  return null;
+                                }),
                                 const SizedBox(height: 20),
 
                                 Row(
                                   children: [
-                                    Checkbox(
-                                      value: _consentGiven,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _consentGiven = value ?? false;
-                                        });
-                                      },
-                                    ),
-                                    const Text(
-                                      'Consent & Agreements',
-                                      style: TextStyle(color: Colors.black87),
-                                    ),
+                                    Checkbox(value: _consentGiven, onChanged: (value) {
+                                      setState(() {
+                                        _consentGiven = value ?? false;
+                                      });
+                                    }),
+                                    const Text('Consent & Agreements', style: TextStyle(color: Colors.black87)),
                                   ],
                                 ),
 
                                 Center(
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(3, (index) {
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 2,
-                                        ),
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color:
-                                              index == 0
-                                                  ? Colors.blue
-                                                  : Colors.grey,
-                                        ),
-                                      );
-                                    }),
+                                    children: List.generate(3, (index) => Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(shape: BoxShape.circle, color: index == 0 ? Colors.blue : Colors.grey),
+                                    )),
                                   ),
                                 ),
                                 const SizedBox(height: 20),
@@ -2547,27 +2354,11 @@ if (response.statusCode == 201) {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue,
                                       minimumSize: const Size(200, 50),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                                     ),
-                                    child:
-                                        isLoading
-                                            ? const SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                            : const Text(
-                                              'Done',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                              ),
-                                            ),
+                                    child: isLoading
+                                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                        : const Text('Done', style: TextStyle(color: Colors.white, fontSize: 16)),
                                   ),
                                 ),
                                 const SizedBox(height: 100),
@@ -2582,19 +2373,8 @@ if (response.statusCode == 201) {
               ],
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildSocialSignInSection(),
-          ),
-          if (isLoading)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.blue),
-              ),
-            ),
+          Positioned(left: 0, right: 0, bottom: 0, child: _buildSocialSignInSection()),
+          if (isLoading) Container(color: Colors.black54, child: const Center(child: CircularProgressIndicator(color: Colors.blue))),
         ],
       ),
     );
@@ -2605,50 +2385,25 @@ if (response.statusCode == 201) {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         children: [
-          Text(
-            text,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: Colors.black87,
-            ),
-          ),
-          if (isRequired)
-            const Text(' *', style: TextStyle(color: Colors.red, fontSize: 14)),
+          Text(text, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Colors.black87)),
+          if (isRequired) const Text(' *', style: TextStyle(color: Colors.red, fontSize: 14)),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(
-    String hint, {
-    TextEditingController? controller,
-    bool isPassword = false,
-    String? Function(String?)? validator,
-  }) {
+  Widget _buildTextField(String hint, {TextEditingController? controller, bool isPassword = false, String? Function(String?)? validator}) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25), boxShadow: [
+        BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+      ]),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.grey),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 15,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: InputBorder.none,
         ),
         validator: validator,
@@ -2656,39 +2411,50 @@ if (response.statusCode == 201) {
     );
   }
 
+  Widget _buildGenderDropdown() {
+    return Container(
+      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25), boxShadow: [
+        BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+      ]),
+      child: DropdownButtonFormField<String>(
+        value: _selectedGender,
+        hint: const Text('Select Gender', style: TextStyle(color: Colors.grey)),
+        decoration: const InputDecoration(
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          border: InputBorder.none,
+        ),
+        items: genderOptions.map((String gender) {
+          return DropdownMenuItem<String>(
+            value: gender,
+            child: Text(gender),
+          );
+        }).toList(),
+        onChanged: (String? newValue) {
+          setState(() {
+            _selectedGender = newValue;
+          });
+        },
+        validator: (value) => value == null ? 'Gender is required' : null,
+      ),
+    );
+  }
+
   Widget _buildDateField() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25), boxShadow: [
+        BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+      ]),
       child: TextFormField(
         controller: _dateOfBirthController,
         readOnly: true,
         decoration: InputDecoration(
           hintText: 'yyyy-mm-dd',
           hintStyle: const TextStyle(color: Colors.grey),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 15,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: InputBorder.none,
           suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Date of birth is required';
-          }
-          return null;
-        },
+        validator: (value) => value == null || value.isEmpty ? 'Date of birth is required' : null,
         onTap: () async {
           final DateTime? picked = await showDatePicker(
             context: context,
@@ -2709,14 +2475,8 @@ if (response.statusCode == 201) {
   Widget _buildCountryAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) {
-          return const Iterable<String>.empty();
-        }
-        return countries.where((country) {
-          return country.toLowerCase().contains(
-            textEditingValue.text.toLowerCase(),
-          );
-        });
+        if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
+        return countries.where((country) => country.toLowerCase().contains(textEditingValue.text.toLowerCase()));
       },
       onSelected: (String selection) {
         setState(() {
@@ -2724,43 +2484,21 @@ if (response.statusCode == 201) {
           _selectedState = null;
         });
       },
-      fieldViewBuilder: (
-        BuildContext context,
-        TextEditingController fieldTextEditingController,
-        FocusNode fieldFocusNode,
-        VoidCallback onFieldSubmitted,
-      ) {
+      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
         return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 1,
-                blurRadius: 3,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25), boxShadow: [
+            BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+          ]),
           child: TextFormField(
             controller: fieldTextEditingController,
             focusNode: fieldFocusNode,
             decoration: InputDecoration(
               hintText: 'Search Country',
               hintStyle: const TextStyle(color: Colors.grey),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 15,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               border: InputBorder.none,
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please select a country';
-              }
-              return null;
-            },
+            validator: (value) => value == null || value.isEmpty ? 'Please select a country' : null,
           ),
         );
       },
@@ -2770,58 +2508,29 @@ if (response.statusCode == 201) {
   Widget _buildStateAutocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty || _selectedCountry == null) {
-          return const Iterable<String>.empty();
-        }
-        return (countryStates[_selectedCountry] ?? []).where((state) {
-          return state.toLowerCase().contains(
-            textEditingValue.text.toLowerCase(),
-          );
-        });
+        if (textEditingValue.text.isEmpty || _selectedCountry == null) return const Iterable<String>.empty();
+        return (countryStates[_selectedCountry] ?? []).where((state) => state.toLowerCase().contains(textEditingValue.text.toLowerCase()));
       },
       onSelected: (String selection) {
         setState(() {
           _selectedState = selection;
         });
       },
-      fieldViewBuilder: (
-        BuildContext context,
-        TextEditingController fieldTextEditingController,
-        FocusNode fieldFocusNode,
-        VoidCallback onFieldSubmitted,
-      ) {
+      fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
         return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 1,
-                blurRadius: 3,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(25), boxShadow: [
+            BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+          ]),
           child: TextFormField(
             controller: fieldTextEditingController,
             focusNode: fieldFocusNode,
             decoration: InputDecoration(
               hintText: 'Search State',
               hintStyle: const TextStyle(color: Colors.grey),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 15,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               border: InputBorder.none,
             ),
-            validator: (value) {
-              if (_selectedCountry != null &&
-                  (value == null || value.isEmpty)) {
-                return 'Please select a state';
-              }
-              return null;
-            },
+            validator: (value) => _selectedCountry != null && (value == null || value.isEmpty) ? 'Please select a state' : null,
           ),
         );
       },
@@ -2831,24 +2540,12 @@ if (response.statusCode == 201) {
   Widget _buildSocialSignInSection() {
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(76),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), boxShadow: [
+        BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, -1)),
+      ]),
       child: Column(
         children: [
-          const Text(
-            'Or Sign-In with',
-            style: TextStyle(color: Colors.black87),
-          ),
+          const Text('Or Sign-In with', style: TextStyle(color: Colors.black87)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -2871,26 +2568,16 @@ if (response.statusCode == 201) {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
         child: Image.asset(
           imagePath,
           width: 24,
           height: 24,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
-            developer.log(
-              'Error loading image: $imagePath, Error: $error',
-              name: 'RegisterPage',
-            );
+            developer.log('Error loading image: $imagePath, Error: $error', name: 'RegisterPage');
             return Icon(
-              imagePath.contains('google')
-                  ? Icons.g_mobiledata
-                  : imagePath.contains('microsoft')
-                  ? Icons.window
-                  : Icons.apple,
+              imagePath.contains('google') ? Icons.g_mobiledata : imagePath.contains('microsoft') ? Icons.window : Icons.apple,
               size: 24,
               color: Colors.grey,
             );
@@ -2904,13 +2591,15 @@ if (response.statusCode == 201) {
 class SuccessPage extends StatefulWidget {
   final String fullName;
   final String email;
-  final String? profileImage; 
+  final String? profileImage;
+  final String? gender;
 
   const SuccessPage({
     super.key,
     required this.fullName,
     required this.email,
     this.profileImage,
+    this.gender,
   });
 
   @override
@@ -2920,6 +2609,7 @@ class SuccessPage extends StatefulWidget {
 class SuccessPageState extends State<SuccessPage> {
   bool isLoading = false;
   final AuthService authService = AuthService();
+
   @override
   void initState() {
     super.initState();
@@ -2930,8 +2620,9 @@ class SuccessPageState extends State<SuccessPage> {
           '/home',
           arguments: {
             'username': widget.email,
-            'fullName': widget.fullName, 
+            'fullName': widget.fullName,
             'profileImage': widget.profileImage,
+            'gender': widget.gender,
           },
         );
       }
@@ -2946,13 +2637,7 @@ class SuccessPageState extends State<SuccessPage> {
           SingleChildScrollView(
             child: Column(
               children: [
-                SizedBox(
-                  height: 200,
-                  width: double.infinity,
-                  child: CustomPaint(
-                    painter: TrianglePainter(),
-                  ),
-                ),
+                SizedBox(height: 200, width: double.infinity, child: CustomPaint(painter: TrianglePainter())),
                 const SizedBox(height: 200),
               ],
             ),
@@ -2964,68 +2649,31 @@ class SuccessPageState extends State<SuccessPage> {
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 60,
-                    color: Colors.white,
-                  ),
+                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                  child: const Icon(Icons.check, size: 60, color: Colors.white),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Account created successfully',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
+                const Text('Account created successfully', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
                 const SizedBox(height: 10),
-                Text(
-                  'Welcome, ${widget.fullName}!',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.black54,
-                  ),
-                ),
+                Text('Welcome, ${widget.fullName}!', style: const TextStyle(fontSize: 18, color: Colors.black54)),
               ],
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildSocialSignInSection(),
-          ),
+          Positioned(left: 0, right: 0, bottom: 0, child: _buildSocialSignInSection()),
         ],
       ),
     );
   }
 
-Widget _buildSocialSignInSection() {
+  Widget _buildSocialSignInSection() {
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.3), // Updated from withOpacity
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), boxShadow: [
+        BoxShadow(color: Colors.grey.withValues(alpha: 0.3), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, -1)),
+      ]),
       child: Column(
         children: [
-          const Text(
-            'Or Sign-In with',
-            style: TextStyle(color: Colors.black87),
-          ),
+          const Text('Or Sign-In with', style: TextStyle(color: Colors.black87)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -3048,39 +2696,28 @@ Widget _buildSocialSignInSection() {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
         child: IconButton(
           icon: Image.asset(
             imagePath,
             width: 24,
             height: 24,
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                imagePath.contains('google')
-                    ? Icons.g_mobiledata
-                    : imagePath.contains('microsoft')
-                        ? Icons.window
-                        : Icons.apple,
-                size: 24,
-                color: Colors.grey,
-              );
-            },
+            errorBuilder: (context, error, stackTrace) => Icon(
+              imagePath.contains('google') ? Icons.g_mobiledata : imagePath.contains('microsoft') ? Icons.window : Icons.apple,
+              size: 24,
+              color: Colors.grey,
+            ),
           ),
           onPressed: () async {
             UserCredential? userCredential;
             try {
               setState(() => isLoading = true);
-
               if (imagePath.contains('google')) {
                 userCredential = await authService.signInWithGoogle();
               } else if (imagePath.contains('apple')) {
                 userCredential = await authService.signInWithApple();
               }
-
               if (mounted && userCredential?.user != null) {
                 Navigator.pushReplacement(
                   context,
@@ -3089,20 +2726,17 @@ Widget _buildSocialSignInSection() {
                       fullName: userCredential!.user!.displayName ?? 'User',
                       email: userCredential.user!.email ?? '',
                       profileImage: userCredential.user!.photoURL,
+                      gender: widget.gender,
                     ),
                   ),
                 );
               }
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Sign in failed: ${e.toString()}')),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign in failed: ${e.toString()}')));
               }
             } finally {
-              if (mounted) {
-                setState(() => isLoading = false);
-              }
+              if (mounted) setState(() => isLoading = false);
             }
           },
         ),
@@ -3110,35 +2744,19 @@ Widget _buildSocialSignInSection() {
     );
   }
 }
+
 class TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(0, size.height)
-      ..close();
-
-    final secondaryPaint = Paint()
-      ..color = Colors.blue.withAlpha(51)
-      ..style = PaintingStyle.fill;
-
+    final paint = Paint()..color = Colors.blue..style = PaintingStyle.fill;
+    final path = Path()..moveTo(0, 0)..lineTo(size.width, 0)..lineTo(0, size.height)..close();
+    final secondaryPaint = Paint()..color = Colors.blue.withAlpha(51)..style = PaintingStyle.fill;
     final curvePath1 = Path()
       ..moveTo(size.width * 0.5, size.height * 0.3)
-      ..quadraticBezierTo(
-        size.width * 0.7,
-        size.height * 0.1,
-        size.width,
-        size.height * 0.2,
-      )
+      ..quadraticBezierTo(size.width * 0.7, size.height * 0.1, size.width, size.height * 0.2)
       ..lineTo(size.width, 0)
       ..lineTo(size.width * 0.4, 0)
       ..close();
-
     canvas.drawPath(path, paint);
     canvas.drawPath(curvePath1, secondaryPaint);
   }

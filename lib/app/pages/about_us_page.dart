@@ -108,7 +108,7 @@ class AboutUsPage extends StatelessWidget {
                   'Project Manager'
                 ],
                 description: 'Pooja coordinates the team, manages timelines, and ensures our project aligns with the hackathon goals.',
-                image: 'assets/specialist.png',
+                image: 'assets/pooja.jpg',
               ),
               SizedBox(height: screenHeight * 0.05),
             ],

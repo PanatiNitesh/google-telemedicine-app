@@ -1,18 +1,61 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/app/pages/HomePage.dart'; // Update with your actual path
+import 'package:flutter_project/app/pages/DoctorListPage.dart';
+import 'package:flutter_project/app/pages/HomePage.dart';
+import 'package:flutter_project/app/pages/profile-page.dart';
+import 'package:flutter_project/app/pages/search_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const LabTestsApp());
 }
 
-class LabTestsApp extends StatelessWidget {
+class LabTestsApp extends StatefulWidget {
   const LabTestsApp({super.key});
+
+  @override
+  _LabTestsAppState createState() => _LabTestsAppState();
+}
+
+class _LabTestsAppState extends State<LabTestsApp> {
+  String? _storedUsername;
+  String? _storedFullName;
+  String? _storedProfileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserSession();
+  }
+
+  Future<void> _loadUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _storedUsername = prefs.getString('username') ?? 'Guest';
+        _storedFullName = prefs.getString('fullName') ?? ''; // Updated to match HomePage
+        _storedProfileImage = prefs.getString('profileImage');
+      });
+    } catch (e) {
+      print('Error loading user session: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const LabTestsPage(),
+      initialRoute: '/labTests',
+      routes: {
+        '/home': (context) => HomePage(
+              username: _storedUsername ?? 'Guest',
+              fullName: _storedFullName ?? '',
+              profileImage: _storedProfileImage,
+            ),
+        '/labTests': (context) => const LabTestsPage(),
+        '/search': (context) => const SearchPage(),
+        '/doctors_list': (context) => const DoctorsListPage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }
@@ -53,13 +96,17 @@ class _LabTestsPageState extends State<LabTestsPage>
     },
   ];
 
-  int _selectedIndex = 1; // LabTests page is at index 1
+  int _selectedIndex = 1;
   late AnimationController _controller;
   late Animation<double> _animation;
+  String? _storedUsername;
+  String? _storedFullName;
+  String? _storedProfileImage;
 
   @override
   void initState() {
     super.initState();
+    _loadUserSession();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -69,6 +116,19 @@ class _LabTestsPageState extends State<LabTestsPage>
     );
   }
 
+  Future<void> _loadUserSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _storedUsername = prefs.getString('username') ?? 'Guest';
+        _storedFullName = prefs.getString('fullName') ?? ''; // Updated to match HomePage
+        _storedProfileImage = prefs.getString('profileImage');
+      });
+    } catch (e) {
+      print('Error loading user session: $e');
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -76,41 +136,46 @@ class _LabTestsPageState extends State<LabTestsPage>
   }
 
   void _onItemTapped(int index) {
-    if (_selectedIndex == index) return; // Avoid unnecessary navigation
+    if (_selectedIndex == index) return;
 
     setState(() {
       _selectedIndex = index;
     });
     _controller.forward().then((_) => _controller.reverse());
 
-    // Update navigation links as needed
     switch (index) {
       case 0:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => PlaceholderPage(title: "Profile")),
+          MaterialPageRoute(builder: (context) => const DoctorsListPage()),
         );
         break;
       case 1:
-        // Already on LabTestsPage
         break;
       case 2:
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (_) => const HomePage(username: 'Email', fullName: 'User',)),
+            builder: (context) => HomePage(
+              username: _storedUsername ?? 'Guest',
+              fullName: _storedFullName ?? '',
+              profileImage: _storedProfileImage,
+            ),
+          ),
         );
         break;
       case 3:
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => PlaceholderPage(title: "Search")),
+          MaterialPageRoute(
+            builder: (context) => const SearchPage(),
+          ),
         );
         break;
       case 4:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => PlaceholderPage(title: "Settings")),
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
         );
         break;
     }
@@ -123,54 +188,68 @@ class _LabTestsPageState extends State<LabTestsPage>
   }
 
   Widget _buildBottomNavBar() {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(30),
-      boxShadow: [BoxShadow(color: Colors.grey.withAlpha(76), spreadRadius: 1, blurRadius: 10, offset: const Offset(0, -2))],
-    ),
-    margin: const EdgeInsets.all(12),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: [
-          _buildNavItem(Icons.person, 0, 'Profile'),
-          _buildNavItem(Icons.science_outlined, 1, 'Tests'),
-          _buildNavItem(Icons.home, 2, 'Home'),
-          _buildNavItem(Icons.search, 3, 'Search'),
-          _buildNavItem(Icons.person_outline, 4, 'Account'),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(76),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
         ],
       ),
-    ),
-  );
-}
+      margin: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: [
+            _buildNavItem(Icons.person, 0, 'Profile'),
+            _buildNavItem(Icons.science_outlined, 1, 'Tests'),
+            _buildNavItem(Icons.home, 2, 'Home'),
+            _buildNavItem(Icons.search, 3, 'Search'),
+            _buildNavItem(Icons.person_outline, 4, 'Account'),
+          ],
+        ),
+      ),
+    );
+  }
 
-BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
-  return BottomNavigationBarItem(
-    icon: AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(color: _selectedIndex == index ? Colors.blue : Colors.transparent, shape: BoxShape.circle),
-            child: Icon(icon, color: _selectedIndex == index ? Colors.white : Colors.grey),
-          ),
-        );
-      },
-    ),
-    label: label,
-  );
-}
+  BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
+    return BottomNavigationBarItem(
+      icon: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _selectedIndex == index ? _animation.value : 0),
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color:
+                    _selectedIndex == index ? Colors.blue : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: _selectedIndex == index ? Colors.white : Colors.grey,
+              ),
+            ),
+          );
+        },
+      ),
+      label: label,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,11 +257,12 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
     final screenWidth = MediaQuery.of(context).size.width;
     final orientation = MediaQuery.of(context).orientation;
 
-    final navBarHeight = screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
+    final navBarHeight =
+        screenHeight * (orientation == Orientation.portrait ? 0.12 : 0.18);
 
     return Scaffold(
       backgroundColor: const Color(0xFFDDDDDD),
-      extendBody: true, // Allows body to extend behind the bottom navbar
+      extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -193,7 +273,13 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const HomePage(username: 'Email', fullName: 'User',)),
+                MaterialPageRoute(
+                  builder: (context) => HomePage(
+                    username: _storedUsername ?? 'Guest',
+                    fullName: _storedFullName ?? '',
+                    profileImage: _storedProfileImage,
+                  ),
+                ),
               );
             },
             child: Image.asset(
@@ -221,9 +307,9 @@ BottomNavigationBarItem _buildNavItem(IconData icon, int index, String label) {
       body: Padding(
         padding: EdgeInsets.fromLTRB(
           screenWidth * 0.04,
-          10.0, // No top padding; content starts directly below AppBar
+          10.0,
           screenWidth * 0.04,
-          navBarHeight + (screenWidth * 0.03), // Padding to avoid overlap with navbar
+          navBarHeight + (screenWidth * 0.03),
         ),
         child: ListView.builder(
           itemCount: tests.length,

@@ -52,8 +52,7 @@ class NotificationService {
     );
     await _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
     await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
@@ -61,8 +60,7 @@ class NotificationService {
     if (Platform.isAndroid) {
       await _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
     }
   }
@@ -73,19 +71,16 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
-    final tz.TZDateTime scheduledTZDateTime = tz.TZDateTime.from(
-      scheduledDate,
-      tz.local,
-    );
+    final tz.TZDateTime scheduledTZDateTime =
+        tz.TZDateTime.from(scheduledDate, tz.local);
 
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'profile_channel',
-          'Profile Updates',
-          channelDescription: 'Notifications for profile updates',
-          importance: Importance.max,
-          priority: Priority.high,
-        );
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'profile_channel',
+      'Profile Updates',
+      channelDescription: 'Notifications for profile updates',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
 
@@ -111,9 +106,9 @@ class NotificationService {
     developer.log('All notifications canceled', name: 'NotificationService');
   }
 
-  void init() {}
+  void init() {} // Kept as is per your request
 
-  showImmediateNotification() {}
+  showImmediateNotification() {} // Kept as is per your request
 }
 
 void main() async {
@@ -190,31 +185,17 @@ class _ProfilePageState extends State<ProfilePage> {
       addressController.text =
           prefs.getString('address') ?? '7th street - medicine road, doctor 82';
       idController.text = prefs.getString('id') ?? 'UPQ935';
-      bloodGroupController.text =
-          prefs.getString('bloodGroup') ?? ''; // Add this line
-      gender =
-          genderOptions.contains(prefs.getString('gender'))
-              ? prefs.getString('gender')
-              : null;
+      bloodGroupController.text = prefs.getString('bloodGroup') ?? '';
+      gender = genderOptions.contains(prefs.getString('gender'))
+          ? prefs.getString('gender')
+          : null;
       profileImagePath = prefs.getString('profileImage');
       privacyMode = prefs.getBool('privacyMode') ?? false;
+      userCode = prefs.getString('id') ?? 'UPQ935';
       isLoading = false;
     });
 
-    developer.log('Loaded local profile data:', name: 'ProfilePage');
-    developer.log(
-      'firstName: ${firstNameController.text}',
-      name: 'ProfilePage',
-    );
-    developer.log('lastName: ${lastNameController.text}', name: 'ProfilePage');
-    developer.log('email: ${emailController.text}', name: 'ProfilePage');
-    developer.log('id: ${idController.text}', name: 'ProfilePage');
-    developer.log('privacyMode: $privacyMode', name: 'ProfilePage');
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Loaded profile from local storage')),
-    );
+    developer.log('Loaded local profile data', name: 'ProfilePage');
   }
 
   Future<void> _loadUserData() async {
@@ -225,91 +206,12 @@ class _ProfilePageState extends State<ProfilePage> {
       userCode = prefs.getString('id') ?? 'UPQ935';
     });
 
-    final storedFullName = prefs.getString('fullName');
-    if (username != null &&
-        storedFullName != null &&
-        (username == storedFullName ||
-            !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(username!))) {
-      developer.log(
-        'Detected invalid username: $username, clearing it',
-        name: 'ProfilePage',
-      );
-      await prefs.remove('username');
-      setState(() {
-        username = null;
-      });
-    }
-
-    developer.log(
-      'SharedPreferences - token: $token, username: $username',
-      name: 'ProfilePage',
-    );
+    developer.log('Token: $token, Username: $username', name: 'ProfilePage');
 
     if (token != null && username != null) {
       await _loadProfileData();
     } else {
-      setState(() {
-        isLoading = false;
-      });
-      if (mounted) {
-        _loadLocalProfileData();
-      }
-    }
-  }
-
-  Future<void> _loadProfileData() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body)['profile'];
-        setState(() {
-          firstNameController.text = data['firstName'] ?? 'Nitesh';
-          lastNameController.text = data['lastName'] ?? 'P';
-          emailController.text = data['email'] ?? 'niteshreddy242005@gmail.com';
-          phoneController.text = data['phoneNumber'] ?? '';
-          dobController.text = data['dateOfBirth'] ?? '1990-01-01';
-          addressController.text =
-              data['address'] ?? '7th street - medicine road, doctor 82';
-          idController.text = data['governmentId'] ?? 'UPQ935';
-          bloodGroupController.text = data['bloodGroup'] ?? ''; // Add this line
-          gender =
-              genderOptions.contains(data['gender']) ? data['gender'] : null;
-          userCode = data['governmentId'] ?? 'UPQ935';
-
-          if (data['profileImage'] != null) {
-            profileImagePath = 'data:image/jpeg;base64,${data['profileImage']}';
-          } else {
-            profileImagePath = null;
-          }
-        });
-      } else {
-        developer.log(
-          'Failed to load profile: ${response.body}',
-          name: 'ProfilePage',
-        );
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load profile data from server'),
-          ),
-        );
-        await _loadLocalProfileData();
-      }
-    } catch (e) {
-      developer.log('Error loading profile: $e', name: 'ProfilePage');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading profile: ${e.toString()}')),
-      );
       await _loadLocalProfileData();
-    } finally {
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -318,6 +220,60 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _loadProfileData() async {
+    try {
+      developer.log('Fetching profile with token: $token', name: 'ProfilePage');
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      developer.log('Profile response status: ${response.statusCode}',
+          name: 'ProfilePage');
+      developer.log('Profile response body: ${response.body}',
+          name: 'ProfilePage');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['profile'];
+        setState(() {
+          firstNameController.text = data['firstName'] ?? 'Nitesh';
+          lastNameController.text = data['lastName'] ?? 'P';
+          emailController.text =
+              data['email'] ?? 'niteshreddy242005@gmail.com';
+          phoneController.text = data['phoneNumber'] ?? '';
+          dobController.text = data['dateOfBirth'] ?? '1990-01-01';
+          addressController.text =
+              data['address'] ?? '7th street - medicine road, doctor 82';
+          idController.text = data['governmentId'] ?? 'UPQ935';
+          bloodGroupController.text = data['bloodGroup'] ?? '';
+          gender = genderOptions.contains(data['gender']) ? data['gender'] : null;
+          userCode = data['governmentId'] ?? 'UPQ935';
+          profileImagePath = data['profileImage'] != null
+              ? 'data:image/jpeg;base64,${data['profileImage']}'
+              : null;
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Server returned status: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error loading profile: $e', name: 'ProfilePage');
+      await _loadLocalProfileData();
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load profile: $e')),
+        );
+      }
+    }
+  }
+
+  // Rest of the code remains unchanged below this point
   Widget buildProfileImage() {
     return GestureDetector(
       onTap: isEditing ? _pickProfileImage : null,
@@ -338,45 +294,43 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Stack(
           children: [
             SizedBox(
-              width: 100, // Ensure this matches your desired circle size
+              width: 100,
               height: 100,
               child: ClipOval(
-                child:
-                    profileImagePath != null
-                        ? profileImagePath!.startsWith('data:image')
-                            ? Image.memory(
-                              base64Decode(profileImagePath!.split(',')[1]),
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                              alignment:
-                                  Alignment.center, // Ensure it’s centered
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildDefaultProfileIcon();
-                              },
-                            )
-                            : (!kIsWeb
-                                ? Image.file(
-                                  File(profileImagePath!),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.center,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return _buildDefaultProfileIcon();
-                                  },
-                                )
-                                : Image.network(
-                                  profileImagePath!,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.center,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return _buildDefaultProfileIcon();
-                                  },
-                                ))
-                        : _buildDefaultProfileIcon(),
+                child: profileImagePath != null
+                    ? profileImagePath!.startsWith('data:image')
+                        ? Image.memory(
+                            base64Decode(profileImagePath!.split(',')[1]),
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildDefaultProfileIcon();
+                            },
+                          )
+                        : (!kIsWeb
+                            ? Image.file(
+                                File(profileImagePath!),
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return _buildDefaultProfileIcon();
+                                },
+                              )
+                            : Image.network(
+                                profileImagePath!,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return _buildDefaultProfileIcon();
+                                },
+                              ))
+                    : _buildDefaultProfileIcon(),
               ),
             ),
             if (isEditing)
@@ -409,29 +363,29 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
- Future<void> _pickProfileImage() async {
-  final picker = ImagePicker();
-  final XFile? image = await picker.pickImage(
-    source: ImageSource.gallery,
-    imageQuality: 50,  
-    maxWidth: 800,     
-    maxHeight: 800,
-  );
-
-  if (image == null) return;
-
-  final bytes = await image.readAsBytes();
-  if (bytes.length > 2 * 1024 * 1024) { // 2MB limit
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Image must be <2MB')),
+  Future<void> _pickProfileImage() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+      maxWidth: 800,
+      maxHeight: 800,
     );
-    return;
-  }
 
-  setState(() {
-    profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-  });
-}
+    if (image == null) return;
+
+    final bytes = await image.readAsBytes();
+    if (bytes.length > 2 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Image must be <2MB')),
+      );
+      return;
+    }
+
+    setState(() {
+      profileImagePath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    });
+  }
 
   Future<void> _saveProfileData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -448,8 +402,7 @@ class _ProfilePageState extends State<ProfilePage> {
     };
 
     try {
-      if (profileImagePath != null &&
-          profileImagePath!.startsWith('data:image')) {
+      if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
         final base64Image = profileImagePath!.split(',')[1];
         profileData['profileImage'] = base64Image;
       }
@@ -475,7 +428,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save profile: ${e.toString()}')),
       );
-      // Save locally as fallback
       await prefs.setString('firstName', firstNameController.text);
       await prefs.setString('lastName', lastNameController.text);
       await prefs.setString('username', emailController.text);
@@ -490,16 +442,12 @@ class _ProfilePageState extends State<ProfilePage> {
         await prefs.setString('profileImage', profileImagePath!);
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile saved locally')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile saved locally')));
     }
   }
 
-  Future<void> _savePrefs(
-    SharedPreferences prefs,
-    Map<String, dynamic> data,
-  ) async {
+  Future<void> _savePrefs(SharedPreferences prefs, Map<String, dynamic> data) async {
     final fullName = '${data['firstName']} ${data['lastName']}'.trim();
     await prefs.setString('fullName', fullName);
     await prefs.setString('username', data['email']);
@@ -510,20 +458,11 @@ class _ProfilePageState extends State<ProfilePage> {
     await prefs.setString('gender', data['gender']);
     await prefs.setBool('privacyMode', privacyMode);
 
-    if (profileImagePath != null &&
-        profileImagePath!.startsWith('data:image')) {
+    if (profileImagePath != null && profileImagePath!.startsWith('data:image')) {
       await prefs.setString('profileImage', profileImagePath!);
-      developer.log(
-        'Saved profileImage to SharedPreferences: $profileImagePath',
-        name: 'ProfilePage',
-      );
     } else if (data['profileImage'] != null) {
       final base64Image = 'data:image/jpeg;base64,${data['profileImage']}';
       await prefs.setString('profileImage', base64Image);
-      developer.log(
-        'Saved server profileImage to SharedPreferences: $base64Image',
-        name: 'ProfilePage',
-      );
     }
 
     if (!mounted) return;
@@ -549,43 +488,41 @@ class _ProfilePageState extends State<ProfilePage> {
   void logout() async {
     final bool? initialConfirm = await showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Confirm Logout'),
-            content: const Text('Are you sure you want to logout?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Yes'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
     );
 
     if (initialConfirm == true) {
       final bool? finalConfirm = await showDialog<bool>(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Really Logout?'),
-              content: const Text(
-                'Do you really want to logout? This action will clear your session.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('No'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Yes, Logout'),
-                ),
-              ],
+        builder: (context) => AlertDialog(
+          title: const Text('Really Logout?'),
+          content: const Text(
+            'Do you really want to logout? This action will clear your session.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('No'),
             ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Yes, Logout'),
+            ),
+          ],
+        ),
       );
 
       if (finalConfirm == true) {
@@ -624,26 +561,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool _validateForm() {
     if (firstNameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('First Name is required')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('First Name is required')));
       return false;
     }
     if (lastNameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Last Name is required')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Last Name is required')));
       return false;
     }
     if (emailController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Email is required')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Email is required')));
       return false;
     }
-    if (!RegExp(
-      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-    ).hasMatch(emailController.text.trim())) {
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+        .hasMatch(emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid email')),
       );
@@ -654,9 +587,7 @@ class _ProfilePageState extends State<ProfilePage> {
         !RegExp(r'^\+\d{1,3}\s\d{5,15}$').hasMatch(phoneText)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Please enter a valid phone number (e.g., +91 12345 6789)',
-          ),
+          content: Text('Please enter a valid phone number (e.g., +91 12345 6789)'),
         ),
       );
       return false;
@@ -715,30 +646,28 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _navigateToHomePage() {
-    // Add a confirmation dialog if editing is in progress
     if (isEditing) {
       showDialog(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: Text('Unsaved Changes'),
-              content: Text(
-                'You have unsaved changes. Are you sure you want to leave?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _performNavigation();
-                  },
-                  child: Text('Leave'),
-                ),
-              ],
+        builder: (context) => AlertDialog(
+          title: Text('Unsaved Changes'),
+          content: Text(
+            'You have unsaved changes. Are you sure you want to leave?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _performNavigation();
+              },
+              child: Text('Leave'),
+            ),
+          ],
+        ),
       );
     } else {
       _performNavigation();
@@ -751,19 +680,19 @@ class _ProfilePageState extends State<ProfilePage> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => HomePage(
-              username:
-                  emailController.text.isNotEmpty
-                      ? emailController.text
-                      : username ?? 'Guest',
-              fullName: fullName.isNotEmpty ? fullName : 'Guest User',
-              profileImage: profileImagePath,
-            ),
+        builder: (context) => HomePage(
+          username: emailController.text.isNotEmpty
+              ? emailController.text
+              : username ?? 'Guest',
+          fullName: fullName.isNotEmpty ? fullName : 'Guest User',
+          profileImage: profileImagePath,
+        ),
       ),
     );
   }
-double get iconSize => screenWidth * 0.10;
+
+  double get iconSize => screenWidth * 0.10;
+
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
@@ -771,67 +700,64 @@ double get iconSize => screenWidth * 0.10;
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      body:
-          isLoading
-              ? _buildSkeletonLoading()
-              : NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    SliverAppBar(
-                      backgroundColor: Colors.white, // Set your desired color
-                      elevation: 0,
-                      pinned: true,
-                      floating: false,
-                      expandedHeight: 0, // No expanded height needed
-                      toolbarHeight: kToolbarHeight, // Standard toolbar height
-                      automaticallyImplyLeading: false,
-                      flexibleSpace: Container(), // Empty flexible space
-                      title: Row(
-                        children: [
-                          IconButton(
-                            icon: Image.asset(
-                              'assets/back.png',
-                              width: iconSize,
-                              height: iconSize,
-                            ),
-                            onPressed: _navigateToHomePage,
-                            tooltip: 'Go back',
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
+      body: isLoading
+          ? _buildSkeletonLoading()
+          : NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    backgroundColor: Colors.white,
+                    elevation: 0,
+                    pinned: true,
+                    floating: false,
+                    expandedHeight: 0,
+                    toolbarHeight: kToolbarHeight,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: Container(),
+                    title: Row(
+                      children: [
+                        IconButton(
+                          icon: Image.asset(
+                            'assets/back.png',
+                            width: iconSize,
+                            height: iconSize,
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Profile Summary',
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.05,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+                          onPressed: _navigateToHomePage,
+                          tooltip: 'Go back',
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Profile Summary',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.05,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(Icons.logout, color: Colors.red),
-                            onPressed: logout,
-                            tooltip: 'Logout',
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.red),
+                          onPressed: logout,
+                          tooltip: 'Logout',
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                        ),
+                      ],
                     ),
-                  ];
-                },
-                body: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // Profile Card - now part of scrollable content
-                      _buildProfileHeader(),
-                      // Rest of your content
-                      _buildProfileContent(),
-                    ],
                   ),
+                ];
+              },
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildProfileHeader(),
+                    _buildProfileContent(),
+                  ],
                 ),
               ),
+            ),
     );
   }
 
@@ -841,7 +767,7 @@ double get iconSize => screenWidth * 0.10;
 
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.only(top: 16), // Add some top padding
+      padding: EdgeInsets.only(top: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -926,7 +852,6 @@ double get iconSize => screenWidth * 0.10;
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Health Notice Section
             Container(
               width: double.infinity,
               margin: EdgeInsets.all(screenWidth * 0.04),
@@ -964,8 +889,6 @@ double get iconSize => screenWidth * 0.10;
                 ],
               ),
             ),
-
-            // Medical Records Section
             _buildSectionTitle('Medical Records'),
             _buildMedicalMenuItem(
               icon: Icons.medical_services,
@@ -974,19 +897,16 @@ double get iconSize => screenWidth * 0.10;
               onTap: () {
                 showDialog(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Medical History'),
-                        content: const Text(
-                          'No records available at this time.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('OK'),
-                          ),
-                        ],
+                  builder: (context) => AlertDialog(
+                    title: const Text('Medical History'),
+                    content: const Text('No records available at this time.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('OK'),
                       ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -997,19 +917,16 @@ double get iconSize => screenWidth * 0.10;
               onTap: () {
                 showDialog(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Current Medications'),
-                        content: const Text(
-                          'No records available at this time.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('OK'),
-                          ),
-                        ],
+                  builder: (context) => AlertDialog(
+                    title: const Text('Current Medications'),
+                    content: const Text('No records available at this time.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('OK'),
                       ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -1020,24 +937,19 @@ double get iconSize => screenWidth * 0.10;
               onTap: () {
                 showDialog(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('Upcoming Appointments'),
-                        content: const Text(
-                          'No records available at this time.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('OK'),
-                          ),
-                        ],
+                  builder: (context) => AlertDialog(
+                    title: const Text('Upcoming Appointments'),
+                    content: const Text('No records available at this time.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('OK'),
                       ),
+                    ],
+                  ),
                 );
               },
             ),
-
-            // Personal Information Section
             _buildSectionTitle('Personal Information'),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -1104,13 +1016,12 @@ double get iconSize => screenWidth * 0.10;
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      items:
-                          genderOptions.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
+                      items: genderOptions.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
                       onChanged: (newValue) {
                         setState(() {
                           gender = newValue;
@@ -1128,8 +1039,6 @@ double get iconSize => screenWidth * 0.10;
                 ],
               ),
             ),
-
-            // Emergency Contacts (unchanged)
             _buildSectionTitle('Emergency Contacts'),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
@@ -1157,8 +1066,6 @@ double get iconSize => screenWidth * 0.10;
                 ),
               ),
             ),
-
-            // Edit/Save Button
             Padding(
               padding: EdgeInsets.all(screenWidth * 0.04),
               child: ElevatedButton(
@@ -1167,17 +1074,16 @@ double get iconSize => screenWidth * 0.10;
                   backgroundColor: isEditing ? Colors.green : Colors.blue,
                 ),
                 onPressed: toggleEditing,
-                child:
-                    isSaving
-                        ? CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                          isEditing ? 'SAVE PROFILE' : 'EDIT PROFILE',
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                child: isSaving
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        isEditing ? 'SAVE PROFILE' : 'EDIT PROFILE',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
+                      ),
               ),
             ),
           ],
@@ -1250,7 +1156,7 @@ double get iconSize => screenWidth * 0.10;
   }) {
     return Column(
       children: [
-        SizedBox(height: 8), // Add gap above each item
+        SizedBox(height: 8),
         InkWell(
           onTap: onTap,
           child: Container(
@@ -1318,8 +1224,7 @@ double get iconSize => screenWidth * 0.10;
         filled: !isEditing,
         fillColor: Colors.grey[100],
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        suffixIcon:
-            onTap != null && isEditing ? Icon(Icons.calendar_today) : null,
+        suffixIcon: onTap != null && isEditing ? Icon(Icons.calendar_today) : null,
       ),
       readOnly: !isEditing || onTap != null,
       onTap: onTap,
@@ -1358,9 +1263,7 @@ double get iconSize => screenWidth * 0.10;
                 ...List.generate(
                   3,
                   (index) => Padding(
-                    padding: EdgeInsets.symmetric(
-                      vertical: screenHeight * 0.01,
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
                     child: Container(
                       width: double.infinity,
                       height: screenHeight * 0.06,
