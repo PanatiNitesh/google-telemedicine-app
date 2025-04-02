@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "curl": "^0.1.4",
+    "firebase": "^11.6.0",
+    "lucide-react": "^0.487.0",
     "react-router-dom": "^7.4.1"
   }
 }

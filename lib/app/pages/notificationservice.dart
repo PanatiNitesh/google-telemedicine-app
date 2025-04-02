@@ -15,9 +15,12 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  Timer? _healthTipTimer; // Timer for recurring health tip notifications
+
   /// Initialize Notifications
   Future<void> init() async {
     await initialize();
+    startHealthTipNotifications(); // Start the recurring notifications
   }
 
   /// Initialize the notification plugin
@@ -87,6 +90,21 @@ class NotificationService {
     }
   }
 
+  /// Start sending health tip notifications every 2 minutes
+  void startHealthTipNotifications() {
+    _healthTipTimer?.cancel(); // Cancel any existing timer to avoid duplicates
+    _healthTipTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      sendHealthTipNotification();
+    });
+    developer.log('Started health tip notifications every 2 minutes', name: 'NotificationService');
+  }
+
+  /// Stop the health tip notifications timer
+  void stopHealthTipNotifications() {
+    _healthTipTimer?.cancel();
+    developer.log('Stopped health tip notifications', name: 'NotificationService');
+  }
+
   /// Show an immediate notification (e.g., for login success)
   Future<void> showImmediateNotification() async {
     try {
@@ -147,7 +165,8 @@ class NotificationService {
         body,
         scheduledTZDateTime,
         notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
 
       developer.log('Scheduled notification with ID $id at $scheduledTZDateTime', name: 'NotificationService');
@@ -156,7 +175,7 @@ class NotificationService {
     }
   }
 
-  /// Send a health tip notification (called by the background service)
+  /// Send a health tip notification (called by the background service or timer)
   Future<void> sendHealthTipNotification() async {
     try {
       final String tip = HealthTips.getRandomTip();
@@ -192,5 +211,10 @@ class NotificationService {
     } catch (e) {
       developer.log('Error canceling notifications: $e', name: 'NotificationService');
     }
+  }
+
+  /// Clean up resources when the app is closed
+  void dispose() {
+    stopHealthTipNotifications();
   }
 }

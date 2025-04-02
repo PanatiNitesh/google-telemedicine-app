@@ -110,7 +110,7 @@ class AboutUsPage extends StatelessWidget {
                 description: 'Pooja coordinates the team, manages timelines, and ensures our project aligns with the hackathon goals.',
                 image: 'assets/pooja.jpg',
               ),
-              SizedBox(height: screenHeight * 0.05),
+              SizedBox(height: screenHeight * 0.02),
             ],
           ),
         ),

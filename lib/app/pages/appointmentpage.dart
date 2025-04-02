@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
-import 'video_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'video_page.dart'; 
 
 class AppointmentHistoryPage extends StatefulWidget {
   const AppointmentHistoryPage({super.key});
@@ -21,6 +22,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
     Appointment(
       id: '1',
       title: 'Dentist Checkup with Dr. Smith',
+      doctorId: 'DOC0001', // Added doctorId
       dateTime: DateTime.now().subtract(const Duration(days: 2)),
       location: 'Dental Clinic',
       description: 'Regular dental checkup and cleaning',
@@ -29,6 +31,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
     Appointment(
       id: '2',
       title: 'Team Meeting',
+      doctorId: null, // Non-medical, so no doctorId
       dateTime: DateTime.now().add(const Duration(days: 1)),
       location: 'Office Room 3',
       description: 'Weekly team sync-up meeting',
@@ -37,6 +40,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
     Appointment(
       id: '3',
       title: 'Consultation with Dr. Johnson',
+      doctorId: 'DOC0002', // Added doctorId
       dateTime: DateTime.now().add(const Duration(hours: 2)),
       location: 'Medical Center',
       description: 'Follow-up consultation',
@@ -63,8 +67,6 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
     _fabController.dispose();
     super.dispose();
   }
-
-  String get _userId => 'patient_${DateTime.now().millisecondsSinceEpoch}';
 
   void _filterAppointments() {
     final query = _searchController.text.toLowerCase();
@@ -97,25 +99,36 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
     });
   }
 
-  void _startVideoCall(String doctorName) {
-    final callId = '${_userId}_${DateTime.now().millisecondsSinceEpoch}';
+  Future<void> _startVideoCall(String? doctorId) async {
+    if (doctorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No doctor assigned to this appointment')),
+      );
+      return;
+    }
+
+    // Fetch userId from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User ID not found. Please log in again.')),
+      );
+      Navigator.pushReplacementNamed(context, '/login'); // Adjust route as needed
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => VideoConsultPage(
-          doctorName: doctorName,
-          callId: callId,
-          userRole: 'patient', // Patient initiates the call
+          doctorId: doctorId,
+          userRole: 'patient',
         ),
       ),
     );
   }
 
-  String _extractDoctorName(String title) {
-    final regex = RegExp(r'(Dr\.|Dr\s|with\s)([\w\s]+)');
-    final match = regex.firstMatch(title);
-    return match?.group(2)?.trim() ?? 'Doctor';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +154,18 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
         elevation: 0,
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black, size: screenWidth * 0.08),
-          onPressed: () => Navigator.pop(context),
-        ),
+  icon: Image.asset(
+    'assets/back.png',
+    width: 35,
+    height: 35,
+    errorBuilder: (context, error, stackTrace) => Icon(
+      Icons.arrow_back,
+      size: screenWidth * 0.08,  // Keeping the original size for consistency
+      color: Colors.black,
+    ),
+  ),
+  onPressed: () => Navigator.pop(context),
+),
         actions: [
           IconButton(
             icon: Icon(
@@ -343,7 +365,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
                               color: Colors.green,
                               size: screenWidth * 0.06,
                             ),
-                            onPressed: () => _startVideoCall(_extractDoctorName(appointment.title)),
+                            onPressed: () => _startVideoCall(appointment.doctorId),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -446,7 +468,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
                           color: Colors.green,
                           size: screenWidth * 0.06,
                         ),
-                        onPressed: () => _startVideoCall(_extractDoctorName(appointment.title)),
+                        onPressed: () => _startVideoCall(appointment.doctorId),
                       ),
                   ],
                 ),
@@ -491,14 +513,20 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
               'Description: ${appointment.description}',
               style: TextStyle(fontSize: screenWidth * 0.04),
             ),
+            if (appointment.doctorId != null)
+              SizedBox(height: screenWidth * 0.02),
+              Text(
+                'Doctor ID: ${appointment.doctorId}',
+                style: TextStyle(fontSize: screenWidth * 0.04),
+              ),
           ],
         ),
         actions: [
-          if (appointment.category == 'Medical')
+          if (appointment.category == 'Medical' && appointment.dateTime.isAfter(DateTime.now()))
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _startVideoCall(_extractDoctorName(appointment.title));
+                _startVideoCall(appointment.doctorId);
               },
               child: Text(
                 'Video Call',
@@ -535,6 +563,7 @@ class _AppointmentHistoryPageState extends State<AppointmentHistoryPage> with Si
 class Appointment {
   final String id;
   final String title;
+  final String? doctorId; // Added doctorId, nullable for non-medical appointments
   final DateTime dateTime;
   final String location;
   final String description;
@@ -543,6 +572,7 @@ class Appointment {
   const Appointment({
     required this.id,
     required this.title,
+    this.doctorId,
     required this.dateTime,
     required this.location,
     required this.description,

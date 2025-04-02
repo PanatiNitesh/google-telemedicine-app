@@ -1,20 +1,19 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class VideoConsultPage extends StatefulWidget {
-  final String doctorName;
-  final String callId;
+  final String doctorId;
   final String userRole; // 'patient' or 'doctor'
 
   const VideoConsultPage({
     super.key,
-    required this.doctorName,
-    required this.callId,
+    required this.doctorId,
     required this.userRole,
   });
 
@@ -31,7 +30,8 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
   late CollectionReference _callsRef;
   StreamSubscription<DocumentSnapshot>? _callSub;
   StreamSubscription<QuerySnapshot>? _messagesSub;
-  String? _userId;
+  String? _username; // Changed from _userId to _username
+  late String _callId;
 
   bool _isMuted = false;
   bool _isVideoOff = false;
@@ -66,15 +66,81 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
   }
 
   Future<void> _initCall() async {
-    try {
-      _userId = const Uuid().v4();
-      _callsRef = FirebaseFirestore.instance.collection('calls');
-      await _setupWebRTC();
-      await _setupSignaling();
-    } catch (e) {
-      _showError('Failed to initialize call: $e');
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showError('User not authenticated. Please log in again.');
+      if (mounted) Navigator.pop(context);
+      return;
     }
+
+    final prefs = await SharedPreferences.getInstance();
+    _username = prefs.getString('username') ?? user.uid;
+    _callId = '${widget.doctorId}${user.uid}'; // Use uid in callId
+    _callsRef = FirebaseFirestore.instance.collection('calls');
+    await _setupWebRTC();
+    await _setupSignaling();
+  } catch (e) {
+    _showError('Failed to initialize call: $e');
   }
+}
+
+Future<void> _setupSignaling() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    _showError('User not authenticated.');
+    if (mounted) Navigator.pop(context);
+    return;
+  }
+
+  final callDocRef = _callsRef.doc(_callId);
+
+  final callDoc = await callDocRef.get();
+  if (!callDoc.exists) {
+    await callDocRef.set({
+      'participants': {widget.userRole: user.uid}, // Use uid
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    developer.log('Call document created for ${widget.userRole}', name: 'VideoConsult');
+  } else {
+    await callDocRef.update({
+      'participants.${widget.userRole}': user.uid, // Use uid
+    });
+    developer.log('${widget.userRole} joined existing call', name: 'VideoConsult');
+  }
+
+  _callSub = callDocRef.snapshots().listen((snapshot) {
+    final data = snapshot.data() as Map<String, dynamic>?;
+    if (!snapshot.exists || data?['status'] == 'ended') {
+      _endCall();
+      if (mounted) Navigator.pop(context);
+    }
+  });
+
+  _messagesSub = callDocRef.collection('messages').orderBy('timestamp').snapshots().listen((snapshot) {
+    for (var change in snapshot.docChanges) {
+      if (change.type == DocumentChangeType.added) {
+        final data = change.doc.data() as Map<String, dynamic>;
+        if (data['sender'] != user.uid) { // Compare with uid
+          _handleSignalingMessage(data);
+        }
+      }
+    }
+  });
+
+  if (widget.userRole == 'patient') {
+    final offer = await _peerConnection!.createOffer();
+    await _peerConnection!.setLocalDescription(offer);
+    _sendMessage({
+      'type': 'offer',
+      'sdp': offer.sdp,
+      'sender': user.uid, // Use uid
+      'role': widget.userRole,
+    });
+    developer.log('Offer sent by patient', name: 'VideoConsult');
+  }
+}
 
   Future<void> _setupWebRTC() async {
     if (!await _requestPermissions()) {
@@ -101,7 +167,7 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
           'sdpMid': candidate.sdpMid,
           'sdpMLineIndex': candidate.sdpMLineIndex,
         },
-        'sender': _userId,
+        'sender': _username, // Use username
         'role': widget.userRole,
       });
     };
@@ -120,60 +186,7 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
     };
   }
 
-  Future<void> _setupSignaling() async {
-    final callDocRef = _callsRef.doc(widget.callId);
 
-    // Initialize call document if it doesn't exist
-    final callDoc = await callDocRef.get();
-    if (!callDoc.exists) {
-      await callDocRef.set({
-        'participants': {widget.userRole: _userId},
-        'status': 'active',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      developer.log('Call document created for ${widget.userRole}', name: 'VideoConsult');
-    } else {
-      // Join existing call
-      await callDocRef.update({
-        'participants.${widget.userRole}': _userId,
-      });
-      developer.log('${widget.userRole} joined existing call', name: 'VideoConsult');
-    }
-
-    // Listen for call status
-    _callSub = callDocRef.snapshots().listen((snapshot) {
-      final data = snapshot.data() as Map<String, dynamic>?;
-      if (!snapshot.exists || data?['status'] == 'ended') {
-        _endCall();
-        if (mounted) Navigator.pop(context);
-      }
-    });
-
-    // Handle signaling messages
-    _messagesSub = callDocRef.collection('messages').orderBy('timestamp').snapshots().listen((snapshot) {
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>;
-          if (data['sender'] != _userId) {
-            _handleSignalingMessage(data);
-          }
-        }
-      }
-    });
-
-    // If patient, create offer; if doctor, wait for offer
-    if (widget.userRole == 'patient') {
-      final offer = await _peerConnection!.createOffer();
-      await _peerConnection!.setLocalDescription(offer);
-      _sendMessage({
-        'type': 'offer',
-        'sdp': offer.sdp,
-        'sender': _userId,
-        'role': widget.userRole,
-      });
-      developer.log('Offer sent by patient', name: 'VideoConsult');
-    }
-  }
 
   Future<bool> _requestPermissions() async {
     final status = await [Permission.camera, Permission.microphone].request();
@@ -195,13 +208,12 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
             _sendMessage({
               'type': 'answer',
               'sdp': answer.sdp,
-              'sender': _userId,
+              'sender': _username, // Use username
               'role': widget.userRole,
             });
             developer.log('Answer sent by doctor', name: 'VideoConsult');
           }
           break;
-
         case 'answer':
           if (widget.userRole == 'patient') {
             await _peerConnection!.setRemoteDescription(
@@ -210,7 +222,6 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
             developer.log('Answer received by patient', name: 'VideoConsult');
           }
           break;
-
         case 'candidate':
           await _peerConnection!.addCandidate(
             RTCIceCandidate(
@@ -228,7 +239,7 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
   }
 
   void _sendMessage(Map<String, dynamic> message) {
-    _callsRef.doc(widget.callId).collection('messages').add({
+    _callsRef.doc(_callId).collection('messages').add({
       ...message,
       'timestamp': FieldValue.serverTimestamp(),
     });
@@ -265,9 +276,9 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
       _remoteRenderer.srcObject = null;
       await _localStream?.dispose();
       await _peerConnection?.close();
-      await _callsRef.doc(widget.callId).update({
+      await _callsRef.doc(_callId).update({
         'status': 'ended',
-        'endedBy': _userId,
+        'endedBy': _username, // Use username
         'endedAt': FieldValue.serverTimestamp(),
       });
       developer.log('Call ended by ${widget.userRole}', name: 'VideoConsult');
@@ -440,7 +451,7 @@ class _VideoConsultPageState extends State<VideoConsultPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          widget.doctorName,
+          'Dr. ${widget.doctorId}',
           style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.05),
         ),
         leading: IconButton(

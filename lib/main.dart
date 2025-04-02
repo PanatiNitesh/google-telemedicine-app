@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_project/app/pages/about_us_page.dart';
+import 'package:flutter_project/app/pages/notificationservice.dart' as notification_service; // Import NotificationService
 
 Future<void> initializeService() async {
   await Future.delayed(const Duration(seconds: 1)); // Dummy delay
@@ -44,6 +45,9 @@ void main() async {
   }
 
   await initializeService();
+
+  // Initialize NotificationService
+  await notification_service.NotificationService().init();
 
   if (await Permission.notification.isDenied) {
     await Permission.notification.request();
@@ -181,7 +185,7 @@ class TelemedicineApp extends StatelessWidget {
           return const Scaffold(body: Center(child: Text('Error: Invalid booking arguments')));
         },
         '/about_us': (context) => const AboutUsPage(),
-        '/appointment_history': (context) => const AppointmentHistoryPage(), // Added from first snippet
+        '/appointment_history': (context) => const AppointmentHistoryPage(),
       },
       onGenerateRoute: (settings) {
         developer.log('Navigating to: ${settings.name}', name: 'TelemedicineApp');
@@ -248,7 +252,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
     {
       'title': 'Connect with\nSpecialists',
       'subtitle': 'Video consultations with\nexperienced doctors',
-      'image': 'assets/specialist.png',
+      'image': 'assets/specialist_transparent.png',
     },
   ];
 

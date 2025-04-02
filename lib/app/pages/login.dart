@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/app/pages/login_password_page.dart';
-
 import 'package:flutter_project/app/pages/profile-page.dart';
 import 'package:flutter_project/app/pages/services/auth_service.dart';
 import 'dart:developer' as developer;
@@ -22,7 +21,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    NotificationService().init();
     _loadStoredEmail();
   }
 
