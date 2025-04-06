@@ -216,7 +216,7 @@ Our roadmap includes several enhancements to further improve healthcare accessib
 ## Project Links
 
 - **GitHub Repository**: [https://github.com/PanatiNitesh/google-telemedicine-app](https://github.com/PanatiNitesh/google-telemedicine-app)
-- **Demo Video**: [Link to Demo Video]()
+- **Demo Video**: [Link to Demo Video](https://youtu.be/yHqS1EEoiHI?si=rYVWAQ9sZ2ElZ9Gv)
 - **MVP Demo**: [https://drive.google.com/drive/folders/1tXWnGCqZgLyW3zSc8mcb70zA7Ocxgf2Q](https://drive.google.com/drive/folders/1tXWnGCqZgLyW3zSc8mcb70zA7Ocxgf2Q)
 - **UI Design (Figma)**: [https://www.figma.com/design/pa4CDuDENlb8GTf3U6GYay/Telemedicine-app?node-id=513-230&t=Aib5dXJiTgEPadRf-1](https://www.figma.com/design/pa4CDuDENlb8GTf3U6GYay/Telemedicine-app?node-id=513-230&t=Aib5dXJiTgEPadRf-1)
 - **User Flow & Architecture**: [https://app.eraser.io/workspace/OSQ73C09McBXQQCUY7WV?origin=share](https://app.eraser.io/workspace/OSQ73C09McBXQQCUY7WV?origin=share)
